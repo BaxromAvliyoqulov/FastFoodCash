@@ -112,6 +112,12 @@ function clearActiveCart() {
   }
 }
 
+function saveTableOrder() {
+  if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+    posStore.clearActiveTable();
+  }
+}
+
 // ─── Payment ──────────────────────────────────────────────────────────────────
 function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
   if (!shiftStore.currentShift) {
@@ -162,28 +168,28 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
         </div>
 
         <!-- SABOY / ZAL MODE TOGGLE -->
-        <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0 shadow-inner">
-          <button
-            @click="switchMode('SABOY')"
-            :class="[
-              'px-4 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-extrabold',
-              posStore.operationMode === 'SABOY'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            ]"
-          >
-            <span class="text-sm">🛍️</span><span>Saboy</span>
-          </button>
+        <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0">
           <button
             @click="switchMode('ZAL')"
             :class="[
-              'px-4 py-2 rounded-xl transition-all flex items-center space-x-2 text-xs font-extrabold',
+              'px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold',
               posStore.operationMode === 'ZAL'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
             ]"
           >
-            <span class="text-sm">🏛️</span><span>Zal</span>
+            <span class="text-base">🏛️</span><span>Zal</span>
+          </button>
+          <button
+            @click="switchMode('SABOY')"
+            :class="[
+              'px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold',
+              posStore.operationMode === 'SABOY'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+            ]"
+          >
+            <span class="text-base">🛍️</span><span>Saboy</span>
           </button>
         </div>
 
@@ -420,14 +426,14 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
             <span class="text-sm font-black text-amber-600 dark:text-amber-400 font-mono shrink-0">{{ item.totalPrice.toLocaleString('uz-UZ') }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-[11px] text-slate-400">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</span>
-            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-0.5">
-              <button @click="updateQty(item.id, -1)" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-500 hover:text-white text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors">
-                <Minus class="w-3 h-3" />
+            <span class="text-[12px] text-slate-400">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</span>
+            <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
+              <button @click="updateQty(item.id, -1)" class="w-8 h-8 rounded-md bg-white dark:bg-slate-800 shadow-sm hover:bg-rose-50 hover:text-rose-500 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95">
+                <Minus class="w-4 h-4" />
               </button>
-              <span class="text-xs font-black text-slate-900 dark:text-white w-6 text-center font-mono">{{ item.quantity }}</span>
-              <button @click="updateQty(item.id, 1)" class="w-6 h-6 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-colors">
-                <Plus class="w-3 h-3" />
+              <span class="text-sm font-bold text-slate-900 dark:text-white w-8 text-center font-mono">{{ item.quantity }}</span>
+              <button @click="updateQty(item.id, 1)" class="w-8 h-8 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95">
+                <Plus class="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -464,22 +470,34 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           ✅ Sessiyada jami to'langan: {{ posStore.activeTable.totalPaid.toLocaleString('uz-UZ') }} so'm
         </div>
 
-        <!-- Checkout button — faqat savat to'la bo'lganda aktiv -->
-        <button
-          :disabled="activeCart.length === 0"
-          @click="showPaymentModal = true"
-          class="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 disabled:opacity-35 disabled:cursor-not-allowed text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
-        >
-          <CreditCard class="w-5 h-5" />
-          <span>
-            <template v-if="posStore.operationMode === 'ZAL'">
-              {{ activeCart.length }}-ta buyurtmani To'lash
-            </template>
-            <template v-else>
-              To'lovga O'tish
-            </template>
-          </span>
-        </button>
+        <!-- Checkout buttons -->
+        <template v-if="posStore.operationMode === 'ZAL'">
+          <div class="grid grid-cols-2 gap-3 mt-2">
+            <button
+              :disabled="activeCart.length === 0"
+              @click="saveTableOrder"
+              class="w-full bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white py-4 rounded-xl font-bold text-base transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <Utensils class="w-4 h-4" /> Oshxonaga
+            </button>
+            <button
+              :disabled="activeCart.length === 0"
+              @click="showPaymentModal = true"
+              class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-base shadow-sm transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <CreditCard class="w-4 h-4" /> Hisob-kitob
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <button
+            :disabled="activeCart.length === 0"
+            @click="showPaymentModal = true"
+            class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 mt-2"
+          >
+            <CreditCard class="w-5 h-5" /> To'lov ({{ activeSubtotal.toLocaleString('uz-UZ') }} so'm)
+          </button>
+        </template>
       </div>
     </div>
 

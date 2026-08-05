@@ -17,6 +17,7 @@ export interface Ingredient {
   unit: 'GRAM' | 'KG' | 'LITER' | 'PIECE';
   currentStock: number;
   costPerUnit: number;
+  minThreshold?: number; // Kam qolganida ogohlantirish uchun minimal miqdor
 }
 
 export interface RecipeItem {
@@ -95,6 +96,13 @@ export interface Table {
 
 }
 
+export interface ShiftExpense {
+  id: string;
+  amount: number;
+  reason: string;
+  time: string;
+}
+
 export interface Shift {
   id: string;
   cashierName: string;
@@ -105,6 +113,7 @@ export interface Shift {
   totalCashSales: number;
   totalCardSales: number;
   totalQrSales: number;
+  expenses: ShiftExpense[];
 }
 
 export interface ShiftCashAudit {
@@ -115,6 +124,7 @@ export interface ShiftCashAudit {
   difference: number; // declared - expected
   declaredCard: number;
   declaredQr: number;
+  totalExpenses: number;
   status: 'BALANCED' | 'SHORTAGE' | 'SURPLUS';
   notes?: string;
   createdAt: string;

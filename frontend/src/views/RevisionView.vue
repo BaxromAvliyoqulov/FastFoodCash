@@ -1,56 +1,38 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useToastStore } from '../stores/toastStore';
 import { 
-  Scale, 
-  RefreshCw,
+  Package, 
+  AlertTriangle,
   Layers,
-  Flame,
-  ShieldAlert
+  ArrowDownToLine,
+  CheckCircle2,
+  TrendingDown
 } from 'lucide-vue-next';
 
-import type { Ingredient } from '../types/pos';
-
 const posStore = usePosStore();
+const toast = useToastStore();
 
-// Physical Count Inputs
-const physicalInputs = ref<Record<string, number>>({});
-
-function getDiscrepancy(ingredientId: string, currentStock: number) {
-  const actual = physicalInputs.value[ingredientId];
-  if (actual === undefined || actual === null) return null;
-  return actual - currentStock;
-}
-
-const revisionSummary = computed(() => {
-  let totalDiscrepancyCost = 0;
-  let alertCount = 0;
-
-  posStore.ingredients.forEach((ing: Ingredient) => {
-    const diff = getDiscrepancy(ing.id, ing.currentStock);
-    if (diff !== null && diff < 0) {
-      const lossCost = Math.abs(diff) * ing.costPerUnit;
-      totalDiscrepancyCost += lossCost;
-      if (Math.abs(diff) / (ing.currentStock || 1) > 0.05) {
-        alertCount++;
-      }
-    }
-  });
-
-  return { totalDiscrepancyCost, alertCount };
+onMounted(() => {
+  posStore.checkLowStockAlerts(toast);
 });
 
-function applyRevisionAdjustments() {
-  let count = 0;
-  posStore.ingredients.forEach((ing: Ingredient) => {
-    const actual = physicalInputs.value[ing.id];
-    if (actual !== undefined && actual !== null) {
-      ing.currentStock = actual;
-      count++;
-    }
-  });
-  alert(`${count} ta ingrediyent fizik reviziya natijasida omborda yangilandi!`);
-  physicalInputs.value = {};
+// Qidiruv uchun
+const searchQuery = ref('');
+
+const filteredIngredients = computed(() => {
+  if (!searchQuery.value) return posStore.ingredients;
+  return posStore.ingredients.filter(ing => 
+    ing.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+function getStockStatus(current: number, min: number | undefined) {
+  if (!min) return { label: 'Joyida', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30' };
+  if (current <= min) return { label: 'Tugamoqda', color: 'text-rose-500 bg-rose-500/10 border-rose-500/30 shadow-[0_0_10px_rgba(225,29,72,0.3)]' };
+  if (current <= min * 1.5) return { label: 'O\'rtacha', color: 'text-amber-500 bg-amber-500/10 border-amber-500/30' };
+  return { label: 'Yetarli', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30' };
 }
 </script>
 
@@ -60,126 +42,141 @@ function applyRevisionAdjustments() {
     <!-- Header Title -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Ombor & Ingrediyentlar Reviziyasi</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Smena reviziyasi: Tarozidagi fizik gramm sanoq vs Kutilayotgan retseptura qoldig'i</p>
+        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Ombor Zaxiralari (Warehouse)</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Restorandagi joriy mahsulotlar qoldig'i va holati</p>
       </div>
 
       <button 
-        @click="applyRevisionAdjustments"
-        class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 flex items-center space-x-2 transition active:scale-95"
+        @click="toast.info('Yangi mahsulot qabul qilish oynasi tez kunda qo\'shiladi!')"
+        class="bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-indigo-500/25 flex items-center space-x-2 transition active:scale-95"
       >
-        <RefreshCw class="w-4 h-4" />
-        <span>Reviziya Natijalarini Tasdiqlash</span>
+        <ArrowDownToLine class="w-4 h-4" />
+        <span>Yangi Mahsulot Qabul Qilish (Kirim)</span>
       </button>
     </div>
 
     <!-- Audit Radar Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
       
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
-          <span>Ingrediyentlar Turlari</span>
-          <Layers class="w-4 h-4 text-amber-500" />
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition"></div>
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
+          <span>Jami Mahsulot Turlari</span>
+          <Layers class="w-4 h-4 text-indigo-500" />
         </div>
-        <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">
+        <div class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono relative z-10">
           {{ posStore.ingredients.length }} xil
         </div>
-        <div class="text-[11px] text-slate-500">Tizimda kuzatuvdagi ingrediyentlar</div>
+        <div class="text-[11px] text-slate-500 relative z-10">Tizimda ro'yxatga olingan mahsulotlar</div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
-          <span>Aniqlangan Moddiy Yo'qotish (Loss)</span>
-          <Flame class="w-4 h-4 text-rose-500" />
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-rose-500/5 rounded-full blur-xl group-hover:bg-rose-500/10 transition"></div>
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
+          <span>Tugayotgan Mahsulotlar</span>
+          <AlertTriangle class="w-4 h-4 text-rose-500" />
         </div>
-        <div class="text-xl sm:text-2xl font-black text-rose-500 dark:text-rose-400 font-mono">
-          {{ revisionSummary.totalDiscrepancyCost.toLocaleString('uz-UZ') }} so'm
+        <div class="text-xl sm:text-3xl font-black text-rose-500 dark:text-rose-400 font-mono relative z-10">
+          {{ posStore.lowStockIngredients.length }} ta
         </div>
-        <div class="text-[11px] text-slate-500">Fizik sanoq va tizim qoldig'i o'rtasidagi pul farqi</div>
+        <div class="text-[11px] text-slate-500 relative z-10">Zaxirasi minimal darajadan past bo'lganlar</div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl">
-        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
-          <span>Anti-Fraud Shubhali Ogohlantirishlar</span>
-          <ShieldAlert class="w-4 h-4 text-amber-500" />
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition"></div>
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
+          <span>Sog'lom Zaxiralar</span>
+          <CheckCircle2 class="w-4 h-4 text-emerald-500" />
         </div>
-        <div class="text-xl sm:text-2xl font-black text-amber-500 dark:text-amber-400 font-mono">
-          {{ revisionSummary.alertCount }} ta alert
+        <div class="text-xl sm:text-3xl font-black text-emerald-500 dark:text-emerald-400 font-mono relative z-10">
+          {{ posStore.ingredients.length - posStore.lowStockIngredients.length }} ta
         </div>
-        <div class="text-[11px] text-slate-500">Porsiya yoki retsepturadan me'yordan ortiq yo'qotish</div>
+        <div class="text-[11px] text-slate-500 relative z-10">Zaxirasi yetarli bo'lgan mahsulotlar</div>
       </div>
 
     </div>
 
-    <!-- Revision Table -->
+    <!-- Inventory Table -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm dark:shadow-xl">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-          <Scale class="w-5 h-5 text-amber-500" />
-          <span>Ingrediyentlar Smena Reviziyasi Jadvali</span>
+          <Package class="w-5 h-5 text-indigo-500" />
+          <span>Hozirgi Ombor Qoldig'i</span>
         </h3>
+        <input 
+          v-model="searchQuery"
+          type="text" 
+          placeholder="Mahsulot qidirish..." 
+          class="w-full sm:w-64 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 focus:outline-none transition-all dark:text-white placeholder:text-slate-400"
+        />
       </div>
 
-      <div class="overflow-x-auto max-w-full">
-        <table class="w-full text-left text-xs border-collapse min-w-[650px]">
+      <div class="overflow-x-auto max-w-full pb-10">
+        <table class="w-full text-left text-xs border-separate border-spacing-y-3 min-w-[700px]">
           <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
-              <th class="py-3.5 px-4">Ingrediyent Nomi</th>
-              <th class="py-3.5 px-4">O'lchov Birligi</th>
-              <th class="py-3.5 px-4">Tizimdagi Qoldiq (System)</th>
-              <th class="py-3.5 px-4">Fizik Sanalgan (Tarozi)</th>
-              <th class="py-3.5 px-4">Farq (Variance)</th>
-              <th class="py-3.5 px-4">Yo'qotish Qiymati (So'm)</th>
-              <th class="py-3.5 px-4">Audit Holati</th>
+            <tr class="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold text-[10px] px-4">
+              <th class="pb-2 px-4 font-semibold">Mahsulot Nomi</th>
+              <th class="pb-2 px-4 font-semibold text-center">O'lchov</th>
+              <th class="pb-2 px-4 font-semibold text-center">Minimal Chegara</th>
+              <th class="pb-2 px-4 font-semibold text-center">Hozirgi Qoldiq</th>
+              <th class="pb-2 px-4 font-semibold text-center">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono text-slate-700 dark:text-slate-300">
-            <tr v-for="ing in posStore.ingredients" :key="ing.id" class="hover:bg-slate-50 dark:hover:bg-slate-950/50 transition">
-              <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white font-sans text-sm">{{ ing.name }}</td>
-              <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-semibold">{{ ing.unit }}</td>
-              <td class="py-3.5 px-4 text-amber-600 dark:text-amber-400 font-bold">
-                {{ ing.currentStock.toFixed(3) }} {{ ing.unit }}
+          <tbody class="font-mono text-slate-700 dark:text-slate-300">
+            <tr v-for="ing in filteredIngredients" :key="ing.id" 
+                class="bg-slate-50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 shadow-sm hover:shadow-md group rounded-2xl">
+              
+              <!-- Nomi -->
+              <td class="py-4 px-4 font-bold text-slate-900 dark:text-white font-sans text-sm rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 group-hover:bg-indigo-500/10 group-hover:text-indigo-500 transition-colors">
+                    <Package class="w-4 h-4" />
+                  </div>
+                  <span>{{ ing.name }}</span>
+                </div>
               </td>
-              <td class="py-3.5 px-4">
-                <input 
-                  type="number" 
-                  step="0.001"
-                  v-model.number="physicalInputs[ing.id]"
-                  placeholder="Tortilgan kg/g"
-                  class="w-32 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white font-bold text-xs focus:border-amber-500 focus:outline-none"
-                />
+              
+              <!-- Birlik -->
+              <td class="py-4 px-4 text-slate-500 dark:text-slate-400 font-semibold text-center border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+                <span class="bg-slate-200/50 dark:bg-slate-700/50 px-2.5 py-1 rounded-md text-[10px] uppercase tracking-widest">{{ ing.unit }}</span>
               </td>
-              <td class="py-3.5 px-4">
-                <span v-if="getDiscrepancy(ing.id, ing.currentStock) !== null" :class="[
-                  'font-extrabold',
-                  getDiscrepancy(ing.id, ing.currentStock)! < 0 ? 'text-rose-500' : 'text-emerald-500'
-                ]">
-                  {{ getDiscrepancy(ing.id, ing.currentStock)!.toFixed(3) }} {{ ing.unit }}
+              
+              <!-- Minimal Chegara -->
+              <td class="py-4 px-4 text-center border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+                <span class="text-slate-400 dark:text-slate-500 text-[11px] uppercase tracking-wider font-semibold">
+                  Min: <span class="text-slate-600 dark:text-slate-300">{{ ing.minThreshold || 0 }}</span>
                 </span>
-                <span v-else class="text-slate-400 dark:text-slate-600">-</span>
               </td>
-              <td class="py-3.5 px-4">
-                <span v-if="getDiscrepancy(ing.id, ing.currentStock) !== null && getDiscrepancy(ing.id, ing.currentStock)! < 0" class="text-rose-500 font-bold">
-                  {{ (Math.abs(getDiscrepancy(ing.id, ing.currentStock)!) * ing.costPerUnit).toLocaleString('uz-UZ') }} so'm
-                </span>
-                <span v-else class="text-slate-400 dark:text-slate-600">0 so'm</span>
+              
+              <!-- Hozirgi Qoldiq -->
+              <td class="py-4 px-4 text-center border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+                <div class="flex items-center justify-center gap-2">
+                  <span class="text-xl font-black" :class="ing.currentStock <= (ing.minThreshold || 0) ? 'text-rose-500 drop-shadow-[0_0_8px_rgba(225,29,72,0.4)]' : 'text-slate-800 dark:text-white'">
+                    {{ ing.currentStock.toFixed(0) }}
+                  </span>
+                  <TrendingDown v-if="ing.currentStock <= (ing.minThreshold || 0)" class="w-4 h-4 text-rose-500 animate-pulse" />
+                </div>
               </td>
-              <td class="py-3.5 px-4">
-                <span v-if="getDiscrepancy(ing.id, ing.currentStock) !== null" :class="[
-                  'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border',
-                  getDiscrepancy(ing.id, ing.currentStock)! < -0.1 ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 dark:text-rose-400' :
-                  getDiscrepancy(ing.id, ing.currentStock)! > 0.1 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 dark:text-amber-400' :
-                  'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 dark:text-emerald-400'
-                ]">
-                  {{ getDiscrepancy(ing.id, ing.currentStock)! < -0.1 ? 'Kamchilik' : getDiscrepancy(ing.id, ing.currentStock)! > 0.1 ? 'Ortiqcha' : 'Norma' }}
+
+              <!-- Status -->
+              <td class="py-4 px-4 text-center rounded-r-2xl border-y border-r border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+                <span 
+                  class="px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border shadow-sm"
+                  :class="getStockStatus(ing.currentStock, ing.minThreshold).color"
+                >
+                  {{ getStockStatus(ing.currentStock, ing.minThreshold).label }}
                 </span>
-                <span v-else class="text-slate-400 dark:text-slate-600 font-sans text-xs">Sanoq kutilmoqda</span>
+              </td>
+            </tr>
+            
+            <tr v-if="filteredIngredients.length === 0">
+              <td colspan="5" class="py-10 text-center text-slate-500 dark:text-slate-400">
+                Mahsulot topilmadi
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-
   </div>
 </template>

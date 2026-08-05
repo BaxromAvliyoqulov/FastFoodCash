@@ -6,24 +6,51 @@ import MenuView from './views/MenuView.vue';
 import DashboardView from './views/DashboardView.vue';
 import ShiftView from './views/ShiftView.vue';
 import RevisionView from './views/RevisionView.vue';
+import HistoryView from './views/HistoryView.vue';
+import LoginView from './views/LoginView.vue';
+import ToastContainer from './components/ToastContainer.vue';
 import { useThemeStore } from './stores/themeStore';
+import { useAuthStore } from './stores/authStore';
+import { usePosStore } from './stores/posStore';
+import { useShiftStore } from './stores/shiftStore';
+import { watch } from 'vue';
 
 // Persist active tab in localStorage so F5 refresh stays on current page!
 const activeTab = ref(localStorage.getItem('doston_pos_active_tab') || 'pos');
 const themeStore = useThemeStore();
+const authStore = useAuthStore();
+const posStore = usePosStore();
+const shiftStore = useShiftStore();
 
 function handleTabChange(tab: string) {
   activeTab.value = tab;
   localStorage.setItem('doston_pos_active_tab', tab);
 }
 
+function initData() {
+  if (authStore.isAuthenticated) {
+    posStore.fetchProducts();
+    shiftStore.fetchActiveShift();
+  }
+}
+
+watch(() => authStore.isAuthenticated, (newVal) => {
+  if (newVal) {
+    initData();
+  }
+});
+
 onMounted(() => {
   themeStore.applyTheme();
+  initData();
 });
 </script>
 
 <template>
-  <div class="h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden transition-colors duration-300">
+  <ToastContainer />
+  <LoginView v-if="!authStore.isAuthenticated" />
+
+  <div v-else class="h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-['Plus_Jakarta_Sans',sans-serif] overflow-hidden transition-colors duration-300">
     <!-- Navbar (Fixed Header Height) -->
     <Navbar class="shrink-0" :activeTab="activeTab" @changeTab="handleTabChange" />
 
@@ -33,6 +60,7 @@ onMounted(() => {
       <MenuView v-else-if="activeTab === 'menu'" />
       <DashboardView v-else-if="activeTab === 'dashboard'" />
       <ShiftView v-else-if="activeTab === 'shift'" />
+      <HistoryView v-else-if="activeTab === 'history'" />
       <RevisionView v-else-if="activeTab === 'revision'" />
     </main>
   </div>

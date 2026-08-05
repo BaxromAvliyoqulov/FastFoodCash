@@ -22,16 +22,42 @@ import {
 const posStore = usePosStore();
 const selectedPeriod = ref<'today' | 'yesterday' | 'week' | 'month'>('today');
 
+// Period Multipliers to make the demo data interactive when switching tabs
+const periodMultiplier = computed(() => {
+  switch (selectedPeriod.value) {
+    case 'today': return 1;
+    case 'yesterday': return 0.85; // Kecha sal kamroq bo'lgan
+    case 'week': return 6.8; // Haftalik
+    case 'month': return 28.5; // Oylik
+    default: return 1;
+  }
+});
+
+// Dynamic Comparison Text & Growth Percentages
+const comparisonData = computed(() => {
+  switch (selectedPeriod.value) {
+    case 'today': return { text: 'kechagiga nisbatan', revVal: 14.8, revPos: true, ordVal: 8.2, ordPos: true };
+    case 'yesterday': return { text: 'oldingi kunga nisbatan', revVal: 3.2, revPos: false, ordVal: 1.5, ordPos: false };
+    case 'week': return { text: 'oldingi haftaga nisbatan', revVal: 12.4, revPos: true, ordVal: 9.1, ordPos: true };
+    case 'month': return { text: 'oldingi oyga nisbatan', revVal: 22.5, revPos: true, ordVal: 15.3, ordPos: true };
+    default: return { text: 'oldingi davrga nisbatan', revVal: 0, revPos: true, ordVal: 0, ordPos: true };
+  }
+});
+
 // 1. Core Financial KPI Metrics
 const totalRevenue = computed(() => {
   if (posStore.orderHistory.length === 0) {
-    return 1485000; // Simulated demo baseline if no live order
+    return Math.round(1485000 * periodMultiplier.value); // Simulated demo baseline
   }
+  // In a fully real app, we would filter `posStore.orderHistory` by date here.
   return posStore.orderHistory.reduce((sum: number, order: Order) => sum + order.totalAmount, 0);
 });
 
 const totalOrdersCount = computed(() => {
-  return Math.max(42, posStore.orderHistory.length);
+  if (posStore.orderHistory.length === 0) {
+    return Math.round(42 * periodMultiplier.value);
+  }
+  return posStore.orderHistory.length;
 });
 
 const averageTicketSize = computed(() => {
@@ -104,27 +130,70 @@ const paymentBreakdown = computed(() => {
   ];
 });
 
-// 4. Hourly Sales Chart Data (09:00 to 22:00)
-const hourlyData = computed(() => [
-  { hour: '09:00', sales: 65000 },
-  { hour: '11:00', sales: 140000 },
-  { hour: '13:00', sales: 380000 },
-  { hour: '15:00', sales: 190000 },
-  { hour: '17:00', sales: 240000 },
-  { hour: '19:00', sales: 410000 },
-  { hour: '21:00', sales: 290000 },
-]);
+// 4. Dynamic Chart Data based on selected period
+const chartData = computed(() => {
+  if (selectedPeriod.value === 'week') {
+    return [
+      { label: 'Du', sales: 1200000 },
+      { label: 'Se', sales: 1450000 },
+      { label: 'Ch', sales: 1300000 },
+      { label: 'Pa', sales: 1800000 },
+      { label: 'Ju', sales: 2400000 },
+      { label: 'Sh', sales: 2900000 },
+      { label: 'Ya', sales: 2600000 },
+    ].map(item => ({ ...item, sales: Math.round(item.sales * (periodMultiplier.value / 6.8)) }));
+  } else if (selectedPeriod.value === 'month') {
+    return [
+      { label: '1-hafta', sales: 9500000 },
+      { label: '2-hafta', sales: 11200000 },
+      { label: '3-hafta', sales: 10800000 },
+      { label: '4-hafta', sales: 12500000 },
+    ].map(item => ({ ...item, sales: Math.round(item.sales * (periodMultiplier.value / 28.5)) }));
+  } else {
+    // Today or Yesterday (Hourly)
+    return [
+      { label: '09:00', sales: 65000 },
+      { label: '11:00', sales: 140000 },
+      { label: '13:00', sales: 380000 },
+      { label: '15:00', sales: 190000 },
+      { label: '17:00', sales: 240000 },
+      { label: '19:00', sales: 410000 },
+      { label: '21:00', sales: 290000 },
+    ].map(item => ({ ...item, sales: Math.round(item.sales * periodMultiplier.value) }));
+  }
+});
 
-const maxHourlySales = computed(() => Math.max(...hourlyData.value.map(h => h.sales)) || 1);
+const maxChartSales = computed(() => Math.max(...chartData.value.map(h => h.sales)) || 1);
 
-// 5. Top 5 Bestsellers
+// Mini Comparison Graph Data (Current vs Previous)
+const comparisonGraph = computed(() => {
+  const current = totalRevenue.value;
+  const growthFactor = comparisonData.value.revPos 
+    ? (100 + comparisonData.value.revVal) / 100 
+    : (100 - comparisonData.value.revVal) / 100;
+  const previous = Math.round(current / (growthFactor || 1));
+  const max = Math.max(current, previous);
+  return {
+    current,
+    previous,
+    currentPct: Math.round((current / max) * 100),
+    previousPct: Math.round((previous / max) * 100)
+  };
+});
+
+// 5. Top 10 Bestsellers
 const topBestsellers = computed(() => {
   return [
-    { rank: 1, name: 'Lavash (obichniy)', category: 'Lavash', price: 35000, soldCount: 38, totalRevenue: 1330000, imageUrl: '/images/food/lavash_obichniy.jpg' },
-    { rank: 2, name: 'Donar Pizza (XIT SOTUVDA)', category: 'Pizza', price: 85000, soldCount: 14, totalRevenue: 1190000, imageUrl: '/images/pizza/donar_pizza.png' },
-    { rank: 3, name: 'Chesse Burger', category: 'Burger', price: 37000, soldCount: 26, totalRevenue: 962000, imageUrl: '/images/burger/cheeseburger.png' },
-    { rank: 4, name: 'HOT DOG KAROL', category: 'Hot Dog', price: 25000, soldCount: 22, totalRevenue: 550000, imageUrl: '/images/hotdog/hot_dog_karol.png' },
-    { rank: 5, name: 'Classic Fri', category: 'Qovurilganlar', price: 18000, soldCount: 28, totalRevenue: 504000, imageUrl: '/images/food/classic_fri.jpg' },
+    { rank: 1, name: 'Lavash (obichniy)', category: 'Lavash', price: 35000, soldCount: Math.round(38 * periodMultiplier.value), totalRevenue: Math.round(1330000 * periodMultiplier.value), imageUrl: '/images/food/lavash_obichniy.jpg' },
+    { rank: 2, name: 'Donar Pizza (XIT SOTUVDA)', category: 'Pizza', price: 85000, soldCount: Math.round(14 * periodMultiplier.value), totalRevenue: Math.round(1190000 * periodMultiplier.value), imageUrl: '/images/pizza/donar_pizza.png' },
+    { rank: 3, name: 'Chesse Burger', category: 'Burger', price: 37000, soldCount: Math.round(26 * periodMultiplier.value), totalRevenue: Math.round(962000 * periodMultiplier.value), imageUrl: '/images/burger/cheeseburger.png' },
+    { rank: 4, name: 'HOT DOG KAROL', category: 'Hot Dog', price: 25000, soldCount: Math.round(22 * periodMultiplier.value), totalRevenue: Math.round(550000 * periodMultiplier.value), imageUrl: '/images/hotdog/hot_dog_karol.png' },
+    { rank: 5, name: 'Classic Fri', category: 'Qovurilganlar', price: 18000, soldCount: Math.round(28 * periodMultiplier.value), totalRevenue: Math.round(504000 * periodMultiplier.value), imageUrl: '/images/food/classic_fri.jpg' },
+    { rank: 6, name: 'Coca-Cola 0.5L', category: 'Ichimliklar', price: 8000, soldCount: Math.round(55 * periodMultiplier.value), totalRevenue: Math.round(440000 * periodMultiplier.value), imageUrl: '/images/drinks/coca_cola.jpg' },
+    { rank: 7, name: 'Tandir Lavash (Mol go\'shtli)', category: 'Lavash', price: 42000, soldCount: Math.round(10 * periodMultiplier.value), totalRevenue: Math.round(420000 * periodMultiplier.value), imageUrl: '/images/food/lavash_obichniy.jpg' },
+    { rank: 8, name: 'KFC Tovuq Qanotlari', category: 'Qovurilganlar', price: 35000, soldCount: Math.round(11 * periodMultiplier.value), totalRevenue: Math.round(385000 * periodMultiplier.value), imageUrl: '/images/food/classic_fri.jpg' },
+    { rank: 9, name: 'Assorti Pizza', category: 'Pizza', price: 75000, soldCount: Math.round(5 * periodMultiplier.value), totalRevenue: Math.round(375000 * periodMultiplier.value), imageUrl: '/images/pizza/donar_pizza.png' },
+    { rank: 10, name: 'Choy Qora (Choynak)', category: 'Ichimliklar', price: 5000, soldCount: Math.round(45 * periodMultiplier.value), totalRevenue: Math.round(225000 * periodMultiplier.value), imageUrl: '/images/drinks/coca_cola.jpg' },
   ];
 });
 
@@ -151,14 +220,8 @@ const lowStockIngredients = computed(() => {
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">DOSTON BURGER tushumi, top taomlar va ombor hisoboti</p>
       </div>
 
-      <!-- Time Filter Pills -->
+      <!-- Time Filter Pills (Fixed Order: Kecha, Bugun, Hafta, Oy) -->
       <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-bold space-x-1">
-        <button 
-          @click="selectedPeriod = 'today'"
-          :class="['px-3.5 py-2 rounded-xl transition-all', selectedPeriod === 'today' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white']"
-        >
-          Bugun
-        </button>
         <button 
           @click="selectedPeriod = 'yesterday'"
           :class="['px-3.5 py-2 rounded-xl transition-all', selectedPeriod === 'yesterday' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white']"
@@ -166,10 +229,22 @@ const lowStockIngredients = computed(() => {
           Kecha
         </button>
         <button 
+          @click="selectedPeriod = 'today'"
+          :class="['px-3.5 py-2 rounded-xl transition-all', selectedPeriod === 'today' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white']"
+        >
+          Bugun
+        </button>
+        <button 
           @click="selectedPeriod = 'week'"
           :class="['px-3.5 py-2 rounded-xl transition-all', selectedPeriod === 'week' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white']"
         >
           Shu Hafta
+        </button>
+        <button 
+          @click="selectedPeriod = 'month'"
+          :class="['px-3.5 py-2 rounded-xl transition-all', selectedPeriod === 'month' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white']"
+        >
+          Shu Oy
         </button>
       </div>
     </div>
@@ -187,9 +262,10 @@ const lowStockIngredients = computed(() => {
         <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono mb-2">
           {{ totalRevenue.toLocaleString('uz-UZ') }} <span class="text-xs font-sans text-slate-500">so'm</span>
         </div>
-        <div class="flex items-center text-xs font-bold text-emerald-500">
-          <ArrowUpRight class="w-4 h-4 mr-0.5" />
-          <span>+14.8% kechagiga nisbatan</span>
+        <div :class="['flex items-center text-xs font-bold', comparisonData.revPos ? 'text-emerald-500' : 'text-rose-500']">
+          <ArrowUpRight v-if="comparisonData.revPos" class="w-4 h-4 mr-0.5" />
+          <TrendingUp v-else class="w-4 h-4 mr-0.5 transform rotate-180" />
+          <span>{{ comparisonData.revPos ? '+' : '-' }}{{ comparisonData.revVal }}% {{ comparisonData.text }}</span>
         </div>
       </div>
 
@@ -204,9 +280,10 @@ const lowStockIngredients = computed(() => {
         <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono mb-2">
           {{ totalOrdersCount }} <span class="text-xs font-sans text-slate-500">ta buyurtma</span>
         </div>
-        <div class="flex items-center text-xs font-bold text-emerald-500">
-          <ArrowUpRight class="w-4 h-4 mr-0.5" />
-          <span>+8.2% faollik yuqori</span>
+        <div :class="['flex items-center text-xs font-bold', comparisonData.ordPos ? 'text-emerald-500' : 'text-rose-500']">
+          <ArrowUpRight v-if="comparisonData.ordPos" class="w-4 h-4 mr-0.5" />
+          <TrendingUp v-else class="w-4 h-4 mr-0.5 transform rotate-180" />
+          <span>{{ comparisonData.ordPos ? '+' : '-' }}{{ comparisonData.ordVal }}% {{ comparisonData.text }}</span>
         </div>
       </div>
 
@@ -243,26 +320,52 @@ const lowStockIngredients = computed(() => {
       </div>
     </div>
 
-    <!-- Middle Charts Section: Hourly Bar Chart & Payment Methods -->
+    <!-- Middle Charts Section: Dynamic Bar Chart & Comparison Mini-Graph -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- 1. Hourly Sales Bar Chart (2 columns) -->
+      <!-- 1. Dynamic Sales Bar Chart (2 columns) -->
       <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h3 class="font-black text-base text-slate-900 dark:text-white flex items-center gap-2">
               <BarChart2 class="w-5 h-5 text-amber-500" />
-              <span>Soatbay Tushum Dinamikasi</span>
+              <span>{{ selectedPeriod === 'week' ? 'Haftalik' : selectedPeriod === 'month' ? 'Oylik' : 'Soatbay' }} Tushum Dinamikasi</span>
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">09:00 dan 22:00 gacha bo'lgan davrdagi eng qizg'in vaqtlar</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Tanlangan davrga ko'ra barcha tushumlar tarixi
+            </p>
           </div>
-          <span class="text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-3 py-1 rounded-xl"> Peak: 19:00-21:00</span>
+          
+          <!-- Mini Comparison Widget: Current vs Previous -->
+          <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 w-full sm:w-56 shrink-0">
+            <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Solishtirma ({{ comparisonData.text.split(' ')[0] }})</div>
+            
+            <div class="space-y-2">
+              <!-- Previous Period Bar -->
+              <div class="flex items-center gap-2 text-[10px]">
+                <span class="w-10 text-slate-400">Oldingi</span>
+                <div class="flex-1 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-slate-400 h-full rounded-full transition-all duration-700" :style="{ width: `${comparisonGraph.previousPct}%` }"></div>
+                </div>
+                <span class="w-14 text-right font-mono text-slate-500">{{ (comparisonGraph.previous / 1000000).toFixed(1) }}M</span>
+              </div>
+              
+              <!-- Current Period Bar -->
+              <div class="flex items-center gap-2 text-[10px] font-bold">
+                <span class="w-10 text-amber-500">Joriy</span>
+                <div class="flex-1 bg-amber-500/20 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-amber-500 h-full rounded-full transition-all duration-700" :style="{ width: `${comparisonGraph.currentPct}%` }"></div>
+                </div>
+                <span class="w-14 text-right font-mono text-amber-500">{{ (comparisonGraph.current / 1000000).toFixed(1) }}M</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Custom SVG Bar Chart -->
         <div class="h-48 sm:h-56 flex items-end justify-between gap-2 sm:gap-4 pt-6 pb-2 px-2 border-b border-slate-200 dark:border-slate-800">
           <div 
-            v-for="(item, idx) in hourlyData" 
+            v-for="(item, idx) in chartData" 
             :key="idx" 
             class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
           >
@@ -274,10 +377,10 @@ const lowStockIngredients = computed(() => {
             <!-- Bar -->
             <div 
               class="w-full max-w-[42px] bg-gradient-to-t from-amber-500 to-orange-500 rounded-t-xl group-hover:brightness-110 transition-all duration-500 shadow-md shadow-amber-500/20"
-              :style="{ height: `${(item.sales / maxHourlySales) * 100}%` }"
+              :style="{ height: `${(item.sales / maxChartSales) * 100}%` }"
             ></div>
-            <!-- Hour label -->
-            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-2 font-mono">{{ item.hour }}</span>
+            <!-- Dynamic Label -->
+            <span class="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-2 font-mono truncate max-w-full px-1">{{ item.label }}</span>
           </div>
         </div>
 

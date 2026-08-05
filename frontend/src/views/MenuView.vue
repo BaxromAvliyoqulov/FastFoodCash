@@ -264,12 +264,12 @@ function handleSaveProduct() {
                   :class="[
                     'p-1.5 rounded-xl border transition-all', 
                     cat.isHidden 
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500 hover:text-white' 
+                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500/30' 
                       : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-500 border-transparent'
                   ]"
                 >
-                  <EyeOff v-if="!cat.isHidden" class="w-3.5 h-3.5" />
-                  <Eye v-else class="w-3.5 h-3.5" />
+                  <Eye v-if="!cat.isHidden" class="w-3.5 h-3.5" />
+                  <EyeOff v-else class="w-3.5 h-3.5" />
                 </button>
 
                 <button 

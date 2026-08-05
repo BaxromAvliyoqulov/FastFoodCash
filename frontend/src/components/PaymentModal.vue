@@ -74,24 +74,6 @@ function handleComplete() {
         </button>
 
         <button 
-          @click="selectedPaymentType = 'CARD'; paidAmountInput = totalAmount"
-          :class="[
-            'p-4 rounded-2xl border flex items-center space-x-3 transition-all duration-200',
-            selectedPaymentType === 'CARD' 
-              ? 'bg-blue-500/15 border-blue-500 text-blue-600 dark:text-blue-400 font-bold shadow-lg shadow-blue-500/10'
-              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-          ]"
-        >
-          <div :class="['p-2 rounded-xl', selectedPaymentType === 'CARD' ? 'bg-blue-500 text-white' : 'bg-slate-200 dark:bg-slate-900 text-slate-500']">
-            <CreditCard class="w-5 h-5" />
-          </div>
-          <div class="text-left">
-            <div class="text-sm">Uzcard / Humo</div>
-            <div class="text-[10px] opacity-70">POS Terminal</div>
-          </div>
-        </button>
-
-        <button 
           @click="selectedPaymentType = 'CLICK_PAYME'; paidAmountInput = totalAmount"
           :class="[
             'p-4 rounded-2xl border flex items-center space-x-3 transition-all duration-200',
@@ -106,24 +88,6 @@ function handleComplete() {
           <div class="text-left">
             <div class="text-sm">Click / Payme</div>
             <div class="text-[10px] opacity-70">Dynamic QR Code</div>
-          </div>
-        </button>
-
-        <button 
-          @click="selectedPaymentType = 'DELIVERY_PARTNER'; paidAmountInput = totalAmount"
-          :class="[
-            'p-4 rounded-2xl border flex items-center space-x-3 transition-all duration-200',
-            selectedPaymentType === 'DELIVERY_PARTNER' 
-              ? 'bg-purple-500/15 border-purple-500 text-purple-600 dark:text-purple-400 font-bold shadow-lg shadow-purple-500/10'
-              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
-          ]"
-        >
-          <div :class="['p-2 rounded-xl', selectedPaymentType === 'DELIVERY_PARTNER' ? 'bg-purple-500 text-white' : 'bg-slate-200 dark:bg-slate-900 text-slate-500']">
-            <Truck class="w-5 h-5" />
-          </div>
-          <div class="text-left">
-            <div class="text-sm">Yandex / Express</div>
-            <div class="text-[10px] opacity-70">Agregator to'lov</div>
           </div>
         </button>
       </div>

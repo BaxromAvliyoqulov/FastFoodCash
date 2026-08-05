@@ -1,14 +1,18 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type {
+import { ref, computed, watch } from 'vue';
+import {
   Product, CartItem, Order, PaymentType, OrderType,
   Ingredient, Modifier, Category, OperationMode, Table
 } from '../types/pos';
 import { initialIngredients, initialCategories, initialProducts } from '../data/menu';
+import { useAuthStore } from './authStore';
+import { useShiftStore } from './shiftStore';
 
-// ─── Helper: 10 ta bo'sh stol yaratish ────────────────────────────────────────
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+
+// ─── Helper: 30 ta bo'sh stol yaratish ────────────────────────────────────────
 function createInitialTables(): Table[] {
-  return Array.from({ length: 10 }, (_, i) => ({
+  return Array.from({ length: 30 }, (_, i) => ({
     id: `table-${i + 1}`,
     number: i + 1,
     status: 'FREE' as const,
@@ -23,13 +27,47 @@ export const usePosStore = defineStore('pos', () => {
   // ─── Ingredient Stock ────────────────────────────────────────────────────────
   const ingredients = ref<Ingredient[]>(initialIngredients);
 
+  const lowStockIngredients = computed(() => {
+    return ingredients.value.filter(ing => ing.minThreshold && ing.currentStock <= ing.minThreshold);
+  });
+
+  function checkLowStockAlerts(toast: any) {
+    const lowStock = lowStockIngredients.value;
+    if (lowStock.length === 0) return;
+    
+    // Bitta yig'ma toast (juda ko'p sms kelmasligi uchun) yoki alohida-alohida
+    if (lowStock.length > 3) {
+      toast.error(`DIQQAT: ${lowStock.length} ta mahsulot zahirasi tugamoqda! Omborga buyurtma bering.`, 5000);
+    } else {
+      lowStock.forEach(ing => {
+        toast.error(`Zahira tugamoqda: ${ing.name} (Qoldiq: ${ing.currentStock} ${ing.unit})`, 5000);
+      });
+    }
+  }
+
   // ─── Categories ──────────────────────────────────────────────────────────────
-  const categories = ref<Category[]>(initialCategories);
+  const storedCategories = localStorage.getItem('doston_pos_categories');
+  const categories = ref<Category[]>(
+    storedCategories ? JSON.parse(storedCategories) : initialCategories
+  );
+  watch(categories, (newVal) => localStorage.setItem('doston_pos_categories', JSON.stringify(newVal)), { deep: true });
+  
   const selectedCategory = ref('cat-all');
   const searchQuery = ref('');
 
   // ─── Products ────────────────────────────────────────────────────────────────
   const products = ref<Product[]>(initialProducts);
+
+  async function fetchProducts() {
+    try {
+      const res = await fetch(`${API_URL}/products`);
+      if (res.ok) {
+        products.value = await res.json();
+      }
+    } catch (e) {
+      console.error('Fetch products error:', e);
+    }
+  }
 
   // ─── SABOY Cart ──────────────────────────────────────────────────────────────
   const cart = ref<CartItem[]>([]);
@@ -39,9 +77,9 @@ export const usePosStore = defineStore('pos', () => {
   const orderHistory = ref<Order[]>([]);
   const selectedOrderType = ref<OrderType>('DINE_IN');
 
-  // ─── Operation Mode: SABOY | ZAL ─────────────────────────────────────────────
+  // ─── Operation Mode: ZAL | SABOY ─────────────────────────────────────────────
   const operationMode = ref<OperationMode>(
-    (localStorage.getItem('doston_pos_mode') as OperationMode) || 'SABOY'
+    (localStorage.getItem('doston_pos_mode') as OperationMode) || 'ZAL'
   );
 
   function setOperationMode(mode: OperationMode) {
@@ -57,7 +95,12 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── ZAL: Tables ─────────────────────────────────────────────────────────────
-  const tables = ref<Table[]>(createInitialTables());
+  const storedTables = localStorage.getItem('doston_pos_tables');
+  const tables = ref<Table[]>(
+    storedTables ? JSON.parse(storedTables) : createInitialTables()
+  );
+  watch(tables, (newVal) => localStorage.setItem('doston_pos_tables', JSON.stringify(newVal)), { deep: true });
+  
   const activeTableId = ref<string | null>(
     localStorage.getItem('doston_pos_active_table') || null
   );
@@ -183,35 +226,50 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── SABOY: submitOrder ───────────────────────────────────────────────────────
-  function submitOrder(
+  async function submitOrder(
     paymentType: PaymentType,
     paidAmount: number,
     cashierName: string,
     shiftId: string,
     orderType?: OrderType
-  ): Order {
-    const totalAmount = cartSubtotal.value;
-    const changeAmount = Math.max(0, paidAmount - totalAmount);
-    _deductIngredients(cart.value);
+  ): Promise<Order | null> {
+    const authStore = useAuthStore();
+    
+    try {
+      const payload = {
+        cashierId: authStore.user?.id || 'default',
+        shiftId,
+        paymentType,
+        items: cart.value.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        }))
+      };
 
-    const newOrder: Order = {
-      id: 'ord-' + Date.now(),
-      orderNumber: activeOrderNumber.value++,
-      shiftId,
-      cashierName,
-      orderType: orderType || selectedOrderType.value,
-      items: [...cart.value],
-      totalAmount,
-      paymentType,
-      paidAmount,
-      changeAmount,
-      status: 'COOKING',
-      createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    orderHistory.value.unshift(newOrder);
-    clearCart();
-    return newOrder;
+      const res = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        orderHistory.value.unshift(data.order);
+        clearCart();
+        
+        // Optimistically deduct local ingredients (backend already does it, but we want UI to reflect instantly if we don't re-fetch)
+        _deductIngredients(cart.value);
+        
+        return data.order;
+      } else {
+        alert(data.error || 'Buyurtma saqlashda xatolik');
+        return null;
+      }
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }
 
   // ─── ZAL: addToTableCart ──────────────────────────────────────────────────────
@@ -290,48 +348,65 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── ZAL: submitTableOrder ────────────────────────────────────────────────────
-  function submitTableOrder(
+  async function submitTableOrder(
     tableId: string,
     paymentType: PaymentType,
     paidAmount: number,
     cashierName: string,
     shiftId: string
-  ): Order | null {
+  ): Promise<Order | null> {
     const table = tables.value.find(t => t.id === tableId);
     if (!table || table.cart.length === 0) return null;
 
-    const totalAmount = table.cart.reduce((s, i) => s + i.totalPrice, 0);
-    const changeAmount = Math.max(0, paidAmount - totalAmount);
-    _deductIngredients(table.cart);
+    const authStore = useAuthStore();
 
-    const newOrder: Order = {
-      id: 'ord-' + Date.now(),
-      orderNumber: activeOrderNumber.value++,
-      shiftId,
-      cashierName,
-      orderType: 'DINE_IN',
-      tableId: table.id,
-      tableNumber: table.number,
-      waiterNote: table.waiterNote || undefined,
-      items: [...table.cart],
-      totalAmount,
-      paymentType,
-      paidAmount,
-      changeAmount,
-      status: 'COOKING',
-      createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
-    };
+    try {
+      const payload = {
+        cashierId: authStore.user?.id || 'default',
+        shiftId,
+        paymentType,
+        items: table.cart.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        }))
+      };
 
-    orderHistory.value.unshift(newOrder);
+      const res = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        orderHistory.value.unshift(data.order);
+        
+        // Optimistically deduct
+        _deductIngredients(table.cart);
 
-    // ✅ Savat tozalanadi LEKIN stol OCCUPIED qoladi!
-    // Mijoz hali o'tiribdi — yana buyurtma berishi mumkin.
-    // Stolni yopish faqat admin "Stolni Yopish" tugmasi bilan qiladi.
-    table.cart = [];
-    table.totalPaid += totalAmount;
-    // waiterNote saqlanadi (mijoz uchun maxsus izoh)
+        // ✅ Stol to'liq yopiladi va bo'shatiladi
+        table.cart = [];
+        table.status = 'FREE';
+        table.orderNumber = undefined;
+        table.openedAt = null;
+        table.totalPaid = 0;
+        table.waiterNote = '';
 
-    return newOrder;
+        if (activeTableId.value === tableId) {
+          activeTableId.value = null;
+          localStorage.removeItem('doston_pos_active_table');
+        }
+
+        return data.order;
+      } else {
+        alert(data.error || 'Buyurtma saqlashda xatolik');
+        return null;
+      }
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }
 
   // Admin stolni yopganda — sessiya yakunlanadi
@@ -411,6 +486,7 @@ export const usePosStore = defineStore('pos', () => {
   return {
     // State
     ingredients,
+    lowStockIngredients,
     categories,
     visibleCategories,
     selectedCategory,
@@ -444,6 +520,7 @@ export const usePosStore = defineStore('pos', () => {
     updateQuantity,
     clearCart,
     submitOrder,
+    checkLowStockAlerts,
 
     // ZAL methods
     addToTableCart,
