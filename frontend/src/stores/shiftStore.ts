@@ -31,7 +31,7 @@ export const useShiftStore = defineStore('shift', () => {
     }
   }
 
-  async function openShift(initialCash: number, cashierName: string = 'ADMIN') {
+  async function openShift(initialCash: number, _cashierName: string = 'ADMIN') {
     const authStore = useAuthStore();
     if (!authStore.user) return;
     try {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { PaymentType } from '../types/pos';
-import { X, CreditCard, Banknote, QrCode, Truck, CheckCircle2 } from 'lucide-vue-next';
+import { X, Banknote, QrCode, CheckCircle2 } from 'lucide-vue-next';
 
 const props = defineProps<{
   totalAmount: number;

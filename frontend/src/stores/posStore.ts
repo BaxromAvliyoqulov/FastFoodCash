@@ -6,7 +6,7 @@ import {
 } from '../types/pos';
 import { initialIngredients, initialCategories, initialProducts } from '../data/menu';
 import { useAuthStore } from './authStore';
-import { useShiftStore } from './shiftStore';
+
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -228,10 +228,10 @@ export const usePosStore = defineStore('pos', () => {
   // ─── SABOY: submitOrder ───────────────────────────────────────────────────────
   async function submitOrder(
     paymentType: PaymentType,
-    paidAmount: number,
-    cashierName: string,
+    _paidAmount: number,
+    _cashierName: string,
     shiftId: string,
-    orderType?: OrderType
+    _orderType?: OrderType
   ): Promise<Order | null> {
     const authStore = useAuthStore();
     
@@ -351,8 +351,8 @@ export const usePosStore = defineStore('pos', () => {
   async function submitTableOrder(
     tableId: string,
     paymentType: PaymentType,
-    paidAmount: number,
-    cashierName: string,
+    _paidAmount: number,
+    _cashierName: string,
     shiftId: string
   ): Promise<Order | null> {
     const table = tables.value.find(t => t.id === tableId);
@@ -521,6 +521,7 @@ export const usePosStore = defineStore('pos', () => {
     lowStockIngredients,
     categories,
     visibleCategories,
+    fetchProducts,
     selectedCategory,
     selectedOrderType,
     searchQuery,
