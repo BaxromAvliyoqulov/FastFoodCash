@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <ellipse cx="300" cy="310" rx="170" ry="25" fill="rgba(0,0,0,0.6)"/>
+    <path d="M 140,260 Q 300,280 460,260 L 460,280 Q 300,300 140,280 Z" fill="#d97706"/>
+    <rect x="130" y="225" width="340" height="30" rx="12" fill="#451a03"/>
+    <path d="M 140,215 Q 300,80 460,215 Z" fill="#f59e0b"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fbbf24" text-anchor="middle">BURGER KING</text>
+  </svg>

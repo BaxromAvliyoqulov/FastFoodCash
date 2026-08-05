@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="chocoBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1c120c"/>
+        <stop offset="100%" stop-color="#0a0604"/>
+      </linearGradient>
+      <linearGradient id="darkChoco" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3d2314"/>
+        <stop offset="100%" stop-color="#1f1007"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#chocoBg)"/>
+    <ellipse cx="300" cy="305" rx="210" ry="38" fill="rgba(0,0,0,0.7)"/>
+
+    <g transform="translate(130, 75)">
+      <!-- Cake side -->
+      <polygon points="40,210 300,225 300,70 40,60" fill="url(#darkChoco)"/>
+      <!-- Caramel & Peanut Layers -->
+      <rect x="40" y="90" width="260" height="12" fill="#d97706" transform="rotate(3, 40, 90)"/>
+      <rect x="40" y="145" width="260" height="12" fill="#d97706" transform="rotate(3, 40, 145)"/>
+      <!-- White Nougat layer -->
+      <rect x="40" y="118" width="260" height="10" fill="#fff7ed" transform="rotate(3, 40, 118)"/>
+
+      <!-- Top Slice Face -->
+      <polygon points="40,60 300,70 230,20 20,20" fill="#2b180d"/>
+      
+      <!-- Thick Caramel Glaze & Peanuts -->
+      <polygon points="38,58 302,68 232,18 18,18" fill="#b45309"/>
+      <circle cx="100" cy="40" r="7" fill="#f59e0b"/>
+      <circle cx="130" cy="45" r="8" fill="#f59e0b"/>
+      <circle cx="160" cy="35" r="6" fill="#f59e0b"/>
+      <circle cx="190" cy="50" r="7" fill="#f59e0b"/>
+      <circle cx="210" cy="38" r="8" fill="#f59e0b"/>
+    </g>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#f59e0b" text-anchor="middle" letter-spacing="2">SNICKERS TORT</text>
+  </svg>

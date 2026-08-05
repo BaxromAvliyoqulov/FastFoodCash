@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="cdBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1c1917"/><stop offset="100%" stop-color="#0c0a09"/></linearGradient>
+      <linearGradient id="cbun" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+      <linearGradient id="chick" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#cdBg)"/>
+    <ellipse cx="300" cy="300" rx="200" ry="35" fill="rgba(0,0,0,0.6)"/>
+    
+    <path d="M 120,200 Q 300,120 480,200 Q 480,260 300,280 Q 120,260 120,200 Z" fill="url(#cbun)"/>
+    <!-- Crispy Chicken Strips -->
+    <path d="M 100,205 Q 300,165 500,205 Q 490,230 300,225 Q 110,230 100,205 Z" fill="url(#chick)"/>
+    <!-- White Garlic Sauce -->
+    <path d="M 130,200 Q 160,180 190,200 Q 220,180 250,200 Q 280,180 310,200 Q 340,180 370,200 Q 400,180 430,200" stroke="#fff8f0" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fbbf24" text-anchor="middle" letter-spacing="2">CHICKEEN DOG</text>
+  </svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#18181b"/>
+    <!-- Red Box -->
+    <polygon points="220,180 380,180 360,320 240,320" fill="#dc2626"/>
+    <!-- Fries -->
+    <rect x="230" y="100" width="14" height="100" fill="#facc15" transform="rotate(-10, 230, 100)"/>
+    <rect x="255" y="80" width="14" height="120" fill="#facc15"/>
+    <rect x="280" y="70" width="14" height="130" fill="#fbbf24"/>
+    <rect x="305" y="85" width="14" height="115" fill="#facc15"/>
+    <rect x="330" y="95" width="14" height="105" fill="#facc15" transform="rotate(12, 330, 95)"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#facc15" text-anchor="middle">CLASSIC FRI</text>
+  </svg>

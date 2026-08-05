@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#18181b"/>
+    <ellipse cx="300" cy="310" rx="160" ry="25" fill="rgba(0,0,0,0.6)"/>
+    <!-- Bottom Bun -->
+    <path d="M 160,260 Q 300,280 440,260 L 440,280 Q 300,300 160,280 Z" fill="#d97706"/>
+    <!-- Patty 1 -->
+    <rect x="150" y="235" width="300" height="22" rx="10" fill="#451a03"/>
+    <!-- Patty 2 -->
+    <rect x="150" y="205" width="300" height="22" rx="10" fill="#451a03"/>
+    <!-- Top Bun -->
+    <path d="M 160,195 Q 300,90 440,195 Z" fill="#f59e0b"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#f59e0b" text-anchor="middle">DABLBURGER</text>
+  </svg>

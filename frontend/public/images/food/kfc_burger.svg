@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#240c0c"/>
+    <ellipse cx="300" cy="310" rx="160" ry="25" fill="rgba(0,0,0,0.6)"/>
+    <path d="M 160,260 Q 300,280 440,260 L 440,280 Q 300,300 160,280 Z" fill="#d97706"/>
+    <!-- Crispy Chicken Filet -->
+    <path d="M 140,220 Q 300,200 460,220 Q 450,250 300,250 Q 150,250 140,220 Z" fill="#b45309"/>
+    <path d="M 160,205 Q 300,95 440,205 Z" fill="#f59e0b"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#ef4444" text-anchor="middle">KFC BURGER</text>
+  </svg>

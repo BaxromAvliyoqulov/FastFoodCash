@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="hdBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e1b18"/><stop offset="100%" stop-color="#0f0e0c"/></linearGradient>
+      <linearGradient id="bun" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+      <linearGradient id="sausage" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#991b1b"/><stop offset="50%" stop-color="#dc2626"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#hdBg)"/>
+    <ellipse cx="300" cy="300" rx="200" ry="35" fill="rgba(0,0,0,0.6)"/>
+    
+    <!-- Hot Dog Bun -->
+    <path d="M 120,200 Q 300,120 480,200 Q 480,260 300,280 Q 120,260 120,200 Z" fill="url(#bun)"/>
+    <!-- Sausage -->
+    <path d="M 90,210 Q 300,160 510,210 Q 500,235 300,225 Q 100,235 90,210 Z" fill="url(#sausage)"/>
+    <!-- Yellow Mustard Zigzag -->
+    <path d="M 120,205 Q 150,185 180,205 Q 210,185 240,205 Q 270,185 300,205 Q 330,185 360,205 Q 390,185 420,205 Q 450,185 480,205" stroke="#facc15" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- Ketchup Drizzle -->
+    <path d="M 135,210 Q 165,195 195,210 Q 225,195 255,210 Q 285,195 315,210 Q 345,195 375,210 Q 405,195 435,210" stroke="#ef4444" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#facc15" text-anchor="middle" letter-spacing="2">HOT DOG CLASSIC</text>
+  </svg>

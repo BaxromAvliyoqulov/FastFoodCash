@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="zbBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#261a15"/>
+        <stop offset="100%" stop-color="#120c0a"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#zbBg)"/>
+    <ellipse cx="300" cy="305" rx="210" ry="38" fill="rgba(0,0,0,0.65)"/>
+
+    <g transform="translate(130, 75)">
+      <!-- Base Sponge -->
+      <polygon points="40,210 300,225 300,70 40,60" fill="#fef3c7"/>
+      <!-- Zebra Dark Stripes -->
+      <polygon points="40,75 300,88 300,98 40,85" fill="#451a03"/>
+      <polygon points="40,115 300,128 300,138 40,125" fill="#451a03"/>
+      <polygon points="40,155 300,168 300,178 40,165" fill="#451a03"/>
+      <polygon points="40,195 300,208 300,218 40,205" fill="#451a03"/>
+
+      <!-- Top Face Zebra Marble -->
+      <polygon points="40,60 300,70 230,20 20,20" fill="#fde68a"/>
+      <path d="M 40,50 Q 100,25 150,50 Q 200,25 260,55" stroke="#451a03" stroke-width="6" fill="none"/>
+    </g>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fde047" text-anchor="middle" letter-spacing="2">ZEBRA BISKVIT TORT</text>
+  </svg>

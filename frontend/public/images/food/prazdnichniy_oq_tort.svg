@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="whiteBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1e293b"/>
+        <stop offset="100%" stop-color="#0f172a"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#whiteBg)"/>
+    <ellipse cx="300" cy="305" rx="210" ry="38" fill="rgba(0,0,0,0.5)"/>
+
+    <g transform="translate(130, 75)">
+      <!-- Pure White Frosting Side -->
+      <polygon points="40,210 300,225 300,70 40,60" fill="#f8fafc"/>
+      <line x1="40" y1="135" x2="300" y2="148" stroke="#e2e8f0" stroke-width="3"/>
+
+      <!-- Red Ribbon Motif around base -->
+      <line x1="40" y1="195" x2="300" y2="210" stroke="#dc2626" stroke-width="12"/>
+
+      <!-- Top White Face -->
+      <polygon points="40,60 300,70 230,20 20,20" fill="#ffffff"/>
+      <!-- Red Cream Roses -->
+      <circle cx="90" cy="40" r="12" fill="#ef4444"/>
+      <circle cx="160" cy="45" r="14" fill="#ef4444"/>
+      <circle cx="220" cy="35" r="12" fill="#ef4444"/>
+    </g>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#e2e8f0" text-anchor="middle" letter-spacing="2">PRAZDNICHNIY OQ TORT</text>
+  </svg>

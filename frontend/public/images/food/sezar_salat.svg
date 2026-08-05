@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#142e1b"/>
+    <ellipse cx="300" cy="240" rx="160" ry="50" fill="#ffffff"/>
+    <ellipse cx="300" cy="230" rx="140" ry="40" fill="#15803d"/>
+    <rect x="260" y="200" width="15" height="15" fill="#fef08a"/>
+    <rect x="310" y="210" width="15" height="15" fill="#fef08a"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#4ade80" text-anchor="middle">SEZAR SALAT</text>
+  </svg>

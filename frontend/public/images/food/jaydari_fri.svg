@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <ellipse cx="300" cy="270" rx="160" ry="40" fill="#44403c"/>
+    <ellipse cx="300" cy="265" rx="150" ry="35" fill="#78350f"/>
+    <!-- Potato Wedges -->
+    <path d="M 200,240 Q 250,210 300,240" stroke="#fbbf24" stroke-width="16" stroke-linecap="round"/>
+    <path d="M 280,230 Q 330,200 380,230" stroke="#f59e0b" stroke-width="18" stroke-linecap="round"/>
+    <path d="M 220,260 Q 280,230 340,260" stroke="#d97706" stroke-width="16" stroke-linecap="round"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fbbf24" text-anchor="middle">JAYDARI FRI</text>
+  </svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="darkBg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1a1a1a"/>
+        <stop offset="100%" stop-color="#080808"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#darkBg)"/>
+    <ellipse cx="300" cy="305" rx="210" ry="38" fill="rgba(0,0,0,0.7)"/>
+
+    <g transform="translate(130, 75)">
+      <polygon points="40,210 300,225 300,70 40,60" fill="#291810"/>
+      <line x1="40" y1="110" x2="300" y2="123" stroke="#4a2e1b" stroke-width="8"/>
+      <line x1="40" y1="160" x2="300" y2="173" stroke="#4a2e1b" stroke-width="8"/>
+
+      <!-- Glossy Dark Chocolate Drip Top -->
+      <polygon points="40,60 300,70 230,20 20,20" fill="#140b07"/>
+      <path d="M 40,60 Q 60,95 80,60 Q 110,110 130,60 Q 170,100 190,60 Q 230,115 250,60 L 300,70 L 230,20 L 20,20 Z" fill="#0d0704"/>
+    </g>
+
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fbbf24" text-anchor="middle" letter-spacing="2">SHOKOLADLI GLAZUR TORT</text>
+  </svg>

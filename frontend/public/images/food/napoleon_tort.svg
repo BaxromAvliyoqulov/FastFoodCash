@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1e1b18"/>
+        <stop offset="100%" stop-color="#0f0e0c"/>
+      </linearGradient>
+      <linearGradient id="pastry" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e6b87d"/>
+        <stop offset="50%" stop-color="#c48e4d"/>
+        <stop offset="100%" stop-color="#9e692a"/>
+      </linearGradient>
+      <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#fffdf7"/>
+        <stop offset="100%" stop-color="#f5e8c7"/>
+      </linearGradient>
+    </defs>
+    <rect width="600" height="400" fill="url(#bg)"/>
+    <ellipse cx="300" cy="310" rx="220" ry="40" fill="rgba(0,0,0,0.6)"/>
+    
+    <!-- Napoleon Layered Wedge -->
+    <g transform="translate(120, 70)">
+      <!-- Cake Base shadow -->
+      <polygon points="50,220 310,240 330,130 80,110" fill="#6e461b"/>
+      
+      <!-- Pastry Layers -->
+      <polygon points="50,220 310,240 310,225 50,205" fill="url(#pastry)"/>
+      <polygon points="50,205 310,225 310,215 50,195" fill="url(#cream)"/>
+      <polygon points="50,195 310,215 310,200 50,180" fill="url(#pastry)"/>
+      <polygon points="50,180 310,200 310,190 50,170" fill="url(#cream)"/>
+      <polygon points="50,170 310,190 310,175 50,155" fill="url(#pastry)"/>
+      <polygon points="50,155 310,175 310,165 50,145" fill="url(#cream)"/>
+      <polygon points="50,145 310,165 310,150 50,130" fill="url(#pastry)"/>
+      
+      <!-- Top Slice Face -->
+      <polygon points="50,130 310,150 250,60 30,50" fill="#f2cb9b"/>
+      
+      <!-- Powdered Sugar Dusting -->
+      <polygon points="55,128 305,148 245,63 35,53" fill="rgba(255,255,255,0.75)"/>
+      
+      <!-- Strawberries on top -->
+      <circle cx="140" cy="85" r="16" fill="#e62e2e"/>
+      <polygon points="140,65 135,75 145,75" fill="#2d8a39"/>
+      <circle cx="170" cy="95" r="14" fill="#cc2424"/>
+    </g>
+    
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#f3d09a" text-anchor="middle" letter-spacing="2">NAPOLEON TORT</text>
+  </svg>

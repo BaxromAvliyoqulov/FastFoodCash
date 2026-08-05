@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <circle cx="300" cy="200" r="140" fill="#d97706"/>
+    <circle cx="300" cy="200" r="125" fill="#ef4444"/>
+    <circle cx="300" cy="200" r="115" fill="#fef08a"/>
+    <!-- Pepperoni Slices -->
+    <circle cx="260" cy="160" r="18" fill="#991b1b"/>
+    <circle cx="340" cy="170" r="18" fill="#991b1b"/>
+    <circle cx="300" cy="230" r="18" fill="#991b1b"/>
+    <circle cx="230" cy="220" r="16" fill="#78350f"/>
+    <circle cx="350" cy="220" r="16" fill="#78350f"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fef08a" text-anchor="middle">GO'SHTLI VA ASSORTI PIZZA</text>
+  </svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <path d="M 150,260 Q 300,120 450,260 Z" fill="#d97706"/>
+    <path d="M 180,240 Q 300,150 420,240 Z" fill="#78350f"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fbbf24" text-anchor="middle">DANAR BREAD</text>
+  </svg>

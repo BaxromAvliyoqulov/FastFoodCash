@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#2e1423"/>
+    <ellipse cx="300" cy="240" rx="160" ry="50" fill="#ffffff"/>
+    <ellipse cx="300" cy="230" rx="140" ry="40" fill="#fff1f2"/>
+    <circle cx="280" cy="220" r="8" fill="#f43f5e"/>
+    <circle cx="320" cy="210" r="8" fill="#fbbf24"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#fb7185" text-anchor="middle">JENSKIY KAPRIZ</text>
+  </svg>

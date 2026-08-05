@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <rect x="220" y="120" width="160" height="160" rx="20" fill="rgba(245,158,11,0.2)" stroke="#f59e0b" stroke-width="4"/>
+    <circle cx="300" cy="180" r="30" fill="#facc15"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#facc15" text-anchor="middle">LIMON CHOY</text>
+  </svg>

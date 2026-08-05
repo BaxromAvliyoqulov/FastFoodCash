@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1e1e1e"/>
+    <ellipse cx="300" cy="300" rx="180" ry="30" fill="rgba(0,0,0,0.5)"/>
+    <!-- Lavash Roll -->
+    <path d="M 140,240 L 440,160 L 460,190 L 160,270 Z" fill="#e5d0ac"/>
+    <ellipse cx="150" cy="255" rx="15" ry="18" fill="#5c3a21"/>
+    <!-- Grill marks -->
+    <line x1="200" y1="210" x2="220" y2="240" stroke="#8c6239" stroke-width="4"/>
+    <line x1="260" y1="190" x2="280" y2="220" stroke="#8c6239" stroke-width="4"/>
+    <line x1="320" y1="170" x2="340" y2="200" stroke="#8c6239" stroke-width="4"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#e5d0ac" text-anchor="middle">LAVASH (OBICHNIY)</text>
+  </svg>

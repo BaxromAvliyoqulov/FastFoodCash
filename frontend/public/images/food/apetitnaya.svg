@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#1c1917"/>
+    <ellipse cx="300" cy="240" rx="160" ry="50" fill="#ffffff"/>
+    <ellipse cx="300" cy="230" rx="140" ry="40" fill="#fffbeb"/>
+    <circle cx="270" cy="215" r="10" fill="#f59e0b"/>
+    <circle cx="320" cy="225" r="10" fill="#78350f"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#f59e0b" text-anchor="middle">APETITNAYA SALAT</text>
+  </svg>

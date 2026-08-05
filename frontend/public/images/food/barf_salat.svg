@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+    <rect width="600" height="400" fill="#142e1b"/>
+    <ellipse cx="300" cy="240" rx="160" ry="50" fill="#ffffff"/>
+    <ellipse cx="300" cy="230" rx="140" ry="40" fill="#166534"/>
+    <rect x="250" y="210" width="30" height="8" fill="#78350f" transform="rotate(20, 250, 210)"/>
+    <rect x="310" y="215" width="30" height="8" fill="#78350f" transform="rotate(-15, 310, 215)"/>
+    <text x="300" y="360" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="24" fill="#86efac" text-anchor="middle">BARF SALAT</text>
+  </svg>
