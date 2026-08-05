@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { loginByPin } from './controllers/auth.controller';
-import { getProducts } from './controllers/product.controller';
+import { getProducts, createProduct, updateProduct, deleteProduct } from './controllers/product.controller';
 import { createOrder, cancelOrder } from './controllers/order.controller';
 import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.controller';
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
@@ -24,7 +24,11 @@ app.get('/health', (req, res) => {
 // API Routes
 app.post('/api/v1/auth/login', loginByPin);
 
+// Products
 app.get('/api/v1/products', getProducts);
+app.post('/api/v1/products', createProduct);
+app.put('/api/v1/products/:id', updateProduct);
+app.delete('/api/v1/products/:id', deleteProduct);
 
 app.post('/api/v1/orders', createOrder);
 app.post('/api/v1/orders/cancel', cancelOrder);

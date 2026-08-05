@@ -422,34 +422,66 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── Menu CRUD ────────────────────────────────────────────────────────────────
-  function toggleStopList(productId: string) {
+  async function toggleStopList(productId: string) {
     const prod = products.value.find(p => p.id === productId);
-    if (prod) prod.isStopList = !prod.isStopList;
-  }
-
-  function saveProduct(productData: Partial<Product> & { id?: string }) {
-    if (productData.id) {
-      const index = products.value.findIndex(p => p.id === productData.id);
-      if (index > -1) {
-        products.value[index] = { ...products.value[index], ...productData } as Product;
+    if (!prod) return;
+    try {
+      const res = await fetch(`${API_URL}/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isStopList: !prod.isStopList })
+      });
+      if (res.ok) {
+        prod.isStopList = !prod.isStopList;
       }
-    } else {
-      const newProd: Product = {
-        id: 'prod-custom-' + Date.now(),
-        categoryId: productData.categoryId || 'cat-burger',
-        categoryName: productData.categoryName || 'Burger',
-        name: productData.name || 'Yangi Taom',
-        price: productData.price || 25000,
-        imageUrl: productData.imageUrl || '/images/burger/gamburger.png',
-        recipe: productData.recipe || []
-      };
-      products.value.push(newProd);
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  function deleteProduct(productId: string) {
-    const index = products.value.findIndex(p => p.id === productId);
-    if (index > -1) products.value.splice(index, 1);
+  async function saveProduct(productData: Partial<Product> & { id?: string }) {
+    try {
+      if (productData.id) {
+        const res = await fetch(`${API_URL}/products/${productData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData)
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const index = products.value.findIndex(p => p.id === productData.id);
+          if (index > -1) {
+            products.value[index] = { ...products.value[index], ...updated } as Product;
+          }
+        }
+      } else {
+        const res = await fetch(`${API_URL}/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData)
+        });
+        if (res.ok) {
+          const newProd = await res.json();
+          products.value.unshift(newProd as Product);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function deleteProduct(productId: string) {
+    try {
+      const res = await fetch(`${API_URL}/products/${productId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const index = products.value.findIndex(p => p.id === productId);
+        if (index > -1) products.value.splice(index, 1);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function addCategory(name: string) {
