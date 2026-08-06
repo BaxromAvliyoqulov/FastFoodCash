@@ -119,7 +119,7 @@ async function deleteTable(id: string) {
     </div>
 
     <!-- Tables Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
       <div v-for="table in posStore.tables" :key="table.id" 
         class="bg-white dark:bg-slate-900 rounded-2xl border p-4 flex flex-col items-center relative group"
         :class="table.isActive ? 'border-slate-200 dark:border-slate-800' : 'border-rose-200 opacity-70'">

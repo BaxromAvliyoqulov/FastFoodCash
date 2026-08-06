@@ -124,7 +124,7 @@ export const usePosStore = defineStore('pos', () => {
           return { ...current, name: ft.name, number: ft.number, isActive: ft.isActive };
         }
         return ft;
-      }).filter(t => t.isActive);
+      });
     }
   }
 

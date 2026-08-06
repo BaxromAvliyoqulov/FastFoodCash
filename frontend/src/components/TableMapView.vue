@@ -101,7 +101,7 @@ function handleCloseTable(tableId: string, event: Event) {
 
     <!-- Table Grid -->
     <div class="flex-1 overflow-y-auto p-4">
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
         <button
           v-for="table in posStore.tables.filter(t => t.isActive)"
           :key="table.id"

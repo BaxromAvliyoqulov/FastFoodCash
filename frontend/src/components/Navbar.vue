@@ -59,7 +59,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <ShoppingCart class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>POS Kassa</span>
+        <span :class="activeTab === 'pos' ? 'block' : 'hidden xl:block'">POS Kassa</span>
       </button>
 
       <button 
@@ -72,7 +72,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <FolderKanban class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-        <span>Menyu & Kategoriyalar</span>
+        <span :class="activeTab === 'menu' ? 'block' : 'hidden xl:block'">Menyu & Kategoriyalar</span>
       </button>
 
       <button 
@@ -85,7 +85,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <LayoutDashboard class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>Stollar Boshqaruvi</span>
+        <span :class="activeTab === 'tables' ? 'block' : 'hidden xl:block'">Stollar Boshqaruvi</span>
       </button>
 
       <button 
@@ -98,7 +98,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <BarChart3 class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>Boshqaruv Paneli</span>
+        <span :class="activeTab === 'dashboard' ? 'block' : 'hidden xl:block'">Boshqaruv Paneli</span>
       </button>
 
       <!-- YANGLIK: Savdo Tarixi -->
@@ -112,7 +112,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <ClipboardCheck class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>Savdo Tarixi</span>
+        <span :class="activeTab === 'history' ? 'block' : 'hidden xl:block'">Savdo Tarixi</span>
       </button>
 
       <button 
@@ -125,7 +125,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <Receipt class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>Smena & Z-Report</span>
+        <span :class="activeTab === 'shift' ? 'block' : 'hidden xl:block'">Smena & Z-Report</span>
       </button>
 
       <button 
@@ -138,7 +138,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <ClipboardCheck class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        <span>Ombor Qoldig'i</span>
+        <span :class="activeTab === 'revision' ? 'block' : 'hidden xl:block'">Ombor Qoldig'i</span>
       </button>
     </nav>
 
