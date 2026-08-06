@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useAuthStore } from '../stores/authStore';
+import { useToastStore } from '../stores/toastStore';
+import ReceiptModal from '../components/ReceiptModal.vue';
+import type { Order } from '../types/pos';
+import { formatMoney, formatTime, formatDateTime } from '../utils/formatters';
 import { 
   ClipboardList, 
   Search,
@@ -8,15 +13,59 @@ import {
   Banknote,
   QrCode,
   CreditCard,
-  Utensils
+  Utensils,
+  Printer,
+  Eye,
+  Trash2,
+  X,
+  User,
+  Filter
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
+const authStore = useAuthStore();
+const toast = useToastStore();
+
 const searchQuery = ref('');
+const selectedDateFilter = ref<'ALL' | 'TODAY' | 'YESTERDAY' | 'MONTH'>('ALL');
+const selectedPaymentFilter = ref<'ALL' | 'CASH' | 'CARD' | 'CLICK_PAYME'>('ALL');
+
+// Modal states
+const selectedOrderForModal = ref<Order | null>(null);
+const isDetailModalOpen = ref(false);
+
+const orderForPrint = ref<Order | null>(null);
+const isReceiptModalOpen = ref(false);
 
 const filteredOrders = computed(() => {
   let result = posStore.orderHistory;
   
+  // Date filtering
+  const now = new Date();
+  const todayStr = now.toDateString();
+  
+  if (selectedDateFilter.value === 'TODAY') {
+    result = result.filter(o => new Date(o.createdAt).toDateString() === todayStr);
+  } else if (selectedDateFilter.value === 'YESTERDAY') {
+    const yest = new Date();
+    yest.setDate(now.getDate() - 1);
+    const yestStr = yest.toDateString();
+    result = result.filter(o => new Date(o.createdAt).toDateString() === yestStr);
+  } else if (selectedDateFilter.value === 'MONTH') {
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    result = result.filter(o => {
+      const d = new Date(o.createdAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+  }
+
+  // Payment type filtering
+  if (selectedPaymentFilter.value !== 'ALL') {
+    result = result.filter(o => o.paymentType === selectedPaymentFilter.value);
+  }
+
+  // Search query
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(o => 
@@ -26,20 +75,14 @@ const filteredOrders = computed(() => {
     );
   }
   
-  // Eng oxirgi buyurtmalar birinchi chiqishi uchun
   return [...result].reverse();
 });
 
 const totalSalesAmount = computed(() => 
-  posStore.orderHistory.reduce((sum, o) => sum + o.totalAmount, 0)
+  filteredOrders.value.reduce((sum, o) => sum + o.totalAmount, 0)
 );
 
-const totalOrders = computed(() => posStore.orderHistory.length);
-
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-}
+const totalOrders = computed(() => filteredOrders.value.length);
 
 function getPaymentIcon(type: string) {
   switch(type) {
@@ -58,6 +101,38 @@ function getPaymentColor(type: string) {
     default: return 'text-slate-500 bg-slate-500/10 border-slate-500/30';
   }
 }
+
+function openOrderDetails(order: Order) {
+  selectedOrderForModal.value = order;
+  isDetailModalOpen.value = true;
+}
+
+function closeOrderDetails() {
+  isDetailModalOpen.value = false;
+  selectedOrderForModal.value = null;
+}
+
+function triggerReprintReceipt(order: Order) {
+  orderForPrint.value = order;
+  isReceiptModalOpen.value = true;
+  toast.success(`Buyurtma #${order.orderNumber} cheki chop etishga yuborildi!`);
+}
+
+function cancelOrder(order: Order) {
+  if (!authStore.isAdmin) {
+    toast.error('Faqat Menejer yoki Admin buyurtmani bekor qila oladi!');
+    return;
+  }
+  
+  if (confirm(`Haqiqatan ham #${order.orderNumber} raqamli buyurtmani bekor qilmoqchimisiz?`)) {
+    const idx = posStore.orderHistory.findIndex(o => o.id === order.id);
+    if (idx > -1) {
+      posStore.orderHistory.splice(idx, 1);
+      toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli bekor qilindi!`);
+      closeOrderDetails();
+    }
+  }
+}
 </script>
 
 <template>
@@ -66,60 +141,127 @@ function getPaymentColor(type: string) {
     <!-- Header Title -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Savdo Tarixi (History)</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Barcha yopilgan cheklar va kunlik buyurtmalar ro'yxati</p>
+        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Savdo Tarixi & Cheklar Audit (History)</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Barcha yopilgan cheklar, ularning detallari va qayta chop etish</p>
       </div>
     </div>
 
     <!-- Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-      
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition"></div>
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
-          <span>Jami Buyurtmalar</span>
+          <span>Filtrlangan Buyurtmalar</span>
           <ClipboardList class="w-4 h-4 text-indigo-500" />
         </div>
         <div class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono relative z-10">
           {{ totalOrders }} ta
         </div>
-        <div class="text-[11px] text-slate-500 relative z-10">Tizimdagi barcha muvaffaqiyatli xaridlar</div>
+        <div class="text-[11px] text-slate-500 relative z-10">Tanlangan filter bo'yicha cheklar soni</div>
       </div>
 
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition"></div>
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
-          <span>Jami Tushum (Savdo)</span>
+          <span>Filtrlangan Jami Savdo</span>
           <Banknote class="w-4 h-4 text-emerald-500" />
         </div>
         <div class="text-xl sm:text-3xl font-black text-emerald-500 dark:text-emerald-400 font-mono relative z-10">
-          {{ totalSalesAmount.toLocaleString('uz-UZ') }} so'm
+          {{ formatMoney(totalSalesAmount) }} so'm
         </div>
-        <div class="text-[11px] text-slate-500 relative z-10">Jami sotilgan mahsulotlar summasi</div>
+        <div class="text-[11px] text-slate-500 relative z-10">Tanlangan filter bo'yicha tushum summasi</div>
       </div>
+    </div>
 
+    <!-- Filters Bar -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-sm dark:shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        
+        <!-- Date Filters -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
+            <Filter class="w-3.5 h-3.5" /> Sana:
+          </span>
+          <button 
+            @click="selectedDateFilter = 'ALL'"
+            :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0', selectedDateFilter === 'ALL' ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200']"
+          >
+            Barchasi
+          </button>
+          <button 
+            @click="selectedDateFilter = 'TODAY'"
+            :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0', selectedDateFilter === 'TODAY' ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200']"
+          >
+            Bugun
+          </button>
+          <button 
+            @click="selectedDateFilter = 'YESTERDAY'"
+            :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0', selectedDateFilter === 'YESTERDAY' ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200']"
+          >
+            Kecha
+          </button>
+          <button 
+            @click="selectedDateFilter = 'MONTH'"
+            :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0', selectedDateFilter === 'MONTH' ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200']"
+          >
+            Shu Oy
+          </button>
+        </div>
+
+        <!-- Payment Type Filters & Search -->
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <button 
+              @click="selectedPaymentFilter = 'ALL'"
+              :class="['px-2.5 py-1 rounded-xl text-xs font-bold font-sans transition-all', selectedPaymentFilter === 'ALL' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500']"
+            >
+              Hamma To'lov
+            </button>
+            <button 
+              @click="selectedPaymentFilter = 'CASH'"
+              :class="['px-2.5 py-1 rounded-xl text-xs font-bold font-sans transition-all', selectedPaymentFilter === 'CASH' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500']"
+            >
+              Naqd
+            </button>
+            <button 
+              @click="selectedPaymentFilter = 'CARD'"
+              :class="['px-2.5 py-1 rounded-xl text-xs font-bold font-sans transition-all', selectedPaymentFilter === 'CARD' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500']"
+            >
+              Karta
+            </button>
+            <button 
+              @click="selectedPaymentFilter = 'CLICK_PAYME'"
+              :class="['px-2.5 py-1 rounded-xl text-xs font-bold font-sans transition-all', selectedPaymentFilter === 'CLICK_PAYME' ? 'bg-indigo-500 text-white shadow-sm' : 'text-slate-500']"
+            >
+              Click
+            </button>
+          </div>
+
+          <div class="relative w-full sm:w-64">
+            <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              v-model="searchQuery"
+              type="text" 
+              placeholder="Buyurtma yoki kassir qidirish..." 
+              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 focus:outline-none transition-all dark:text-white placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- History Table -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm dark:shadow-xl">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center justify-between">
         <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
           <CalendarDays class="w-5 h-5 text-indigo-500" />
-          <span>Barcha Buyurtmalar Ro'yxati</span>
+          <span>Barcha Buyurtmalar Ro'yxati (Batafsil ko'rish uchun tanlang)</span>
         </h3>
-        <div class="relative w-full sm:w-64">
-          <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="Buyurtma yoki kassa qidirish..." 
-            class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 focus:outline-none transition-all dark:text-white placeholder:text-slate-400"
-          />
-        </div>
       </div>
 
       <div class="overflow-x-auto max-w-full pb-10">
-        <table class="w-full text-left text-xs border-separate border-spacing-y-3 min-w-[800px]">
+        <table class="w-full text-left text-xs border-separate border-spacing-y-3 min-w-[850px]">
           <thead>
             <tr class="text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold text-[10px] px-4">
               <th class="pb-2 px-4 font-semibold">Buyurtma No / Vaqt</th>
@@ -127,33 +269,41 @@ function getPaymentColor(type: string) {
               <th class="pb-2 px-4 font-semibold">Tarkibi</th>
               <th class="pb-2 px-4 font-semibold text-center">To'lov Turi</th>
               <th class="pb-2 px-4 font-semibold text-right">Summa</th>
+              <th class="pb-2 px-4 font-semibold text-center">Amallar</th>
             </tr>
           </thead>
           <tbody class="font-mono text-slate-700 dark:text-slate-300">
-            <tr v-for="order in filteredOrders" :key="order.id" 
-                class="bg-slate-50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 shadow-sm hover:shadow-md group rounded-2xl">
+            <tr 
+              v-for="order in filteredOrders" 
+              :key="order.id" 
+              @click="openOrderDetails(order)"
+              class="bg-slate-50 dark:bg-slate-800/40 hover:bg-amber-500/5 dark:hover:bg-amber-500/10 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group rounded-2xl border border-transparent hover:border-amber-500/30"
+            >
               
               <!-- Buyurtma Info -->
-              <td class="py-4 px-4 font-bold text-slate-900 dark:text-white font-sans text-sm rounded-l-2xl border-y border-l border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+              <td class="py-4 px-4 font-bold text-slate-900 dark:text-white font-sans text-sm rounded-l-2xl">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
                     <span class="text-xs font-black">#{{ order.orderNumber }}</span>
                   </div>
                   <div>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 font-normal mb-0.5">ID: {{ order.id.split('-')[0] }}...</div>
-                    <div class="text-xs font-semibold">{{ formatTime(order.createdAt) }}</div>
+                    <div class="text-xs font-semibold text-amber-600 dark:text-amber-400">{{ formatTime(order.createdAt) }}</div>
                   </div>
                 </div>
               </td>
               
               <!-- Kassir -->
-              <td class="py-4 px-4 text-slate-500 dark:text-slate-400 font-semibold border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50 font-sans">
-                {{ order.cashierName }}
+              <td class="py-4 px-4 text-slate-500 dark:text-slate-400 font-semibold font-sans">
+                <div class="flex items-center gap-1.5">
+                  <User class="w-3.5 h-3.5 text-slate-400" />
+                  <span>{{ order.cashierName }}</span>
+                </div>
               </td>
               
               <!-- Tarkibi -->
-              <td class="py-4 px-4 border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
-                <div class="flex items-center gap-1.5 flex-wrap">
+              <td class="py-4 px-4">
+                <div class="flex items-center gap-1.5 flex-wrap max-w-xs">
                   <span v-for="item in order.items" :key="item.id" class="bg-slate-200/50 dark:bg-slate-700/50 px-2 py-1 rounded-md text-[10px] font-sans text-slate-600 dark:text-slate-300 flex items-center gap-1">
                     <Utensils class="w-2.5 h-2.5" />
                     {{ item.product.name }} (x{{ item.quantity }})
@@ -162,7 +312,7 @@ function getPaymentColor(type: string) {
               </td>
               
               <!-- To'lov Turi -->
-              <td class="py-4 px-4 text-center border-y border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
+              <td class="py-4 px-4 text-center">
                 <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest border shadow-sm" :class="getPaymentColor(order.paymentType)">
                   <component :is="getPaymentIcon(order.paymentType)" class="w-3.5 h-3.5" />
                   <span>{{ order.paymentType === 'CASH' ? 'Naqd Pul' : order.paymentType === 'CLICK_PAYME' ? 'Click' : order.paymentType }}</span>
@@ -170,21 +320,166 @@ function getPaymentColor(type: string) {
               </td>
 
               <!-- Summa -->
-              <td class="py-4 px-4 text-right rounded-r-2xl border-y border-r border-transparent group-hover:border-slate-200 dark:group-hover:border-slate-700/50">
-                <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                  {{ order.totalAmount.toLocaleString('uz-UZ') }} <span class="text-[10px] font-bold text-slate-500">so'm</span>
-                </span>
+              <td class="py-4 px-4 text-right font-black text-slate-900 dark:text-white text-sm sm:text-base">
+                {{ formatMoney(order.totalAmount) }} <span class="text-[10px] font-bold text-slate-500">so'm</span>
               </td>
+
+              <!-- Action Buttons -->
+              <td class="py-4 px-4 text-center rounded-r-2xl" @click.stop>
+                <div class="flex items-center justify-center space-x-1.5">
+                  <button 
+                    @click="openOrderDetails(order)"
+                    title="Batafsil Ko'rish"
+                    class="p-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 transition-colors text-slate-600 dark:text-slate-300"
+                  >
+                    <Eye class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="triggerReprintReceipt(order)"
+                    title="Chekni Qayta Chop Etish"
+                    class="p-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors"
+                  >
+                    <Printer class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+
             </tr>
             
             <tr v-if="filteredOrders.length === 0">
-              <td colspan="5" class="py-10 text-center text-slate-500 dark:text-slate-400 font-sans">
-                Buyurtmalar topilmadi
+              <td colspan="6" class="py-12 text-center text-slate-500 dark:text-slate-400 font-sans space-y-2">
+                <ClipboardList class="w-10 h-10 mx-auto text-slate-400 opacity-50" />
+                <p class="font-bold">Buyurtmalar topilmadi</p>
+                <p class="text-xs">Tanlangan filter yoki qidiruv mos kelmadi</p>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- ORDER DETAILS MODAL -->
+    <Teleport to="body">
+      <div 
+        v-if="isDetailModalOpen && selectedOrderForModal" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      >
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden transition-colors">
+          
+          <!-- Modal Header -->
+          <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+                #{{ selectedOrderForModal.orderNumber }}
+              </div>
+              <div>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white">Buyurtma Detallari</h3>
+                <p class="text-xs text-slate-500">ID: {{ selectedOrderForModal.id }}</p>
+              </div>
+            </div>
+            <button @click="closeOrderDetails" class="p-2 rounded-xl text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            
+            <!-- Meta Grid -->
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 text-xs">
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Vaqti</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ formatDateTime(selectedOrderForModal.createdAt) }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Kassir</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ selectedOrderForModal.cashierName }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">To'lov Turi</span>
+                <span class="font-bold uppercase text-amber-600 dark:text-amber-400">{{ selectedOrderForModal.paymentType }}</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px] uppercase font-bold">Status</span>
+                <span class="font-bold text-emerald-500">MUVAFFAQIYATLI</span>
+              </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="space-y-3">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">Buyurtma Tarkibi</h4>
+              <div class="space-y-2">
+                <div 
+                  v-for="item in selectedOrderForModal.items" 
+                  :key="item.id"
+                  class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-800/50 text-xs font-mono"
+                >
+                  <div class="flex items-center space-x-3">
+                    <img :src="item.product.imageUrl" class="w-10 h-10 object-cover rounded-lg shrink-0" />
+                    <div>
+                      <div class="font-bold font-sans text-slate-900 dark:text-white">{{ item.product.name }}</div>
+                      <div class="text-[10px] text-slate-500 font-sans">
+                        {{ formatMoney(item.unitPrice) }} so'm × {{ item.quantity }} ta
+                      </div>
+                      <div v-if="item.selectedModifiers && item.selectedModifiers.length" class="text-[9px] text-amber-500 italic font-sans">
+                        + {{ item.selectedModifiers.map(m => m.name).join(', ') }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="font-black text-slate-900 dark:text-white">
+                    {{ formatMoney(item.totalPrice) }} so'm
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Totals -->
+            <div class="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-2 text-xs font-mono">
+              <div class="flex justify-between font-bold text-sm text-slate-900 dark:text-white">
+                <span>Jami Summa:</span>
+                <span class="text-amber-500">{{ formatMoney(selectedOrderForModal.totalAmount) }} so'm</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>Berilgan pul:</span>
+                <span>{{ formatMoney(selectedOrderForModal.paidAmount ?? selectedOrderForModal.totalAmount) }} so'm</span>
+              </div>
+              <div class="flex justify-between text-emerald-500 font-bold">
+                <span>Qaytim:</span>
+                <span>{{ formatMoney(selectedOrderForModal.changeAmount ?? 0) }} so'm</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Modal Footer Actions -->
+          <div class="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
+            <button 
+              @click="triggerReprintReceipt(selectedOrderForModal)"
+              class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 transition active:scale-95 text-xs"
+            >
+              <Printer class="w-4 h-4" />
+              <span>Chekni Qayta Chop Etish</span>
+            </button>
+            <button 
+              v-if="authStore.isAdmin"
+              @click="cancelOrder(selectedOrderForModal)"
+              class="px-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white font-bold py-3 rounded-2xl transition active:scale-95 text-xs flex items-center space-x-1"
+            >
+              <Trash2 class="w-4 h-4" />
+              <span>Bekor Qilish</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- REPRINT RECEIPT MODAL -->
+    <ReceiptModal 
+      :isOpen="isReceiptModalOpen" 
+      :order="orderForPrint" 
+      @close="isReceiptModalOpen = false" 
+    />
+
   </div>
 </template>

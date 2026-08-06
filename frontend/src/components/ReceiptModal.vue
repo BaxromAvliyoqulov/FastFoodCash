@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import type { Order } from '../types/pos';
 import { Printer, X, Flame, QrCode } from 'lucide-vue-next';
+import { formatMoney } from '../utils/formatters';
 
 const props = defineProps<{
   order: Order | null;
@@ -131,13 +132,13 @@ const formattedDate = computed(() => {
               <div v-for="item in order.items" :key="item.id" class="space-y-0.5">
                 <div class="flex justify-between font-semibold">
                   <span class="truncate max-w-[170px]">{{ item.product.name }}</span>
-                  <span>{{ item.totalPrice.toLocaleString('uz-UZ') }}</span>
+                  <span>{{ formatMoney(item.totalPrice) }}</span>
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-600">
-                  <span>{{ item.quantity }} x {{ item.unitPrice.toLocaleString('uz-UZ') }} so'm</span>
+                  <span>{{ item.quantity }} x {{ formatMoney(item.unitPrice) }} so'm</span>
                 </div>
                 <!-- Modifiers line if any -->
-                <div v-if="item.selectedModifiers.length" class="text-[9px] text-slate-500 italic pl-2">
+                <div v-if="item.selectedModifiers && item.selectedModifiers.length" class="text-[9px] text-slate-500 italic pl-2">
                   + {{ item.selectedModifiers.map(m => m.name).join(', ') }}
                 </div>
               </div>
@@ -147,15 +148,15 @@ const formattedDate = computed(() => {
             <div class="py-2.5 border-b border-slate-900 space-y-1 text-[11px]">
               <div class="flex justify-between font-bold text-sm pt-1">
                 <span>JAMI SUMMA:</span>
-                <span class="text-slate-900 font-extrabold">{{ order.totalAmount.toLocaleString('uz-UZ') }} SO'M</span>
+                <span class="text-slate-900 font-extrabold">{{ formatMoney(order.totalAmount) }} SO'M</span>
               </div>
               <div class="flex justify-between text-slate-600 pt-1">
                 <span>Berilgan Naqd/Summa:</span>
-                <span>{{ order.paidAmount.toLocaleString('uz-UZ') }} so'm</span>
+                <span>{{ formatMoney(order.paidAmount ?? order.totalAmount) }} so'm</span>
               </div>
               <div class="flex justify-between font-bold text-emerald-700">
                 <span>QAYTIM (CHANGE):</span>
-                <span>{{ order.changeAmount.toLocaleString('uz-UZ') }} so'm</span>
+                <span>{{ formatMoney(order.changeAmount ?? 0) }} so'm</span>
               </div>
             </div>
 

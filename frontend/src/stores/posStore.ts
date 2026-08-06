@@ -6,34 +6,53 @@ import {
 } from '../types/pos';
 import { initialIngredients, initialCategories, initialProducts } from '../data/menu';
 import { useAuthStore } from './authStore';
+import { useToastStore } from './toastStore';
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+
+const defaultTables: Table[] = Array.from({ length: 12 }, (_, i) => ({
+  id: `tbl-${i + 1}`,
+  number: i + 1,
+  name: `Stol #${i + 1}`,
+  status: 'FREE' as const,
+  cart: [],
+  openedAt: null,
+  waiterNote: '',
+  totalPaid: 0,
+  isActive: true
+}));
 
 // ─── API orqali stollarni yuklash ────────────────────────────────────────
 const fetchTables = async (): Promise<Table[]> => {
   try {
     const res = await fetch(`${API_URL}/tables`);
-    if (!res.ok) throw new Error('Stollarni yuklab bo\'lmadi');
-    const data = await res.json();
-    return data.map((t: any) => ({
-      id: t.id,
-      number: t.number,
-      name: t.name,
-      isActive: t.isActive,
-      status: 'FREE' as const,
-      cart: [],
-      openedAt: null,
-      waiterNote: '',
-      totalPaid: 0
-    }));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((t: any) => ({
+          id: t.id,
+          number: t.number,
+          name: t.name,
+          isActive: t.isActive,
+          status: 'FREE' as const,
+          cart: [],
+          openedAt: null,
+          waiterNote: '',
+          totalPaid: 0
+        }));
+      }
+    }
   } catch (err) {
-    console.error(err);
-    return [];
+    console.warn('Backend API unreachable, loading default tables locally:', err);
   }
+
+  const savedTables = localStorage.getItem('doston_pos_tables');
+  return savedTables ? JSON.parse(savedTables) : defaultTables;
 };
 
 export const usePosStore = defineStore('pos', () => {
+  const toast = useToastStore();
   // ─── Ingredient Stock ────────────────────────────────────────────────────────
   const ingredients = ref<Ingredient[]>(initialIngredients);
 
@@ -75,16 +94,32 @@ export const usePosStore = defineStore('pos', () => {
   const searchQuery = ref('');
 
   // ─── Products ────────────────────────────────────────────────────────────────
+  // initialProducts (frontend data files) — ASOSIY MANBA (Source of Truth)
+  // Backend faqat isStopList holatini sinxronlash uchun ishlatiladi.
+  // Backend seed ma'lumotlari hech qachon frontend menyu ma'lumotlarini ustidan yozmaydi.
   const products = ref<Product[]>(initialProducts);
 
   async function fetchProducts() {
     try {
       const res = await fetch(`${API_URL}/products`);
       if (res.ok) {
-        products.value = await res.json();
+        const backendProducts = await res.json();
+        // ✅ FAQAT stopList holatini backend ma'lumotlaridan sinxronlaymiz.
+        // Narx, nom, rasm — barchasi frontend (initialProducts) dan olinadi.
+        products.value = initialProducts.map(localProd => {
+          const backendMatch = backendProducts.find((bp: any) =>
+            bp.name?.toLowerCase().trim() === localProd.name?.toLowerCase().trim() ||
+            bp.id === localProd.id
+          );
+          return {
+            ...localProd,
+            isStopList: backendMatch?.isStopList ?? localProd.isStopList ?? false
+          };
+        });
       }
     } catch (e) {
-      console.error('Fetch products error:', e);
+      // Backend offline — initialProducts bilan davom etamiz
+      console.warn('Backend offline — frontendning mahalliy menyu ma\'lumotlari ishlatilmoqda:', e);
     }
   }
 
@@ -176,7 +211,11 @@ export const usePosStore = defineStore('pos', () => {
     if (selectedCategory.value !== 'cat-all') {
       const catObj = categories.value.find(c => c.id === selectedCategory.value);
       if (catObj) {
-        result = result.filter(p => p.categoryName === catObj.name);
+        const catBase = catObj.name.toLowerCase().replace(/s$/, '');
+        result = result.filter(p => {
+          const pCatBase = (p.categoryName || '').toLowerCase().replace(/s$/, '');
+          return p.categoryId === catObj.id || p.categoryName === catObj.name || pCatBase === catBase;
+        });
       }
     }
 

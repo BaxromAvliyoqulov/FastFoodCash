@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
 import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
+import { formatMoney } from '../utils/formatters';
 import { 
   Receipt, 
   CheckCircle2, 
@@ -196,7 +197,7 @@ function submitOpenShift() {
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Float Cash</span>
         </div>
         <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono mb-1 truncate">
-          {{ (shiftStore.currentShift?.initialCash || 0).toLocaleString('uz-UZ') }} <span class="text-sm font-sans text-slate-500">so'm</span>
+          {{ formatMoney(shiftStore.currentShift?.initialCash) }} <span class="text-sm font-sans text-slate-500">so'm</span>
         </div>
         <div class="text-xs text-slate-500 font-medium">Smena boshlang'ich kassa qoldig'i</div>
       </div>
@@ -210,9 +211,9 @@ function submitOpenShift() {
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jami Xarajatlar</span>
         </div>
         <div class="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mb-1 truncate">
-          {{ (shiftStore.currentShift?.expenses.reduce((s, e) => s + e.amount, 0) || 0).toLocaleString('uz-UZ') }} <span class="text-sm font-sans text-slate-500">so'm</span>
+          {{ formatMoney(shiftStore.currentShift?.expenses?.reduce((s, e) => s + e.amount, 0)) }} <span class="text-sm font-sans text-slate-500">so'm</span>
         </div>
-        <div class="text-xs text-slate-500 font-medium">{{ shiftStore.currentShift?.expenses.length || 0 }} ta xarajat kiritilgan</div>
+        <div class="text-xs text-slate-500 font-medium">{{ shiftStore.currentShift?.expenses?.length || 0 }} ta xarajat kiritilgan</div>
       </div>
 
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden group hover:shadow-xl transition-all shadow-sm">
@@ -263,20 +264,20 @@ function submitOpenShift() {
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-white/40 dark:bg-black/20 p-4 rounded-2xl border border-slate-200/30 dark:border-slate-800/30">
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Kutilgan Naqd:</span>
-            <span class="font-black text-slate-900 dark:text-white font-mono text-base">{{ lastAuditResult.expectedCash.toLocaleString('uz-UZ') }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
+            <span class="font-black text-slate-900 dark:text-white font-mono text-base">{{ formatMoney(lastAuditResult.expectedCash) }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
           </div>
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Xarajatlar (Minus):</span>
-            <span class="font-black text-rose-600 dark:text-rose-400 font-mono text-base">-{{ (lastAuditResult.totalExpenses || 0).toLocaleString('uz-UZ') }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
+            <span class="font-black text-rose-600 dark:text-rose-400 font-mono text-base">-{{ formatMoney(lastAuditResult.totalExpenses) }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
           </div>
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Kassir kiritgan:</span>
-            <span class="font-black text-slate-900 dark:text-white font-mono text-base">{{ lastAuditResult.declaredCash.toLocaleString('uz-UZ') }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
+            <span class="font-black text-slate-900 dark:text-white font-mono text-base">{{ formatMoney(lastAuditResult.declaredCash) }} <span class="text-[10px] font-sans text-slate-500">so'm</span></span>
           </div>
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Farq (Diff):</span>
             <span :class="['font-black font-mono text-lg', lastAuditResult.difference < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400']">
-              {{ lastAuditResult.difference > 0 ? '+' : '' }}{{ lastAuditResult.difference.toLocaleString('uz-UZ') }} <span class="text-[10px] font-sans">so'm</span>
+              {{ lastAuditResult.difference > 0 ? '+' : '' }}{{ formatMoney(lastAuditResult.difference) }} <span class="text-[10px] font-sans">so'm</span>
             </span>
           </div>
         </div>

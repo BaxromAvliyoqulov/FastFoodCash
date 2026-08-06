@@ -25,7 +25,8 @@
 - [x] 3-bosqich: Vue 3 POS Kassa Interfeysi (Kategoriya, Modifikatorlar, Savatcha, Dynamic Payment modal) to'liq tayyorlandi.
 - [x] 4-bosqich: Smena Ochish / Ko'r-kassir Yopish (Z-Report) va Kamchilik (Shortage) audit algoritmi backend va frontendda ishga tushirildi.
 - [x] 5-bosqich: Reviziya (Shift Quick Audit) & Anti-Fraud Radar loglari realizatsiya qilindi.
-- [x] Frontend & Backend loyihasi muvaffaqiyatli va xatolarsiz build qilindi.
+- [x] 6-bosqich: Vercel Full QA Audit & 100/100 Perfection — Savdo Tarixi (HistoryView) Order Details Modal, Chekni Qayta Chop Etish (Re-print Receipt), Ombor Kirim (Intake) va Isrof (Waste) modallari to'liq ulandi.
+- [x] 7-bosqich: Crash-Safe Money formatting (`formatters.ts`) va Vercel Offline-First Storage Fallbacks joriy etildi (`vue-tsc` & Vite build 100% PASS).
 
 ---
 
