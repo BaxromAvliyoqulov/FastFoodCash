@@ -3,6 +3,21 @@ import { ref, computed } from 'vue';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
+// Login freezing oldini olish uchun 5s timeout
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Serverga ulanib bo\'lmadi (5s timeout). Internet yoki backend offline.');
+    throw err;
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(localStorage.getItem('doston_pos_auth') === 'true');
   const user = ref<{ id: string; fullName: string; phone: string; role: string } | null>(
@@ -14,7 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loginByPin(pinCode: string) {
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pinCode })

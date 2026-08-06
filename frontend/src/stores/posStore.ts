@@ -11,6 +11,24 @@ import { useToastStore } from './toastStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
+// ─── Timeout bilan fetch — Render.com "cold start" da qotib qolishni oldini oladi ──
+// Agar backend 5 soniyada javob bermasa, avtomatik xato qaytaradi va offline rejimga o'tiladi.
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw new Error(`Backend ${timeoutMs / 1000}s da javob bermadi (Render cold start yoki internet yo'q)`);
+    }
+    throw err;
+  }
+}
+
 const defaultTables: Table[] = Array.from({ length: 12 }, (_, i) => ({
   id: `tbl-${i + 1}`,
   number: i + 1,
@@ -26,7 +44,7 @@ const defaultTables: Table[] = Array.from({ length: 12 }, (_, i) => ({
 // ─── API orqali stollarni yuklash ────────────────────────────────────────
 const fetchTables = async (): Promise<Table[]> => {
   try {
-    const res = await fetch(`${API_URL}/tables`);
+    const res = await fetchWithTimeout(`${API_URL}/tables`);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -101,7 +119,7 @@ export const usePosStore = defineStore('pos', () => {
 
   async function fetchProducts() {
     try {
-      const res = await fetch(`${API_URL}/products`);
+      const res = await fetchWithTimeout(`${API_URL}/products`);
       if (res.ok) {
         const backendProducts = await res.json();
         // ✅ FAQAT stopList holatini backend ma'lumotlaridan sinxronlaymiz.
@@ -336,11 +354,11 @@ export const usePosStore = defineStore('pos', () => {
         }))
       };
 
-      const res = await fetch(`${API_URL}/orders`, {
+      const res = await fetchWithTimeout(`${API_URL}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
+      }, 8000);
       
       const data = await res.json();
       
@@ -516,7 +534,7 @@ export const usePosStore = defineStore('pos', () => {
     const prod = products.value.find(p => p.id === productId);
     if (!prod) return;
     try {
-      const res = await fetch(`${API_URL}/products/${productId}`, {
+      const res = await fetchWithTimeout(`${API_URL}/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isStopList: !prod.isStopList })
@@ -533,7 +551,7 @@ export const usePosStore = defineStore('pos', () => {
     try {
       let res;
       if (productData.id) {
-        res = await fetch(`${API_URL}/products/${productData.id}`, {
+        res = await fetchWithTimeout(`${API_URL}/products/${productData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
@@ -547,7 +565,7 @@ export const usePosStore = defineStore('pos', () => {
           toast.success('Taom saqlandi!', 3000);
         }
       } else {
-        res = await fetch(`${API_URL}/products`, {
+        res = await fetchWithTimeout(`${API_URL}/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
@@ -571,7 +589,7 @@ export const usePosStore = defineStore('pos', () => {
 
   async function deleteProduct(productId: string) {
     try {
-      const res = await fetch(`${API_URL}/products/${productId}`, {
+      const res = await fetchWithTimeout(`${API_URL}/products/${productId}`, {
         method: 'DELETE'
       });
       if (res.ok) {

@@ -6,6 +6,21 @@ import { usePosStore } from './posStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
+// Render.com cold start da qotib qolishni oldini olish uchun 5s timeout
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Backend timeout');
+    throw err;
+  }
+}
+
 export const useShiftStore = defineStore('shift', () => {
   const storedShift = localStorage.getItem('doston_current_shift');
   const storedAudits = localStorage.getItem('doston_shift_audits');
@@ -32,7 +47,7 @@ export const useShiftStore = defineStore('shift', () => {
     const authStore = useAuthStore();
     if (!authStore.user) return;
     try {
-      const res = await fetch(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
+      const res = await fetchWithTimeout(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
       if (res.ok) {
         const data = await res.json();
         if (data.activeShift) {
@@ -60,7 +75,7 @@ export const useShiftStore = defineStore('shift', () => {
     const cashierId = authStore.user?.id || 'admin-1';
 
     try {
-      const res = await fetch(`${API_URL}/shifts/open`, {
+      const res = await fetchWithTimeout(`${API_URL}/shifts/open`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cashierId, initialCash })
@@ -107,7 +122,7 @@ export const useShiftStore = defineStore('shift', () => {
     const shiftId = activeShiftObj.id;
 
     try {
-      const res = await fetch(`${API_URL}/shifts/close-blind`, {
+      const res = await fetchWithTimeout(`${API_URL}/shifts/close-blind`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +132,7 @@ export const useShiftStore = defineStore('shift', () => {
           declaredQr,
           notes
         })
-      });
+      }, 8000);
       if (res.ok) {
         const data = await res.json();
         shiftAudits.value.unshift(data.audit);
