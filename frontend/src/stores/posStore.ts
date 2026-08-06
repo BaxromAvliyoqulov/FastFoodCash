@@ -104,13 +104,8 @@ export const usePosStore = defineStore('pos', () => {
   function setOperationMode(mode: OperationMode) {
     operationMode.value = mode;
     localStorage.setItem('doston_pos_mode', mode);
-    if (mode === 'ZAL' && !activeTableId.value) {
-      const firstFree = tables.value.find(t => t.status === 'FREE');
-      if (firstFree) {
-        activeTableId.value = firstFree.id;
-        localStorage.setItem('doston_pos_active_table', firstFree.id);
-      }
-    }
+    // ZAL rejimiga o'tganda avtomatik ravishda birinchi stolni tanlamaymiz.
+    // Foydalanuvchi o'zi stol xaritasidan stolni tanlashi kerak.
   }
 
   // ─── Tables (Stollar) ────────────────────────────────────────────────────────

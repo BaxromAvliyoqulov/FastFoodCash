@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
-import { useAuthStore } from '../stores/authStore';
 import { 
-  Grid, Plus, Save, X, Edit2, Trash2, 
+  Plus, Save, X, Edit2, Trash2, 
   ToggleLeft, ToggleRight, LayoutDashboard
 } from 'lucide-vue-next';
 import { Table } from '../types/pos';
 
 const posStore = usePosStore();
-const authStore = useAuthStore();
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 

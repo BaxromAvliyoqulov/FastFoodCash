@@ -2,15 +2,18 @@
 import { ref, computed } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import { useShiftStore } from '../stores/shiftStore';
-import type { Product, Modifier, PaymentType } from '../types/pos';
+import { useToastStore } from '../stores/toastStore';
+import { useAuthStore } from '../stores/authStore';
+import type { Product, Modifier, PaymentType, CartItem } from '../types/pos';
 import ModifierModal from '../components/ModifierModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptModal from '../components/ReceiptModal.vue';
+import KitchenReceiptModal from '../components/KitchenReceiptModal.vue';
 import CategoryIcon from '../components/CategoryIcon.vue';
 import TableMapView from '../components/TableMapView.vue';
 import {
   Plus, Minus, Trash2, CreditCard, Utensils, Sparkles,
-  Search, ShoppingBag, ChevronLeft, ChevronRight,
+  Search, ShoppingBag,
   Printer, FolderKanban, ArrowLeft, MessageSquare,
   CheckCircle, Clock
 } from 'lucide-vue-next';
@@ -19,19 +22,24 @@ const emit = defineEmits<{ (e: 'change-tab', tab: string): void }>();
 
 const posStore = usePosStore();
 const shiftStore = useShiftStore();
+const toast = useToastStore();
+const authStore = useAuthStore();
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 const activeModifierProduct = ref<Product | null>(null);
 const showPaymentModal = ref(false);
 const showReceiptModal = ref(false);
+const showKitchenReceiptModal = ref(false);
+const kitchenReceiptData = ref<{ tableNumber: number | null, items: CartItem[] }>({ tableNumber: null, items: [] });
 const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
-const showTableProducts = ref(false); // ZAL: product grid ochiq yoki stol xaritasi
+const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId); // ZAL: product grid ochiq yoki stol xaritasi
 
 // ─── Modularni tozalash (rejim almashganda) ──────────────────────────────────
 function resetModals() {
   showPaymentModal.value = false;
   showReceiptModal.value = false;
+  showKitchenReceiptModal.value = false;
   lastCompletedOrder.value = null;
   activeModifierProduct.value = null;
 }
@@ -41,6 +49,7 @@ function switchMode(mode: 'SABOY' | 'ZAL') {
   resetModals();
   posStore.setOperationMode(mode);
   showTableProducts.value = false;
+  posStore.clearActiveTable();
 }
 
 // ─── ZAL: stol tanlash ────────────────────────────────────────────────────────
@@ -114,8 +123,22 @@ function removeItem(cartItemId: string) {
 }
 
 function saveTableOrder() {
-  if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+  if (posStore.operationMode === 'ZAL' && posStore.activeTable) {
+    const tableNum = posStore.activeTable.number;
+    
+    // Prepare kitchen ticket data BEFORE clearing
+    kitchenReceiptData.value = {
+      tableNumber: tableNum,
+      items: [...posStore.activeTable.cart]
+    };
+
+    toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
+    
+    showTableProducts.value = false;
     posStore.clearActiveTable();
+    
+    // Show kitchen receipt
+    showKitchenReceiptModal.value = true;
   }
 }
 
@@ -523,6 +546,15 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       :order="lastCompletedOrder"
       :is-open="showReceiptModal"
       @close="showReceiptModal = false"
+    />
+
+    <!-- Kitchen Receipt Modal -->
+    <KitchenReceiptModal
+      :is-open="showKitchenReceiptModal"
+      :table-number="kitchenReceiptData.tableNumber"
+      :items="kitchenReceiptData.items"
+      :cashier-name="authStore.user?.fullName"
+      @close="showKitchenReceiptModal = false"
     />
   </div>
 </template>

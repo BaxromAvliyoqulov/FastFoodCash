@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -8,6 +8,9 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<{ id: string; fullName: string; phone: string; role: string } | null>(
     JSON.parse(localStorage.getItem('doston_pos_user') || 'null')
   );
+
+  const isAdmin = computed(() => user.value?.role === 'ADMIN');
+  const isCashier = computed(() => user.value?.role === 'CASHIER');
 
   async function loginByPin(pinCode: string) {
     try {
@@ -45,6 +48,8 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     isAuthenticated,
     user,
+    isAdmin,
+    isCashier,
     loginByPin,
     logout
   };

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import type { Order } from '../types/pos';
 import { Printer, X, Flame, QrCode } from 'lucide-vue-next';
 
@@ -17,6 +17,17 @@ const receiptWidth = ref<'80mm' | '58mm'>('80mm');
 function triggerPrint() {
   window.print();
 }
+
+// Auto-print logic
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      setTimeout(() => {
+        triggerPrint();
+      }, 300);
+    });
+  }
+});
 
 const formattedDate = computed(() => {
   if (!props.order) return '';

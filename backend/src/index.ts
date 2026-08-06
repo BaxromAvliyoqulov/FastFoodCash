@@ -6,6 +6,7 @@ import { createOrder, cancelOrder } from './controllers/order.controller';
 import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.controller';
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
 import { getAllTables, createTable, updateTable, deleteTable } from './controllers/table.controller';
+import { getDashboardStats } from './controllers/stats.controller';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -38,7 +39,12 @@ app.get('/api/v1/shifts/active', getActiveShift);
 app.post('/api/v1/shifts/open', openShift);
 app.post('/api/v1/shifts/close-blind', closeShiftBlind);
 
+// Ingredients & Audit
 app.get('/api/v1/ingredients', getIngredients);
+
+// Dashboard Stats
+app.get('/api/v1/stats/dashboard', getDashboardStats);
+
 app.post('/api/v1/audit/quick-revision', quickRevision);
 app.get('/api/v1/audit/logs', getAuditLogs);
 

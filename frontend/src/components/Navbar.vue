@@ -63,6 +63,7 @@ const themeStore = useThemeStore();
       </button>
 
       <button 
+        v-if="authStore.isAdmin"
         @click="emit('change-tab', 'menu')"
         :class="[
           'flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs transition-all duration-200 shrink-0',
@@ -89,6 +90,7 @@ const themeStore = useThemeStore();
       </button>
 
       <button 
+        v-if="authStore.isAdmin"
         @click="emit('change-tab', 'dashboard')"
         :class="[
           'flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs transition-all duration-200 shrink-0',
@@ -129,6 +131,7 @@ const themeStore = useThemeStore();
       </button>
 
       <button 
+        v-if="authStore.isAdmin"
         @click="emit('change-tab', 'revision')"
         :class="[
           'flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs transition-all duration-200 shrink-0',
@@ -173,11 +176,11 @@ const themeStore = useThemeStore();
         <div class="text-left text-xs">
           <div class="text-slate-500 dark:text-slate-400 flex items-center gap-1 font-mono text-[10px] sm:text-xs">
             <Clock class="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
-            <span>Smena: {{ shiftStore.currentShift.openedAt }}</span>
+            <span>Smena: {{ new Date(shiftStore.currentShift.openedAt).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }}</span>
           </div>
           <div class="text-slate-900 dark:text-white font-bold flex items-center gap-1 text-[11px] sm:text-xs">
             <User class="w-3 h-3 text-amber-500 dark:text-amber-400 shrink-0" />
-            <span>{{ shiftStore.currentShift.cashierName }}</span>
+            <span>{{ shiftStore.currentShift.cashierName || authStore.user?.fullName }}</span>
           </div>
         </div>
       </button>

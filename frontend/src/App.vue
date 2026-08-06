@@ -24,12 +24,18 @@ const posStore = usePosStore();
 const shiftStore = useShiftStore();
 
 function handleTabChange(tab: string) {
+  if (authStore.isCashier && ['menu', 'dashboard', 'revision'].includes(tab)) {
+    tab = 'pos';
+  }
   activeTab.value = tab;
   localStorage.setItem('doston_pos_active_tab', tab);
 }
 
 function initData() {
   if (authStore.isAuthenticated) {
+    if (authStore.isCashier && ['menu', 'dashboard', 'revision'].includes(activeTab.value)) {
+      handleTabChange('pos');
+    }
     posStore.fetchProducts();
     posStore.loadTables();
     shiftStore.fetchActiveShift();

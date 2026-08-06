@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
+import type { Ingredient } from '../types/pos';
 import { 
   Package, 
   AlertTriangle,
@@ -11,19 +12,36 @@ import {
   TrendingDown
 } from 'lucide-vue-next';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+
 const posStore = usePosStore();
 const toast = useToastStore();
+const realIngredients = ref<Ingredient[]>([]);
+
+async function fetchIngredients() {
+  try {
+    const res = await fetch(`${API_URL}/ingredients`);
+    if (res.ok) {
+      realIngredients.value = await res.json();
+    }
+  } catch (error) {
+    console.error('Failed to fetch ingredients', error);
+  }
+}
 
 onMounted(() => {
   posStore.checkLowStockAlerts(toast);
+  fetchIngredients();
 });
+
+const ingredients = computed(() => realIngredients.value.length > 0 ? realIngredients.value : posStore.ingredients);
 
 // Qidiruv uchun
 const searchQuery = ref('');
 
 const filteredIngredients = computed(() => {
-  if (!searchQuery.value) return posStore.ingredients;
-  return posStore.ingredients.filter(ing => 
+  if (!searchQuery.value) return ingredients.value;
+  return ingredients.value.filter(ing => 
     ing.name.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });

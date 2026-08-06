@@ -15,22 +15,22 @@ async function main() {
   await prisma.user.deleteMany();
 
   // 1. Create Users
-  const cashier = await prisma.user.create({
+  const cashier1 = await prisma.user.create({
     data: {
-      fullName: 'Aziz Kassir',
-      phone: '+998901234567',
+      fullName: 'Kassir 1',
+      phone: '+998901111111',
       pinCode: '1111',
       role: 'CASHIER',
       isActive: true
     }
   });
 
-  const manager = await prisma.user.create({
+  const cashier2 = await prisma.user.create({
     data: {
-      fullName: 'Sardor Menejer',
-      phone: '+998909876543',
-      pinCode: '9999',
-      role: 'MANAGER',
+      fullName: 'Kassir 2',
+      phone: '+998902222222',
+      pinCode: '2222',
+      role: 'CASHIER',
       isActive: true
     }
   });
@@ -45,7 +45,7 @@ async function main() {
     }
   });
 
-  console.log('✅ Users created:', { cashier: cashier.phone, manager: manager.phone, admin: admin.phone });
+  console.log('✅ Users created:', { cashier1: cashier1.phone, cashier2: cashier2.phone, admin: admin.phone });
 
   // 2. Create Ingredients
   const ingBeef = await prisma.ingredient.create({
@@ -207,7 +207,7 @@ async function main() {
   // 4. Create an open shift for Kassir
   const openShift = await prisma.shift.create({
     data: {
-      cashierId: cashier.id,
+      cashierId: cashier1.id,
       initialCash: 100000,
       status: 'OPEN'
     }

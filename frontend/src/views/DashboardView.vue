@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import type { Order, CartItem, Ingredient } from '../types/pos';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -21,6 +23,43 @@ import {
 
 const posStore = usePosStore();
 const selectedPeriod = ref<'today' | 'yesterday' | 'week' | 'month'>('today');
+
+const dashboardStats = ref({
+  totalRevenue: 0,
+  totalOrders: 0,
+  averageOrderValue: 0,
+  topItems: [] as any[]
+});
+const loadingStats = ref(false);
+
+async function fetchDashboardStats() {
+  try {
+    loadingStats.value = true;
+    const res = await fetch(`${API_URL}/stats/dashboard`);
+    const data = await res.json();
+    if (data.success) {
+      dashboardStats.value = data;
+    }
+  } catch (error) {
+    console.error('Failed to fetch dashboard stats:', error);
+  } finally {
+    loadingStats.value = false;
+  }
+}
+
+onMounted(() => {
+  fetchDashboardStats();
+});
+
+// ─── 1. BOSH SAHIFA STATISTIKASI (KARTALAR) ───────────────────────────────
+
+const totalRevenue = computed(() => dashboardStats.value.totalRevenue || 0);
+const totalOrdersCount = computed(() => dashboardStats.value.totalOrders || 0);
+const averageTicketSize = computed(() => dashboardStats.value.averageOrderValue || 0);
+
+const estimatedNetProfit = computed(() => {
+  return Math.round(totalRevenue.value * 0.46); // ~46% average fast food net profit margin
+});
 
 // Period Multipliers to make the demo data interactive when switching tabs
 const periodMultiplier = computed(() => {
@@ -42,31 +81,6 @@ const comparisonData = computed(() => {
     case 'month': return { text: 'oldingi oyga nisbatan', revVal: 22.5, revPos: true, ordVal: 15.3, ordPos: true };
     default: return { text: 'oldingi davrga nisbatan', revVal: 0, revPos: true, ordVal: 0, ordPos: true };
   }
-});
-
-// 1. Core Financial KPI Metrics
-const totalRevenue = computed(() => {
-  if (posStore.orderHistory.length === 0) {
-    return Math.round(1485000 * periodMultiplier.value); // Simulated demo baseline
-  }
-  // In a fully real app, we would filter `posStore.orderHistory` by date here.
-  return posStore.orderHistory.reduce((sum: number, order: Order) => sum + order.totalAmount, 0);
-});
-
-const totalOrdersCount = computed(() => {
-  if (posStore.orderHistory.length === 0) {
-    return Math.round(42 * periodMultiplier.value);
-  }
-  return posStore.orderHistory.length;
-});
-
-const averageTicketSize = computed(() => {
-  if (totalOrdersCount.value === 0) return 0;
-  return Math.round(totalRevenue.value / totalOrdersCount.value);
-});
-
-const estimatedNetProfit = computed(() => {
-  return Math.round(totalRevenue.value * 0.46); // ~46% average fast food net profit margin
 });
 
 // 2. Category Sales Distribution
@@ -183,6 +197,7 @@ const comparisonGraph = computed(() => {
 
 // 5. Top 10 Bestsellers
 const topBestsellers = computed(() => {
+  if (dashboardStats.value.topItems.length > 0) return dashboardStats.value.topItems;
   return [
     { rank: 1, name: 'Lavash (obichniy)', category: 'Lavash', price: 35000, soldCount: Math.round(38 * periodMultiplier.value), totalRevenue: Math.round(1330000 * periodMultiplier.value), imageUrl: '/images/food/lavash_obichniy.jpg' },
     { rank: 2, name: 'Donar Pizza (XIT SOTUVDA)', category: 'Pizza', price: 85000, soldCount: Math.round(14 * periodMultiplier.value), totalRevenue: Math.round(1190000 * periodMultiplier.value), imageUrl: '/images/pizza/donar_pizza.png' },

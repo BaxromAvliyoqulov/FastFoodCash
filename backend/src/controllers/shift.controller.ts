@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendTelegramMessage } from '../utils/telegram';
 
 export const getActiveShift = async (req: Request, res: Response) => {
   try {
@@ -87,7 +88,10 @@ export const closeShiftBlind = async (req: Request, res: Response) => {
 
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
-      include: { orders: { where: { status: 'COMPLETED' } } }
+      include: { 
+        cashier: true,
+        orders: { where: { status: 'COMPLETED' } } 
+      }
     });
 
     if (!shift || shift.status !== 'OPEN') {
@@ -156,6 +160,31 @@ export const closeShiftBlind = async (req: Request, res: Response) => {
 
       return { audit, shift: updatedShift };
     });
+
+    // Fire and forget Telegram Z-Report Notification
+    const message = `
+🧾 <b>Z-REPORT (SMENA YOPILDI)</b>
+
+👤 <b>Kassir:</b> ${shift.cashier.fullName} (${shift.cashier.phone})
+📅 <b>Ochilgan:</b> ${new Date(shift.openedAt).toLocaleString('uz-UZ')}
+📅 <b>Yopilgan:</b> ${new Date().toLocaleString('uz-UZ')}
+
+💰 <b>Kassadagi Boshlang'ich Pul:</b> ${shift.initialCash.toLocaleString('uz-UZ')} so'm
+
+<b>--- KASSA HISOB-KITOBI ---</b>
+💵 Kutilayotgan Naqd: ${expectedCash.toLocaleString('uz-UZ')} so'm
+💵 Kassir Topshirgan Naqd: ${decCash.toLocaleString('uz-UZ')} so'm
+
+<b>--- TERMINAL VA PAYME ---</b>
+💳 Karta (Terminal): ${decCard.toLocaleString('uz-UZ')} so'm
+📲 QR (Click/Payme): ${decQr.toLocaleString('uz-UZ')} so'm
+
+<b>--- Natija ---</b>
+${difference === 0 ? '✅ <b>BALANS TO\'G\'RI</b>' : (difference > 0 ? `🔥 <b>ORTIQCHA (SURPLUS):</b> +${difference.toLocaleString('uz-UZ')} so'm` : `🚨 <b>KAMOMAD (SHORTAGE):</b> ${difference.toLocaleString('uz-UZ')} so'm`)}
+
+${notes ? `📝 <i>Izoh:</i> ${notes}` : ''}
+    `;
+    sendTelegramMessage(message);
 
     return res.json({
       message: 'Smena ko\'r-usulda muvaffaqiyatli yopildi va audit qilindi',

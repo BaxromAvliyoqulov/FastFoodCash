@@ -21,6 +21,7 @@ export const useShiftStore = defineStore('shift', () => {
       if (data.activeShift) {
         currentShift.value = {
           ...data.activeShift,
+          cashierName: authStore.user.fullName,
           expenses: currentShift.value?.expenses || []
         };
       } else {
