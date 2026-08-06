@@ -26,7 +26,6 @@ const showPaymentModal = ref(false);
 const showReceiptModal = ref(false);
 const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
-const categoryScrollContainer = ref<HTMLDivElement | null>(null);
 const showTableProducts = ref(false); // ZAL: product grid ochiq yoki stol xaritasi
 
 // ─── Modularni tozalash (rejim almashganda) ──────────────────────────────────
@@ -54,12 +53,6 @@ function onTableSelected(tableId: string) {
 function backToTableMap() {
   showTableProducts.value = false;
   posStore.clearActiveTable();
-}
-
-function scrollCategories(offset: number) {
-  if (categoryScrollContainer.value) {
-    categoryScrollContainer.value.scrollBy({ left: offset, behavior: 'smooth' });
-  }
 }
 
 // ─── Active cart (SABOY yoki ZAL) ─────────────────────────────────────────────
@@ -240,23 +233,19 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       <!-- Product grid (SABOY yoki ZAL + stol tanlangan) -->
       <template v-else>
 
-        <!-- Categories bar -->
-        <div class="relative shrink-0 border-b border-slate-200 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 py-2 px-3 flex items-center">
+        <!-- Categories bar (Wrapped) -->
+        <div class="relative shrink-0 border-b border-slate-200 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 py-3 px-3 flex items-start gap-2">
           <!-- ZAL: orqaga tugma -->
           <button
             v-if="posStore.operationMode === 'ZAL'"
             @click="backToTableMap"
-            class="shrink-0 mr-2 w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all"
+            class="shrink-0 w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all shadow-sm"
             title="Stol xaritasiga qaytish"
           >
             <ArrowLeft class="w-4 h-4" />
           </button>
 
-          <button @click="scrollCategories(-200)" class="hidden sm:flex shrink-0 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl items-center justify-center hover:bg-amber-500 hover:text-white transition-all mr-1.5">
-            <ChevronLeft class="w-3.5 h-3.5" />
-          </button>
-
-          <div ref="categoryScrollContainer" class="flex-1 flex space-x-2 overflow-x-auto no-scrollbar scroll-smooth py-1">
+          <div class="flex-1 flex flex-wrap gap-2">
             <button
               v-for="cat in posStore.visibleCategories"
               :key="cat.id"
@@ -274,11 +263,7 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
             </button>
           </div>
 
-          <button @click="scrollCategories(200)" class="hidden sm:flex shrink-0 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl items-center justify-center hover:bg-amber-500 hover:text-white transition-all ml-1.5">
-            <ChevronRight class="w-3.5 h-3.5" />
-          </button>
-
-          <button @click="emit('change-tab', 'menu')" class="shrink-0 ml-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
+          <button @click="emit('change-tab', 'menu')" class="shrink-0 ml-auto bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
             <FolderKanban class="w-3.5 h-3.5" />
             <span class="hidden sm:inline">⚙️ Menyu</span>
           </button>
