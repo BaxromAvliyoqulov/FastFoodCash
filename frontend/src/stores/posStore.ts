@@ -492,8 +492,9 @@ export const usePosStore = defineStore('pos', () => {
 
   async function saveProduct(productData: Partial<Product> & { id?: string }) {
     try {
+      let res;
       if (productData.id) {
-        const res = await fetch(`${API_URL}/products/${productData.id}`, {
+        res = await fetch(`${API_URL}/products/${productData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
@@ -504,9 +505,10 @@ export const usePosStore = defineStore('pos', () => {
           if (index > -1) {
             products.value[index] = { ...products.value[index], ...updated } as Product;
           }
+          toast.success('Taom saqlandi!', 3000);
         }
       } else {
-        const res = await fetch(`${API_URL}/products`, {
+        res = await fetch(`${API_URL}/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
@@ -514,10 +516,17 @@ export const usePosStore = defineStore('pos', () => {
         if (res.ok) {
           const newProd = await res.json();
           products.value.unshift(newProd as Product);
+          toast.success('Yangi taom qo\'shildi!', 3000);
         }
       }
-    } catch (e) {
+      
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(`Xatolik: ${err.error || res.statusText || 'Noma\'lum xato'}`, 5000);
+      }
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Tarmoq xatosi (Internet yoki server o'chiq): ${e.message}`, 5000);
     }
   }
 
