@@ -79,7 +79,11 @@ const filteredCategoriesList = computed(() => {
 // Filtered Products
 const filteredProductList = computed(() => {
   return posStore.products.filter(p => {
-    const matchesCat = selectedCategoryFilter.value === 'ALL' || p.categoryId === selectedCategoryFilter.value;
+    let matchesCat = true;
+    if (selectedCategoryFilter.value !== 'ALL') {
+      const cat = posStore.categories.find(c => c.id === selectedCategoryFilter.value);
+      matchesCat = cat ? p.categoryName === cat.name : false;
+    }
     const matchesSearch = !searchQuery.value || p.name.toLowerCase().includes(searchQuery.value.toLowerCase());
     return matchesCat && matchesSearch;
   });
@@ -249,7 +253,7 @@ function handleSaveProduct() {
                       <span v-if="cat.isHidden" class="text-[9px] bg-rose-500 text-white px-1.5 py-0.2 rounded font-mono font-bold">YOPIQ</span>
                     </div>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                      {{ posStore.products.filter(p => p.categoryId === cat.id).length }} ta taom
+                      {{ posStore.products.filter(p => p.categoryName === cat.name).length }} ta taom
                     </div>
                   </div>
                 </div>
@@ -357,19 +361,19 @@ function handleSaveProduct() {
           <!-- TABLE VIEW MODE -->
           <div v-if="viewMode === 'table'" class="overflow-x-auto flex-1 max-h-[550px] overflow-y-auto no-scrollbar">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-50 dark:bg-slate-950/80 text-slate-500 font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+              <thead class="bg-slate-100 dark:bg-slate-950/80 text-slate-500 font-extrabold text-[10px] uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 shadow-sm">
                 <tr>
-                  <th class="p-3">Taom Nomi</th>
+                  <th class="p-3 pl-4">Taom Nomi</th>
                   <th class="p-3">Kategoriya</th>
                   <th class="p-3">Sotish Narxi</th>
                   <th class="p-3">Holati (Stop-List)</th>
-                  <th class="p-3 text-right">Amallar</th>
+                  <th class="p-3 text-right pr-4">Amallar</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-medium">
-                <tr v-for="prod in filteredProductList" :key="prod.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                <tr v-for="prod in filteredProductList" :key="prod.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 group transition-all duration-200">
                   <!-- Product Image & Name -->
-                  <td class="p-3 flex items-center space-x-3">
+                  <td class="p-3 pl-4 flex items-center space-x-3">
                     <img :src="prod.imageUrl" :alt="prod.name" class="w-10 h-10 rounded-xl object-cover bg-slate-200 shrink-0 border border-slate-200 dark:border-slate-800" />
                     <div>
                       <div class="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
@@ -411,10 +415,10 @@ function handleSaveProduct() {
                   </td>
 
                   <!-- Product Action Buttons -->
-                  <td class="p-3 text-right space-x-1.5">
+                  <td class="p-3 text-right pr-4 space-x-2">
                     <button 
                       @click="openEditProductModal(prod)" 
-                      class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-600 dark:text-slate-300 transition-colors"
+                      class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-600 dark:text-slate-300 transition-colors shadow-sm"
                       title="Taomni tahrirlash"
                     >
                       <Edit3 class="w-4 h-4" />
@@ -422,7 +426,7 @@ function handleSaveProduct() {
 
                     <button 
                       @click="posStore.deleteProduct(prod.id)" 
-                      class="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-colors"
+                      class="p-2 rounded-xl bg-rose-50 hover:bg-rose-500 dark:bg-rose-500/10 dark:hover:bg-rose-500 hover:text-white text-rose-500 transition-colors shadow-sm"
                       title="Taomni o'chirish"
                     >
                       <Trash2 class="w-4 h-4" />

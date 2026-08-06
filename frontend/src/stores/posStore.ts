@@ -57,9 +57,18 @@ export const usePosStore = defineStore('pos', () => {
 
   // ─── Categories ──────────────────────────────────────────────────────────────
   const storedCategories = localStorage.getItem('doston_pos_categories');
-  const categories = ref<Category[]>(
-    storedCategories ? JSON.parse(storedCategories) : initialCategories
-  );
+  let parsedCategories: Category[] = storedCategories ? JSON.parse(storedCategories) : initialCategories;
+  
+  // Merge missing initial categories (e.g. if new categories like Drinks were added to codebase)
+  if (storedCategories) {
+    initialCategories.forEach(initialCat => {
+      if (!parsedCategories.find(c => c.id === initialCat.id)) {
+        parsedCategories.push(initialCat);
+      }
+    });
+  }
+
+  const categories = ref<Category[]>(parsedCategories);
   watch(categories, (newVal) => localStorage.setItem('doston_pos_categories', JSON.stringify(newVal)), { deep: true });
   
   const selectedCategory = ref('cat-all');
