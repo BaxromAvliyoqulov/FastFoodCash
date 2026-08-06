@@ -15,7 +15,7 @@ import {
   Plus, Minus, Trash2, CreditCard, Utensils, Sparkles,
   Search, ShoppingBag,
   Printer, FolderKanban, ArrowLeft, MessageSquare,
-  CheckCircle, Clock
+  CheckCircle
 } from 'lucide-vue-next';
 
 const emit = defineEmits<{ (e: 'change-tab', tab: string): void }>();
@@ -33,9 +33,8 @@ const showKitchenReceiptModal = ref(false);
 const kitchenReceiptData = ref<{ tableNumber: number | null, items: CartItem[] }>({ tableNumber: null, items: [] });
 const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
-const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId); // ZAL: product grid ochiq yoki stol xaritasi
+const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId);
 
-// ─── Modularni tozalash (rejim almashganda) ──────────────────────────────────
 function resetModals() {
   showPaymentModal.value = false;
   showReceiptModal.value = false;
@@ -44,7 +43,6 @@ function resetModals() {
   activeModifierProduct.value = null;
 }
 
-// ─── Mode Switcher ────────────────────────────────────────────────────────────
 function switchMode(mode: 'SABOY' | 'ZAL') {
   resetModals();
   posStore.setOperationMode(mode);
@@ -52,7 +50,6 @@ function switchMode(mode: 'SABOY' | 'ZAL') {
   posStore.clearActiveTable();
 }
 
-// ─── ZAL: stol tanlash ────────────────────────────────────────────────────────
 function onTableSelected(tableId: string) {
   resetModals();
   posStore.setActiveTable(tableId);
@@ -64,7 +61,6 @@ function backToTableMap() {
   posStore.clearActiveTable();
 }
 
-// ─── Active cart (SABOY yoki ZAL) ─────────────────────────────────────────────
 const activeCart = computed(() =>
   posStore.operationMode === 'ZAL' ? (posStore.activeTable?.cart ?? []) : posStore.cart
 );
@@ -72,7 +68,6 @@ const activeSubtotal = computed(() =>
   posStore.operationMode === 'ZAL' ? posStore.activeTableSubtotal : posStore.cartSubtotal
 );
 
-// ─── Product → Cart ───────────────────────────────────────────────────────────
 function handleProductClick(product: Product) {
   if (posStore.operationMode === 'ZAL') {
     if (!posStore.activeTableId) return;
@@ -97,7 +92,6 @@ function confirmModifiers(modifiers: Modifier[]) {
   activeModifierProduct.value = null;
 }
 
-// ─── Qty update ────────────────────────────────────────────────────────────────
 function updateQty(cartItemId: string, delta: number) {
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     posStore.updateTableQuantity(posStore.activeTableId, cartItemId, delta);
@@ -125,49 +119,29 @@ function removeItem(cartItemId: string) {
 function saveTableOrder() {
   if (posStore.operationMode === 'ZAL' && posStore.activeTable) {
     const tableNum = posStore.activeTable.number;
-    
-    // Prepare kitchen ticket data BEFORE clearing
-    kitchenReceiptData.value = {
-      tableNumber: tableNum,
-      items: [...posStore.activeTable.cart]
-    };
-
+    kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
     toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
-    
     showTableProducts.value = false;
     posStore.clearActiveTable();
-    
-    // Show kitchen receipt
     showKitchenReceiptModal.value = true;
   }
 }
 
-// ─── Payment ──────────────────────────────────────────────────────────────────
 function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
   if (!shiftStore.currentShift) {
     alert('Smena ochilmagan! Avval smenani oching.');
     return;
   }
-
   let order;
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-    order = posStore.submitTableOrder(
-      posStore.activeTableId, paymentType, paidAmount,
-      shiftStore.currentShift.cashierName, shiftStore.currentShift.id
-    );
+    order = posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
   } else {
-    order = posStore.submitOrder(
-      paymentType, paidAmount,
-      shiftStore.currentShift.cashierName, shiftStore.currentShift.id
-    );
+    order = posStore.submitOrder(paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
   }
-
   if (order) {
     lastCompletedOrder.value = order;
     showPaymentModal.value = false;
     showReceiptModal.value = true;
-    
-    // ZAL: To'lov qilingach zal xaritasiga qaytish
     if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
       posStore.clearActiveTable();
       showTableProducts.value = false;
@@ -179,70 +153,39 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
 <template>
   <div class="h-full flex flex-col lg:flex-row overflow-hidden bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
 
-    <!-- ═══════════════════════════════════════════════ LEFT COLUMN ══════════════ -->
+    <!-- ═══════════════════════════ LEFT COLUMN ═══════════════════════════ -->
     <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800/80">
 
       <!-- TOP BAR -->
       <div class="shrink-0 px-3 sm:px-4 py-3 border-b border-slate-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/60 flex flex-wrap items-center gap-3">
-
         <!-- Search -->
         <div class="relative flex-1 min-w-[160px] max-w-xs">
           <Search class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            v-model="posStore.searchQuery"
-            type="text"
-            placeholder="Taom qidirish..."
-            class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-2xl pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-colors"
-          />
+          <input v-model="posStore.searchQuery" type="text" placeholder="Taom qidirish..." class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-2xl pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-colors" />
         </div>
 
         <!-- SABOY / ZAL MODE TOGGLE -->
         <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0">
-          <button
-            @click="switchMode('ZAL')"
-            :class="[
-              'px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold',
-              posStore.operationMode === 'ZAL'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            ]"
-          >
+          <button @click="switchMode('ZAL')" :class="['px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold', posStore.operationMode === 'ZAL' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
             <span class="text-base">🏛️</span><span>Zal</span>
           </button>
-          <button
-            @click="switchMode('SABOY')"
-            :class="[
-              'px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold',
-              posStore.operationMode === 'SABOY'
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-            ]"
-          >
+          <button @click="switchMode('SABOY')" :class="['px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold', posStore.operationMode === 'SABOY' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
             <span class="text-base">🛍️</span><span>Saboy</span>
           </button>
         </div>
 
-        <!-- ZAL: aktiv stol chip / Orqaga -->
-        <button
-          v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && showTableProducts"
-          @click="backToTableMap"
-          class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 hover:bg-amber-500/20 transition-colors"
-        >
+        <!-- ZAL: aktiv stol chip -->
+        <button v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && showTableProducts" @click="backToTableMap" class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 hover:bg-amber-500/20 transition-colors">
           <ArrowLeft class="w-3.5 h-3.5" />
           <span>{{ posStore.activeTable.name || `${posStore.activeTable.number}-Stol` }}</span>
           <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
         </button>
 
         <!-- Mobile cart button -->
-        <button
-          @click="mobileCartOpen = !mobileCartOpen"
-          class="lg:hidden ml-auto relative bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg shrink-0"
-        >
+        <button @click="mobileCartOpen = !mobileCartOpen" class="lg:hidden ml-auto relative bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg shrink-0">
           <ShoppingBag class="w-4 h-4" />
           <span>{{ activeCart.length }}</span>
-          <span v-if="activeSubtotal > 0" class="bg-black/20 px-1.5 py-0.5 rounded-lg font-mono text-[10px]">
-            {{ (activeSubtotal / 1000).toFixed(0) }}k
-          </span>
+          <span v-if="activeSubtotal > 0" class="bg-black/20 px-1.5 py-0.5 rounded-lg font-mono text-[10px]">{{ (activeSubtotal / 1000).toFixed(0) }}k</span>
         </button>
       </div>
 
@@ -255,37 +198,18 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
 
       <!-- Product grid (SABOY yoki ZAL + stol tanlangan) -->
       <template v-else>
-
-        <!-- Categories bar (Wrapped) -->
+        <!-- Categories bar -->
         <div class="relative shrink-0 border-b border-slate-200 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 py-3 px-3 flex items-start gap-2">
-          <!-- ZAL: orqaga tugma -->
-          <button
-            v-if="posStore.operationMode === 'ZAL'"
-            @click="backToTableMap"
-            class="shrink-0 w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all shadow-sm"
-            title="Stol xaritasiga qaytish"
-          >
+          <button v-if="posStore.operationMode === 'ZAL'" @click="backToTableMap" class="shrink-0 w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center hover:bg-amber-500 hover:text-white hover:border-amber-500 transition-all shadow-sm" title="Stol xaritasiga qaytish">
             <ArrowLeft class="w-4 h-4" />
           </button>
-
           <div class="flex-1 flex flex-wrap gap-2">
-            <button
-              v-for="cat in posStore.visibleCategories"
-              :key="cat.id"
-              @click="posStore.selectedCategory = cat.id"
-              :class="[
-                'px-3 py-1.5 rounded-2xl font-bold text-xs transition-all flex items-center space-x-1.5 whitespace-nowrap shrink-0 active:scale-95',
-                posStore.selectedCategory === cat.id
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-amber-400'
-              ]"
-            >
+            <button v-for="cat in posStore.visibleCategories" :key="cat.id" @click="posStore.selectedCategory = cat.id" :class="['px-3 py-1.5 rounded-2xl font-bold text-xs transition-all flex items-center space-x-1.5 whitespace-nowrap shrink-0 active:scale-95', posStore.selectedCategory === cat.id ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-amber-400']">
               <CategoryIcon :cat-id="cat.id" size="sm" />
               <span>{{ cat.name }}</span>
               <span :class="['text-[10px] px-1.5 py-0.5 rounded-full font-mono', posStore.selectedCategory === cat.id ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500']">{{ cat.count }}</span>
             </button>
           </div>
-
           <button @click="emit('change-tab', 'menu')" class="shrink-0 ml-auto bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all">
             <FolderKanban class="w-3.5 h-3.5" />
             <span class="hidden sm:inline">⚙️ Menyu</span>
@@ -293,38 +217,25 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
         </div>
 
         <!-- ZAL: stol info banner -->
-        <div
-          v-if="posStore.operationMode === 'ZAL' && posStore.activeTable"
-          class="shrink-0 mx-3 mt-2.5 mb-0 px-4 py-2.5 rounded-2xl flex items-center justify-between border"
-          :class="activeCart.length > 0
-            ? 'bg-amber-500/8 border-amber-500/25 dark:bg-amber-500/5'
-            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'"
-        >
+        <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable" class="shrink-0 mx-3 mt-2.5 mb-0 px-4 py-2.5 rounded-2xl flex items-center justify-between border" :class="activeCart.length > 0 ? 'bg-amber-500/8 border-amber-500/25 dark:bg-amber-500/5' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'">
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
             <span class="text-base">🏛️</span>
             <span>{{ posStore.activeTable.number }}-Stol</span>
             <span class="text-slate-400">·</span>
-            <span class="text-amber-600 dark:text-amber-400">{{ activeCart.length }} ta taom tanlangan</span>
+            <span class="text-amber-600 dark:text-amber-400">{{ activeCart.length }} ta taom</span>
           </div>
-          <span class="text-xs text-slate-400 dark:text-slate-500">Pastdagi savatga qo'shiladi</span>
+          <span class="text-xs text-slate-400 dark:text-slate-500">Savatga qo'shiladi</span>
         </div>
 
-        <!-- Success toast -->
-        <div
-          v-if="lastCompletedOrder && !showReceiptModal"
-          class="shrink-0 mx-3 mt-2.5 mb-0 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between"
-        >
+        <!-- Last order success banner -->
+        <div v-if="lastCompletedOrder && !showReceiptModal" class="shrink-0 mx-3 mt-2.5 mb-0 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
           <div class="flex items-center gap-2">
             <CheckCircle class="w-4 h-4 text-emerald-500 shrink-0" />
             <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-              #{{ lastCompletedOrder.orderNumber }} — {{ lastCompletedOrder.totalAmount.toLocaleString('uz-UZ') }} so'm qabul qilindi
-              <template v-if="lastCompletedOrder.tableNumber"> ({{ lastCompletedOrder.tableNumber }}-Stol)</template>
+              #{{ lastCompletedOrder.orderNumber }} — {{ lastCompletedOrder.totalAmount?.toLocaleString('uz-UZ') }} so'm qabul qilindi
             </span>
           </div>
-          <button
-            @click="showReceiptModal = true"
-            class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 ml-2"
-          >
+          <button @click="showReceiptModal = true" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 ml-2">
             <Printer class="w-3 h-3" />Chek
           </button>
         </div>
@@ -340,13 +251,12 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
             >
               <div class="relative h-28 sm:h-32 rounded-2xl overflow-hidden mb-3 bg-slate-100 dark:bg-slate-950">
                 <img :src="prod.imageUrl" :alt="prod.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <button
-                  v-if="prod.availableModifiers?.length"
-                  @click="openModifiersModal(prod, $event)"
-                  class="absolute top-2 right-2 bg-white/90 dark:bg-slate-950/85 backdrop-blur-sm px-2 py-0.5 rounded-xl text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 hover:bg-amber-500 hover:text-white transition-colors"
-                >
+                <button v-if="prod.availableModifiers?.length" @click="openModifiersModal(prod, $event)" class="absolute top-2 right-2 bg-white/90 dark:bg-slate-950/85 backdrop-blur-sm px-2 py-0.5 rounded-xl text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 hover:bg-amber-500 hover:text-white transition-colors">
                   <Sparkles class="w-3 h-3" />+Qo'shimcha
                 </button>
+                <div v-if="prod.isStopList" class="absolute inset-0 bg-slate-900/70 flex items-center justify-center">
+                  <span class="text-xs font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/30">Stop-List</span>
+                </div>
               </div>
               <div class="min-w-0 flex-1">
                 <div class="text-[10px] uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-500 mb-0.5 truncate">{{ prod.categoryName }}</div>
@@ -364,197 +274,161 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       </template>
     </div>
 
-    <!-- ═══════════════════════════════════════════ RIGHT PANEL: Cart ════════════ -->
+    <!-- ═══════════════════════════ RIGHT PANEL: Premium Cart ═══════════════════════════ -->
     <div
       :class="[
-        'bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800/80 flex flex-col h-full shadow-xl transition-all duration-300',
-        'w-full lg:w-80 xl:w-96 shrink-0',
-        mobileCartOpen ? 'fixed inset-x-0 bottom-0 top-16 z-50' : 'hidden lg:flex'
+        'flex flex-col h-full transition-all duration-300 shrink-0',
+        'w-full lg:w-[340px] xl:w-[380px]',
+        mobileCartOpen ? 'fixed inset-x-0 bottom-0 top-16 z-50' : 'hidden lg:flex',
+        'bg-gradient-to-b from-slate-950 to-slate-900'
       ]"
     >
-      <!-- Cart header -->
-      <div class="shrink-0 px-4 py-3.5 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/60 flex items-center justify-between">
-        <div class="flex items-center gap-2 min-w-0">
-          <ShoppingBag class="w-4 h-4 text-amber-500 shrink-0" />
-          <div class="min-w-0">
-            <h3 class="font-bold text-sm text-slate-900 dark:text-white leading-none truncate">
-              <template v-if="posStore.operationMode === 'ZAL' && posStore.activeTable">
-                {{ posStore.activeTable.number }}-Stol buyurtmasi
-              </template>
+      <!-- HEADER -->
+      <div class="shrink-0 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-orange-600/5 pointer-events-none"></div>
+        <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/8 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative px-4 pt-4 pb-3">
+          <!-- Cashier row -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <span class="text-white font-black text-sm">{{ (authStore.user?.fullName || 'K')[0].toUpperCase() }}</span>
+              </div>
+              <div>
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none">Kassir</p>
+                <p class="text-xs font-black text-white leading-tight mt-0.5">{{ authStore.user?.fullName || 'Kassa' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button v-if="activeCart.length > 0" @click="clearActiveCart" class="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 flex items-center justify-center transition-all active:scale-95">
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
+              <button @click="mobileCartOpen = false" class="lg:hidden w-8 h-8 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center">✕</button>
+            </div>
+          </div>
+          <!-- Title row -->
+          <div class="flex items-center gap-2">
+            <ShoppingBag class="w-4 h-4 text-amber-500" />
+            <h3 class="font-black text-sm text-white leading-none">
+              <template v-if="posStore.operationMode === 'ZAL' && posStore.activeTable">{{ posStore.activeTable.number }}-Stol Buyurtmasi</template>
               <template v-else>Savat</template>
             </h3>
-            <p v-if="posStore.operationMode === 'ZAL' && posStore.activeTable?.openedAt" class="text-[10px] text-amber-500 mt-0.5 flex items-center gap-1">
-              <Clock class="w-3 h-3" />
-              Aktiv stol — mijoz hali o'tiribdi
-            </p>
+            <span v-if="activeCart.length > 0" class="ml-auto bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{{ activeCart.length }} ta</span>
+          </div>
+          <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable?.openedAt" class="mt-2 inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-xl text-[11px] font-semibold">
+            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>Stol faol — mijoz o'tiribdi
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button
-            v-if="activeCart.length > 0"
-            @click="clearActiveCart"
-            class="text-xs text-rose-500 hover:text-rose-600 flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-rose-500/10 transition font-medium"
-          >
-            <Trash2 class="w-3 h-3" /><span>Tozalash</span>
-          </button>
-          <button @click="mobileCartOpen = false" class="lg:hidden text-slate-400 w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">✕</button>
-        </div>
+        <div class="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent mx-4"></div>
       </div>
 
-      <!-- ZAL: stol tanlanmagan holat -->
-      <div
-        v-if="posStore.operationMode === 'ZAL' && !posStore.activeTable"
-        class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3"
-      >
-        <div class="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-          <span class="text-3xl">🏛️</span>
-        </div>
-        <p class="text-sm font-bold text-slate-600 dark:text-slate-400">Stol tanlanmagan</p>
-        <p class="text-xs text-slate-400 dark:text-slate-600">Chapdan stol bosing, so'ng taom qo'shing</p>
+      <!-- ZAL no table -->
+      <div v-if="posStore.operationMode === 'ZAL' && !posStore.activeTable" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4"><span class="text-4xl">🏛️</span></div>
+        <p class="text-sm font-black text-slate-300 mb-1">Stol tanlanmagan</p>
+        <p class="text-xs text-slate-600">Stol xaritasidan stol tanlang</p>
       </div>
 
-      <!-- Bo'sh savat -->
-      <div
-        v-else-if="activeCart.length === 0"
-        class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3"
-      >
-        <div class="w-14 h-14 rounded-3xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-          <Utensils class="w-7 h-7 text-slate-400 dark:text-slate-600" />
+      <!-- Empty cart -->
+      <div v-else-if="activeCart.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div class="relative mb-5">
+          <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 flex items-center justify-center shadow-2xl">
+            <Utensils class="w-10 h-10 text-slate-600" />
+          </div>
+          <div class="absolute -top-2 -right-2 w-4 h-4 bg-amber-500/20 rounded-full animate-bounce"></div>
+          <div class="absolute -bottom-1 -left-3 w-3 h-3 bg-orange-500/20 rounded-full animate-bounce" style="animation-delay:0.3s"></div>
         </div>
-        <p class="text-sm font-bold text-slate-500 dark:text-slate-500">Savat bo'sh</p>
-        <p class="text-xs text-slate-400 dark:text-slate-600">
-          <template v-if="posStore.operationMode === 'ZAL'">
-            Chap tomondagi taomlarni bosib qo'shing
-          </template>
-          <template v-else>
-            Buyurtma urish uchun chap tomondagi taomlarni bosing
-          </template>
+        <p class="text-base font-black text-slate-400 mb-1.5">Savat bo'sh</p>
+        <p class="text-xs text-slate-600 leading-relaxed max-w-[180px]">
+          <template v-if="posStore.operationMode === 'ZAL'">Taomlarni qo'shing va oshxonaga yuboring</template>
+          <template v-else>Chap tomondagi taomlarni bosib savatchaga qo'shing</template>
         </p>
+        <div class="flex flex-wrap gap-1.5 justify-center mt-4">
+          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🍔 Burger</span>
+          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🥪 Lavash</span>
+          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🍕 Pizza</span>
+        </div>
       </div>
 
       <!-- Cart items -->
-      <div v-else class="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        <div
-          v-for="item in activeCart"
-          :key="item.id"
-          class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-3 hover:border-amber-500/30 transition-colors"
-        >
-          <div class="flex items-start justify-between mb-2">
-            <div class="min-w-0 flex-1 pr-2">
-              <h5 class="font-bold text-sm text-slate-900 dark:text-white truncate">{{ item.product.name }}</h5>
-              <div v-if="item.selectedModifiers.length > 0" class="text-[11px] text-amber-500 mt-0.5 truncate">
-                + {{ item.selectedModifiers.map((m: any) => m.name).join(', ') }}
+      <div v-else class="flex-1 overflow-y-auto min-h-0 px-3 py-2 space-y-1.5">
+        <div v-for="item in activeCart" :key="item.id" class="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-amber-500/30 rounded-2xl p-3 transition-all duration-200">
+          <div class="flex items-start gap-2.5">
+            <div class="w-1 self-stretch rounded-full bg-gradient-to-b from-amber-500 to-orange-600 shrink-0 opacity-70"></div>
+            <div class="flex-1 min-w-0">
+              <h5 class="font-bold text-sm text-white truncate leading-tight">{{ item.product.name }}</h5>
+              <div v-if="item.selectedModifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
+                <span v-for="mod in item.selectedModifiers" :key="mod.modifierId" class="text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-md">+{{ mod.name }}</span>
               </div>
+              <p class="text-[11px] text-slate-500 mt-1 font-mono">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</p>
             </div>
-            <span class="text-sm font-black text-amber-600 dark:text-amber-400 font-mono shrink-0">{{ item.totalPrice.toLocaleString('uz-UZ') }}</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-[12px] text-slate-400">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</span>
-            <div class="flex items-center gap-2">
-              <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
-                <button @click="updateQty(item.id, -1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 shadow-sm hover:bg-rose-50 hover:text-rose-500 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95">
-                  <Minus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-                <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white w-6 sm:w-8 text-center font-mono">{{ item.quantity }}</span>
-                <button @click="updateQty(item.id, 1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95">
-                  <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
-              <button @click="removeItem(item.id)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500 flex items-center justify-center transition-colors active:scale-95">
-                <Trash2 class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
+            <div class="shrink-0 text-right">
+              <p class="text-sm font-black text-amber-400 font-mono leading-tight">{{ item.totalPrice.toLocaleString('uz-UZ') }}</p>
+              <p class="text-[9px] text-slate-600 mt-0.5">so'm</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ZAL: Ofitsiant izohi (faqat savatda narsa bo'lganda) -->
-      <div
-        v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && activeCart.length > 0"
-        class="shrink-0 px-3 pb-0 pt-2 border-t border-slate-100 dark:border-slate-800/50"
-      >
-        <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1">
-          <MessageSquare class="w-3 h-3" />Ofitsiant izohi
-        </label>
-        <textarea
-          :value="posStore.activeTable?.waiterNote"
-          @input="(e) => posStore.setWaiterNote(posStore.activeTableId!, (e.target as HTMLTextAreaElement).value)"
-          placeholder="Masalan: 7-stol, allergy bor..."
-          rows="2"
-          class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none resize-none transition-colors"
-        />
-      </div>
-
-      <!-- Checkout footer -->
-      <div class="shrink-0 p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/80 space-y-3">
-        <!-- Total -->
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-slate-500 dark:text-slate-400">Jami:</span>
-          <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ activeSubtotal.toLocaleString('uz-UZ') }} <span class="text-sm font-bold">so'm</span></span>
-        </div>
-
-        <!-- ZAL: sessiya to'langan summa -->
-        <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && posStore.activeTable.totalPaid > 0" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">
-          ✅ Sessiyada jami to'langan: {{ posStore.activeTable.totalPaid.toLocaleString('uz-UZ') }} so'm
-        </div>
-
-        <!-- Checkout buttons -->
-        <template v-if="posStore.operationMode === 'ZAL'">
-          <div class="grid grid-cols-2 gap-3 mt-2">
-            <button
-              :disabled="activeCart.length === 0"
-              @click="saveTableOrder"
-              class="w-full bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white py-4 rounded-xl font-bold text-base transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Utensils class="w-4 h-4" /> Oshxonaga
+          <div class="flex items-center justify-between mt-2.5 pl-3.5">
+            <div class="flex items-center bg-slate-900 rounded-xl overflow-hidden border border-slate-700/50">
+              <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all active:scale-90"><Minus class="w-3.5 h-3.5" /></button>
+              <span class="text-sm font-black text-white font-mono w-8 text-center">{{ item.quantity }}</span>
+              <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:bg-amber-500/20 transition-all active:scale-90"><Plus class="w-3.5 h-3.5" /></button>
+            </div>
+            <button @click="removeItem(item.id)" class="w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500/60 hover:text-rose-400 border border-rose-500/10 hover:border-rose-500/30 flex items-center justify-center transition-all active:scale-90">
+              <Trash2 class="w-3.5 h-3.5" />
             </button>
-            <button
-              :disabled="activeCart.length === 0"
-              @click="showPaymentModal = true"
-              class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-base shadow-sm transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <CreditCard class="w-4 h-4" /> Hisob-kitob
+          </div>
+        </div>
+      </div>
+
+      <!-- Waiter note -->
+      <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && activeCart.length > 0" class="shrink-0 px-3 pb-1 pt-2">
+        <label class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5"><MessageSquare class="w-3 h-3" /> Ofitsiant izohi</label>
+        <textarea :value="posStore.activeTable?.waiterNote" @input="(e) => posStore.setWaiterNote(posStore.activeTableId!, (e.target as HTMLTextAreaElement).value)" placeholder="Allergy bor, alohida tarelka..." rows="2" class="w-full bg-slate-800 border border-slate-700 focus:border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none resize-none transition-colors" />
+      </div>
+
+      <!-- FOOTER -->
+      <div class="shrink-0 p-4 space-y-3 border-t border-slate-800">
+        <div v-if="activeCart.length > 0" class="flex justify-between text-xs text-slate-500">
+          <span>{{ activeCart.length }} xil taom</span>
+          <span class="font-mono">{{ activeCart.reduce((s, i) => s + i.quantity, 0) }} dona</span>
+        </div>
+        <!-- Total card -->
+        <div class="relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700/50 px-4 py-3">
+          <div class="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 pointer-events-none"></div>
+          <div class="relative flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jami to'lov</span>
+            <span class="text-2xl font-black text-white font-mono">{{ activeSubtotal.toLocaleString('uz-UZ') }} <span class="text-sm text-amber-400">so'm</span></span>
+          </div>
+        </div>
+        <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && posStore.activeTable.totalPaid > 0" class="flex items-center justify-between text-xs">
+          <span class="text-slate-600">✅ Oldin to'langan</span>
+          <span class="text-emerald-400 font-mono font-bold">{{ posStore.activeTable.totalPaid.toLocaleString('uz-UZ') }} so'm</span>
+        </div>
+        <!-- Buttons -->
+        <template v-if="posStore.operationMode === 'ZAL'">
+          <div class="grid grid-cols-2 gap-2">
+            <button :disabled="activeCart.length === 0" @click="saveTableOrder" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/30 text-slate-300 hover:text-white py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 active:scale-95">
+              <Utensils class="w-4 h-4" /> Oshxona
+            </button>
+            <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 active:scale-95">
+              <CreditCard class="w-4 h-4" /> To'lov
             </button>
           </div>
         </template>
         <template v-else>
-          <button
-            :disabled="activeCart.length === 0"
-            @click="showPaymentModal = true"
-            class="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 mt-2"
-          >
-            <CreditCard class="w-5 h-5" /> To'lov ({{ activeSubtotal.toLocaleString('uz-UZ') }} so'm)
+          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
+            <CreditCard class="w-5 h-5" />
+            <span v-if="activeCart.length > 0">To'lov — {{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
+            <span v-else>Savat bo'sh</span>
           </button>
         </template>
       </div>
     </div>
 
-    <!-- ═══ Modals ════════════════════════════════════════════════════════════════ -->
-    <ModifierModal
-      v-if="activeModifierProduct"
-      :product="activeModifierProduct"
-      @close="activeModifierProduct = null"
-      @confirm="confirmModifiers"
-    />
-    <PaymentModal
-      v-if="showPaymentModal"
-      :total-amount="activeSubtotal"
-      @close="showPaymentModal = false"
-      @success="handlePaymentSuccess"
-    />
-    <ReceiptModal
-      :order="lastCompletedOrder"
-      :is-open="showReceiptModal"
-      @close="showReceiptModal = false"
-    />
-
-    <!-- Kitchen Receipt Modal -->
-    <KitchenReceiptModal
-      :is-open="showKitchenReceiptModal"
-      :table-number="kitchenReceiptData.tableNumber"
-      :items="kitchenReceiptData.items"
-      :cashier-name="authStore.user?.fullName"
-      @close="showKitchenReceiptModal = false"
-    />
+    <!-- ═══ Modals ═══ -->
+    <ModifierModal v-if="activeModifierProduct" :product="activeModifierProduct" @close="activeModifierProduct = null" @confirm="confirmModifiers" />
+    <PaymentModal v-if="showPaymentModal" :total-amount="activeSubtotal" @close="showPaymentModal = false" @success="handlePaymentSuccess" />
+    <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
+    <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
   </div>
 </template>

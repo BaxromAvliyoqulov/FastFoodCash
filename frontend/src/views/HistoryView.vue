@@ -29,6 +29,35 @@ const toast = useToastStore();
 const searchQuery = ref('');
 const selectedDateFilter = ref<'ALL' | 'TODAY' | 'YESTERDAY' | 'MONTH'>('ALL');
 const selectedPaymentFilter = ref<'ALL' | 'CASH' | 'CARD' | 'CLICK_PAYME'>('ALL');
+const selectedCashierFilter = ref<string>('ALL');
+
+// ─── Kassalar ro'yxati (orderHistory dan dinamik) ────────────────────────────
+const cashierList = computed(() => {
+  const names = new Set(posStore.orderHistory.map(o => o.cashierName).filter(Boolean));
+  return Array.from(names);
+});
+
+// ─── Kassalar kesimida hisobot ────────────────────────────────────────────────
+const cashierStats = computed(() => {
+  const all = posStore.orderHistory;
+  return cashierList.value.map(name => {
+    const orders = all.filter(o => o.cashierName === name);
+    const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
+    const cashRevenue = orders.filter(o => o.paymentType === 'CASH').reduce((s, o) => s + o.totalAmount, 0);
+    const cardRevenue = orders.filter(o => o.paymentType === 'CARD').reduce((s, o) => s + o.totalAmount, 0);
+    const qrRevenue = orders.filter(o => o.paymentType === 'CLICK_PAYME').reduce((s, o) => s + o.totalAmount, 0);
+    const avgTicket = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
+    const topProduct = (() => {
+      const freq: Record<string, number> = {};
+      orders.forEach(o => o.items?.forEach(i => { freq[i.product.name] = (freq[i.product.name] || 0) + i.quantity; }));
+      const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+      return top ? top[0] : '—';
+    })();
+    return { name, orderCount: orders.length, totalRevenue, cashRevenue, cardRevenue, qrRevenue, avgTicket, topProduct };
+  }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+});
+
+const maxCashierRevenue = computed(() => Math.max(...cashierStats.value.map(c => c.totalRevenue), 1));
 
 // Modal states
 const selectedOrderForModal = ref<Order | null>(null);
@@ -63,6 +92,11 @@ const filteredOrders = computed(() => {
   // Payment type filtering
   if (selectedPaymentFilter.value !== 'ALL') {
     result = result.filter(o => o.paymentType === selectedPaymentFilter.value);
+  }
+
+  // Cashier filter
+  if (selectedCashierFilter.value !== 'ALL') {
+    result = result.filter(o => o.cashierName === selectedCashierFilter.value);
   }
 
   // Search query
@@ -173,7 +207,115 @@ function cancelOrder(order: Order) {
       </div>
     </div>
 
-    <!-- Filters Bar -->
+    <!-- ══════════════════ KASSALAR KESIMIDA HISOBOT ══════════════════ -->
+    <div v-if="cashierStats.length > 0" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl">
+      <!-- Section header -->
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <span class="w-7 h-7 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <User class="w-3.5 h-3.5 text-white" />
+            </span>
+            Kassalar Kesimida Hisobot
+          </h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">Har bir kassir bo'yicha savdo tahlili</p>
+        </div>
+        <!-- Cashier filter chips -->
+        <div class="flex items-center gap-1.5 flex-wrap justify-end">
+          <button @click="selectedCashierFilter = 'ALL'" :class="['px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all', selectedCashierFilter === 'ALL' ? 'bg-violet-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200']">
+            Barchasi
+          </button>
+          <button v-for="name in cashierList" :key="name" @click="selectedCashierFilter = name" :class="['px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all', selectedCashierFilter === name ? 'bg-violet-500 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200']">
+            {{ name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Cashier cards grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div
+          v-for="(stat, i) in cashierStats"
+          :key="stat.name"
+          class="relative overflow-hidden rounded-2xl border transition-all duration-200 cursor-pointer hover:border-violet-500/40 hover:-translate-y-0.5 hover:shadow-lg"
+          :class="selectedCashierFilter === stat.name
+            ? 'border-violet-500/50 bg-violet-500/5 dark:bg-violet-500/8 shadow-md shadow-violet-500/10'
+            : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50'"
+          @click="selectedCashierFilter = selectedCashierFilter === stat.name ? 'ALL' : stat.name"
+        >
+          <!-- Rank badge -->
+          <div class="absolute top-3 right-3">
+            <span :class="['text-[10px] font-black px-1.5 py-0.5 rounded-lg', i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-slate-400 text-white' : i === 2 ? 'bg-orange-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500']">
+              #{{ i + 1 }}
+            </span>
+          </div>
+
+          <div class="p-4">
+            <!-- Cashier name & avatar -->
+            <div class="flex items-center gap-3 mb-4">
+              <div :class="['w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-lg', i === 0 ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/30' : i === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-600 shadow-slate-500/20' : 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-violet-500/20']">
+                {{ stat.name[0]?.toUpperCase() }}
+              </div>
+              <div class="min-w-0">
+                <p class="font-black text-sm text-slate-900 dark:text-white truncate">{{ stat.name }}</p>
+                <p class="text-[10px] text-slate-500">{{ stat.orderCount }} ta buyurtma</p>
+              </div>
+            </div>
+
+            <!-- Revenue -->
+            <div class="mb-3">
+              <div class="flex items-end justify-between mb-1.5">
+                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Jami Tushum</span>
+                <span class="text-xs font-black text-slate-900 dark:text-white font-mono">{{ formatMoney(stat.totalRevenue) }} so'm</span>
+              </div>
+              <!-- Progress bar relative to top cashier -->
+              <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-700"
+                  :class="i === 0 ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-violet-500 to-purple-500'"
+                  :style="`width: ${Math.round((stat.totalRevenue / maxCashierRevenue) * 100)}%`"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Stats row -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+              <div class="bg-amber-500/10 dark:bg-amber-500/8 rounded-xl p-2 text-center">
+                <p class="text-[9px] text-amber-600 dark:text-amber-500 font-bold uppercase mb-0.5">Naqd</p>
+                <p class="text-xs font-black text-slate-800 dark:text-white font-mono">{{ (stat.cashRevenue / 1000).toFixed(0) }}k</p>
+              </div>
+              <div class="bg-blue-500/10 dark:bg-blue-500/8 rounded-xl p-2 text-center">
+                <p class="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase mb-0.5">Karta</p>
+                <p class="text-xs font-black text-slate-800 dark:text-white font-mono">{{ (stat.cardRevenue / 1000).toFixed(0) }}k</p>
+              </div>
+              <div class="bg-emerald-500/10 dark:bg-emerald-500/8 rounded-xl p-2 text-center">
+                <p class="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase mb-0.5">QR</p>
+                <p class="text-xs font-black text-slate-800 dark:text-white font-mono">{{ (stat.qrRevenue / 1000).toFixed(0) }}k</p>
+              </div>
+            </div>
+
+            <!-- Avg ticket & top product -->
+            <div class="flex items-center justify-between text-[11px] border-t border-slate-200 dark:border-slate-700 pt-2.5 mt-2.5">
+              <div>
+                <span class="text-slate-500">O'rtacha chek: </span>
+                <span class="font-black text-slate-700 dark:text-slate-300 font-mono">{{ formatMoney(stat.avgTicket) }}</span>
+              </div>
+              <div class="text-right max-w-[120px]">
+                <span class="text-slate-500">Top taom: </span>
+                <span class="font-bold text-violet-600 dark:text-violet-400 truncate block">{{ stat.topProduct }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-if="cashierStats.length === 0" class="text-center py-12 text-slate-500">
+        <User class="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <p class="text-sm font-bold">Hali buyurtmalar yo'q</p>
+      </div>
+    </div>
+
+
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-sm dark:shadow-xl">
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
