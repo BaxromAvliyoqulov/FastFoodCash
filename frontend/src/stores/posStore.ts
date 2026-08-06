@@ -128,6 +128,20 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  function removeTableCartItem(tableId: string, cartItemId: string) {
+    const table = tables.value.find(t => t.id === tableId);
+    if (!table) return;
+    const index = table.cart.findIndex(i => i.id === cartItemId);
+    if (index > -1) {
+      table.cart.splice(index, 1);
+      if (table.cart.length === 0) {
+        table.status = 'FREE';
+        table.orderNumber = undefined;
+        table.openedAt = null;
+      }
+    }
+  }
+
   function setActiveTable(tableId: string) {
     activeTableId.value = tableId;
     localStorage.setItem('doston_pos_active_table', tableId);
@@ -150,13 +164,16 @@ export const usePosStore = defineStore('pos', () => {
   // ─── Computed ────────────────────────────────────────────────────────────────
   const filteredProducts = computed(() => {
     let result = products.value;
-    const hiddenCategoryIds = new Set(
-      categories.value.filter(c => c.isHidden).map(c => c.id)
+    const hiddenCategoryNames = new Set(
+      categories.value.filter(c => c.isHidden).map(c => c.name)
     );
-    result = result.filter(p => !hiddenCategoryIds.has(p.categoryId));
+    result = result.filter(p => !hiddenCategoryNames.has(p.categoryName));
 
     if (selectedCategory.value !== 'cat-all') {
-      result = result.filter(p => p.categoryId === selectedCategory.value);
+      const catObj = categories.value.find(c => c.id === selectedCategory.value);
+      if (catObj) {
+        result = result.filter(p => p.categoryName === catObj.name);
+      }
     }
 
     if (searchQuery.value.trim() !== '') {
@@ -246,6 +263,13 @@ export const usePosStore = defineStore('pos', () => {
 
   function clearCart() {
     cart.value = [];
+  }
+
+  function removeFromCart(cartItemId: string) {
+    const index = cart.value.findIndex(i => i.id === cartItemId);
+    if (index > -1) {
+      cart.value.splice(index, 1);
+    }
   }
 
   // ─── SABOY: submitOrder ───────────────────────────────────────────────────────
@@ -575,6 +599,7 @@ export const usePosStore = defineStore('pos', () => {
     // SABOY methods
     addToCart,
     updateQuantity,
+    removeFromCart,
     clearCart,
     submitOrder,
     checkLowStockAlerts,
@@ -582,6 +607,7 @@ export const usePosStore = defineStore('pos', () => {
     // ZAL methods
     addToTableCart,
     updateTableQuantity,
+    removeTableCartItem,
     clearTableCart,
     closeTable,
     setWaiterNote,

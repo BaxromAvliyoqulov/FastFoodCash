@@ -109,10 +109,10 @@ function handleCloseTable(tableId: string, event: Event) {
           :class="[
             'relative flex flex-col rounded-3xl border-2 p-4 text-left transition-all duration-200 cursor-pointer group overflow-hidden min-h-[140px]',
             posStore.activeTableId === table.id
-              ? 'border-amber-500 bg-amber-50/80 dark:bg-amber-500/10 shadow-xl shadow-amber-500/20 scale-[1.02]'
+              ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 shadow-[0_0_25px_rgba(245,158,11,0.3)] scale-[1.03] ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-950 z-10'
               : table.status === 'FREE'
-                ? 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300 hover:shadow-lg'
-                : 'border-amber-400/50 bg-amber-50 dark:bg-amber-500/5 hover:border-amber-500 hover:shadow-xl shadow-md'
+                ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300 hover:shadow-lg hover:-translate-y-1'
+                : 'border-amber-400/80 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-[1.01]'
           ]"
         >
           <!-- Close button for occupied tables -->
@@ -128,10 +128,10 @@ function handleCloseTable(tableId: string, event: Event) {
           <div class="flex items-start gap-3 w-full mb-3" :class="table.status === 'OCCUPIED' ? 'pr-6' : ''">
             <div
               :class="[
-                'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black shadow-inner transition-colors shrink-0',
+                'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-colors shrink-0',
                 posStore.activeTableId === table.id || table.status === 'OCCUPIED'
-                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-inner'
               ]"
             >
               {{ table.number }}
@@ -146,8 +146,8 @@ function handleCloseTable(tableId: string, event: Event) {
                     : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                 ]"
               >
-                <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-amber-500']"></span>
-                <span>{{ table.status === 'FREE' ? 'Bo\'sh' : 'Band' }}</span>
+                <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse']"></span>
+                <span>{{ table.status === 'FREE' ? 'Bo\'sh' : 'Band (Zaynit)' }}</span>
               </div>
             </div>
           </div>

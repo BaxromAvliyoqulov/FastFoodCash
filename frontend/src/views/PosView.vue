@@ -112,6 +112,14 @@ function clearActiveCart() {
   }
 }
 
+function removeItem(cartItemId: string) {
+  if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+    posStore.removeTableCartItem(posStore.activeTableId, cartItemId);
+  } else {
+    posStore.removeFromCart(cartItemId);
+  }
+}
+
 function saveTableOrder() {
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     posStore.clearActiveTable();
@@ -142,7 +150,12 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
     lastCompletedOrder.value = order;
     showPaymentModal.value = false;
     showReceiptModal.value = true;
-    // ZAL: stol ochiq qoladi, mijoz yana buyurtma berishi mumkin
+    
+    // ZAL: To'lov qilingach zal xaritasiga qaytish
+    if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+      posStore.clearActiveTable();
+      showTableProducts.value = false;
+    }
   }
 }
 </script>
@@ -193,14 +206,16 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           </button>
         </div>
 
-        <!-- ZAL: aktiv stol chip -->
-        <div
+        <!-- ZAL: aktiv stol chip / Orqaga -->
+        <button
           v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && showTableProducts"
-          class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0"
+          @click="backToTableMap"
+          class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 hover:bg-amber-500/20 transition-colors"
         >
-          <span>🏛️ {{ posStore.activeTable.number }}-Stol</span>
+          <ArrowLeft class="w-3.5 h-3.5" />
+          <span>{{ posStore.activeTable.name || `${posStore.activeTable.number}-Stol` }}</span>
           <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-        </div>
+        </button>
 
         <!-- Mobile cart button -->
         <button
@@ -427,13 +442,18 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           </div>
           <div class="flex items-center justify-between">
             <span class="text-[12px] text-slate-400">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</span>
-            <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
-              <button @click="updateQty(item.id, -1)" class="w-8 h-8 rounded-md bg-white dark:bg-slate-800 shadow-sm hover:bg-rose-50 hover:text-rose-500 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95">
-                <Minus class="w-4 h-4" />
-              </button>
-              <span class="text-sm font-bold text-slate-900 dark:text-white w-8 text-center font-mono">{{ item.quantity }}</span>
-              <button @click="updateQty(item.id, 1)" class="w-8 h-8 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95">
-                <Plus class="w-4 h-4" />
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
+                <button @click="updateQty(item.id, -1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-white dark:bg-slate-800 shadow-sm hover:bg-rose-50 hover:text-rose-500 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors active:scale-95">
+                  <Minus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+                <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white w-6 sm:w-8 text-center font-mono">{{ item.quantity }}</span>
+                <button @click="updateQty(item.id, 1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95">
+                  <Plus class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              </div>
+              <button @click="removeItem(item.id)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500 flex items-center justify-center transition-colors active:scale-95">
+                <Trash2 class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
