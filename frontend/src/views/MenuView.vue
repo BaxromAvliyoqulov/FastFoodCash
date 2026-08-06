@@ -387,7 +387,7 @@ function handleSaveProduct() {
                   <!-- Category Badge -->
                   <td class="p-3">
                     <span class="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
-                      <CategoryIcon :cat-id="prod.categoryId" size="sm" />
+                      <CategoryIcon :cat-id="prod.categoryName" size="sm" />
                       <span>{{ prod.categoryName }}</span>
                     </span>
                   </td>
@@ -456,7 +456,7 @@ function handleSaveProduct() {
 
                   <!-- Category Badge -->
                   <div class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5 border border-white/10">
-                    <CategoryIcon :cat-id="prod.categoryId" size="sm" />
+                    <CategoryIcon :cat-id="prod.categoryName" size="sm" />
                     <span>{{ prod.categoryName }}</span>
                   </div>
                 </div>

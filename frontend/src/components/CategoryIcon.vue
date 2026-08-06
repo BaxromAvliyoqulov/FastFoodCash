@@ -11,13 +11,15 @@ const iconSizeClass = computed(() => {
   if (props.size === 'lg') return 'w-7 h-7';
   return 'w-5 h-5';
 });
+
+const safeCatId = computed(() => (props.catId || '').toLowerCase());
 </script>
 
 <template>
   <span class="inline-flex items-center justify-center shrink-0">
     
     <!-- 1. Lavash SVG (Wrap Roll) -->
-    <svg v-if="catId.includes('lavash')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-if="safeCatId.includes('lavash')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <path d="M6 12C6 8.68629 8.68629 6 12 6H20C23.3137 6 26 8.68629 26 12V20C26 23.3137 23.3137 26 20 26H12C8.68629 26 6 23.3137 6 20V12Z" fill="#F59E0B" />
       <path d="M9 11C9 9.34315 10.3431 8 12 8H20C21.6569 8 23 9.34315 23 11V14C23 15.6569 21.6569 17 20 17H12C10.3431 17 9 15.6569 9 14V11Z" fill="#FDE68A" />
       <path d="M11 21C11 19.8954 11.8954 19 13 19H19C20.1046 19 21 19.8954 21 21C21 22.1046 20.1046 23 19 23H13C11.8954 23 11 22.1046 11 21Z" fill="#DC2626" />
@@ -26,7 +28,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 2. Burger SVG (Cheeseburger) -->
-    <svg v-else-if="catId.includes('burger')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('burger')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Top Sesame Bun -->
       <path d="M5 14C5 8.47715 9.47715 4 15 4H17C22.5228 4 27 8.47715 27 14V15H5V14Z" fill="#F59E0B" />
       <!-- Sesame seeds -->
@@ -44,7 +46,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 3. Hot Dog SVG -->
-    <svg v-else-if="catId.includes('hotdog')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('hotdog')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Bun Left -->
       <rect x="4" y="10" width="8" height="16" rx="4" transform="rotate(-30 4 10)" fill="#F59E0B" />
       <!-- Bun Right -->
@@ -56,7 +58,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 4. Qovurilganlar & Sneklar SVG (French Fries) -->
-    <svg v-else-if="catId.includes('fried')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('fried')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Fries Sticks -->
       <rect x="8" y="4" width="3" height="16" rx="1.5" fill="#FBBF24" />
       <rect x="13" y="2" width="3" height="18" rx="1.5" fill="#F59E0B" />
@@ -69,7 +71,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 5. Pizza SVG -->
-    <svg v-else-if="catId.includes('pizza')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('pizza')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Pizza Crust Slice -->
       <path d="M16 4L28 26C28 26 22 29 16 29C10 29 4 26 4 26L16 4Z" fill="#F59E0B" />
       <path d="M16 7L26 24.5C26 24.5 21 27 16 27C11 27 6 24.5 6 24.5L16 7Z" fill="#FBBF24" />
@@ -81,7 +83,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 6. Salatlar SVG (Fresh Bowl) -->
-    <svg v-else-if="catId.includes('salads')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('salad')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Bowl Base -->
       <path d="M4 14C4 14 5 26 16 26C27 26 28 14 28 14H4Z" fill="#3B82F6" />
       <!-- Salad Greens -->
@@ -94,7 +96,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 7. Shirinliklar SVG (Cake) -->
-    <svg v-else-if="catId.includes('desserts')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('dessert')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Base Layer -->
       <rect x="5" y="18" width="22" height="9" rx="3" fill="#EC4899" />
       <!-- Cream Top Layer -->
@@ -107,7 +109,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 8. Coffee Menu SVG -->
-    <svg v-else-if="catId.includes('coffee')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('coffee')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Coffee Cup -->
       <rect x="7" y="11" width="16" height="15" rx="5" fill="#78350F" />
       <!-- Cup Handle -->
@@ -119,7 +121,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 9. Salqin Ichimliklar SVG (Soda Can / Glass with Ice) -->
-    <svg v-else-if="catId.includes('drinks')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('drink')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Cold Glass Container -->
       <path d="M7 8L9 27C9 28.1046 9.89543 29 11 29H21C22.1046 29 23 28.1046 23 27L25 8H7Z" fill="#06B6D4" />
       <!-- Cola Drink Fluid -->
@@ -132,7 +134,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 10. Energetik & Moxito SVG (Lightning Energy) -->
-    <svg v-else-if="catId.includes('energy')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('energy')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Can Body -->
       <rect x="9" y="5" width="14" height="23" rx="4" fill="#6366F1" />
       <!-- Electric Yellow Lightning Bolt -->
@@ -140,7 +142,7 @@ const iconSizeClass = computed(() => {
     </svg>
 
     <!-- 11. Soklar / Sharbatlar SVG (Apple Juice) -->
-    <svg v-else-if="catId.includes('juices')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
+    <svg v-else-if="safeCatId.includes('juice')" :class="iconSizeClass" viewBox="0 0 32 32" fill="none">
       <!-- Apple Juice Body -->
       <path d="M16 11C11.5817 11 8 14.5817 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 14.5817 20.4183 11 16 11Z" fill="#EF4444" />
       <!-- Leaf -->
