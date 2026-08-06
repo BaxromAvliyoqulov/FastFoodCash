@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import Navbar from './components/Navbar.vue';
 import PosView from './views/PosView.vue';
 import MenuView from './views/MenuView.vue';
+import TablesView from './views/TablesView.vue';
 import DashboardView from './views/DashboardView.vue';
 import ShiftView from './views/ShiftView.vue';
 import RevisionView from './views/RevisionView.vue';
@@ -30,6 +31,7 @@ function handleTabChange(tab: string) {
 function initData() {
   if (authStore.isAuthenticated) {
     posStore.fetchProducts();
+    posStore.loadTables();
     shiftStore.fetchActiveShift();
   }
 }
@@ -58,6 +60,7 @@ onMounted(() => {
     <main class="flex-1 min-h-0 overflow-hidden relative">
       <PosView v-if="activeTab === 'pos'" />
       <MenuView v-else-if="activeTab === 'menu'" />
+      <TablesView v-else-if="activeTab === 'tables'" />
       <DashboardView v-else-if="activeTab === 'dashboard'" />
       <ShiftView v-else-if="activeTab === 'shift'" />
       <HistoryView v-else-if="activeTab === 'history'" />

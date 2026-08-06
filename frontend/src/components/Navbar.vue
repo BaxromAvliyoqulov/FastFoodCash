@@ -13,7 +13,8 @@ import {
   Moon,
   BarChart3,
   FolderKanban,
-  LogOut
+  LogOut,
+  LayoutDashboard
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -72,6 +73,19 @@ const themeStore = useThemeStore();
       >
         <FolderKanban class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
         <span>Menyu & Kategoriyalar</span>
+      </button>
+
+      <button 
+        @click="emit('change-tab', 'tables')"
+        :class="[
+          'flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs transition-all duration-200 shrink-0',
+          activeTab === 'tables' 
+            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30' 
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-900'
+        ]"
+      >
+        <LayoutDashboard class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <span>Stollar Boshqaruvi</span>
       </button>
 
       <button 

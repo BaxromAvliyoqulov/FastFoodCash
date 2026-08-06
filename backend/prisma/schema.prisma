@@ -142,3 +142,15 @@ model AuditLog {
 
   @@map("audit_logs")
 }
+
+model DiningTable {
+  id        String   @id @default(uuid())
+  number    Int      @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("dining_tables")
+}
+

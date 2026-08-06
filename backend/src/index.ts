@@ -5,6 +5,7 @@ import { getProducts, createProduct, updateProduct, deleteProduct } from './cont
 import { createOrder, cancelOrder } from './controllers/order.controller';
 import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.controller';
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
+import { getAllTables, createTable, updateTable, deleteTable } from './controllers/table.controller';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +41,12 @@ app.post('/api/v1/shifts/close-blind', closeShiftBlind);
 app.get('/api/v1/ingredients', getIngredients);
 app.post('/api/v1/audit/quick-revision', quickRevision);
 app.get('/api/v1/audit/logs', getAuditLogs);
+
+// Tables
+app.get('/api/v1/tables', getAllTables);
+app.post('/api/v1/tables', createTable);
+app.put('/api/v1/tables/:id', updateTable);
+app.delete('/api/v1/tables/:id', deleteTable);
 
 app.listen(PORT, () => {
   console.log(`🚀 FastFoodCash API server running on port ${PORT}`);

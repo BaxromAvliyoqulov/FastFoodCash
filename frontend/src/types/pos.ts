@@ -87,6 +87,8 @@ export type TableStatus = 'FREE' | 'OCCUPIED';
 export interface Table {
   id: string;           // 'table-1' ... 'table-10'
   number: number;       // 1 ... 10
+  name: string;
+  isActive: boolean;
   status: TableStatus;
   cart: CartItem[];     // Har bir stolning o'z alohida savati
   openedAt: number | null;   // Date.now() — stol band bo'lgan vaqt (timer uchun)

@@ -103,7 +103,7 @@ function handleCloseTable(tableId: string, event: Event) {
     <div class="flex-1 overflow-y-auto p-4">
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         <button
-          v-for="table in posStore.tables"
+          v-for="table in posStore.tables.filter(t => t.isActive)"
           :key="table.id"
           @click="selectTable(table)"
           :class="[
@@ -137,7 +137,7 @@ function handleCloseTable(tableId: string, event: Event) {
               {{ table.number }}
             </div>
             <div class="min-w-0 pt-0.5">
-              <p class="font-extrabold text-sm text-slate-900 dark:text-white leading-none truncate">{{ table.number }}-Stol</p>
+              <p class="font-extrabold text-sm text-slate-900 dark:text-white leading-none truncate">{{ table.name || `${table.number}-Stol` }}</p>
               <div
                 :class="[
                   'text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5 inline-flex items-center gap-1.5',

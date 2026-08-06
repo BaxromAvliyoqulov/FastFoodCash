@@ -10,18 +10,28 @@ import { useAuthStore } from './authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
-// ─── Helper: 30 ta bo'sh stol yaratish ────────────────────────────────────────
-function createInitialTables(): Table[] {
-  return Array.from({ length: 30 }, (_, i) => ({
-    id: `table-${i + 1}`,
-    number: i + 1,
-    status: 'FREE' as const,
-    cart: [],
-    openedAt: null,
-    waiterNote: '',
-    totalPaid: 0
-  }));
-}
+// ─── API orqali stollarni yuklash ────────────────────────────────────────
+const fetchTables = async (): Promise<Table[]> => {
+  try {
+    const res = await fetch(`${API_URL}/tables`);
+    if (!res.ok) throw new Error('Stollarni yuklab bo\'lmadi');
+    const data = await res.json();
+    return data.map((t: any) => ({
+      id: t.id,
+      number: t.number,
+      name: t.name,
+      isActive: t.isActive,
+      status: 'FREE' as const,
+      cart: [],
+      openedAt: null,
+      waiterNote: '',
+      totalPaid: 0
+    }));
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+};
 
 export const usePosStore = defineStore('pos', () => {
   // ─── Ingredient Stock ────────────────────────────────────────────────────────
@@ -94,16 +104,29 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
-  // ─── ZAL: Tables ─────────────────────────────────────────────────────────────
+  // ─── Tables (Stollar) ────────────────────────────────────────────────────────
   const storedTables = localStorage.getItem('doston_pos_tables');
-  const tables = ref<Table[]>(
-    storedTables ? JSON.parse(storedTables) : createInitialTables()
-  );
+  const tables = ref<Table[]>(storedTables ? JSON.parse(storedTables) : []);
   watch(tables, (newVal) => localStorage.setItem('doston_pos_tables', JSON.stringify(newVal)), { deep: true });
-  
+
   const activeTableId = ref<string | null>(
     localStorage.getItem('doston_pos_active_table') || null
   );
+  
+  async function loadTables() {
+    const fetchedTables = await fetchTables();
+    if (fetchedTables.length > 0) {
+      // Mavjud stollarni yangilash (savat va holatlarni saqlab qolish uchun)
+      const currentMap = new Map(tables.value.map(t => [t.id, t]));
+      tables.value = fetchedTables.map(ft => {
+        const current = currentMap.get(ft.id);
+        if (current) {
+          return { ...current, name: ft.name, number: ft.number, isActive: ft.isActive };
+        }
+        return ft;
+      }).filter(t => t.isActive);
+    }
+  }
 
   function setActiveTable(tableId: string) {
     activeTableId.value = tableId;
@@ -541,6 +564,7 @@ export const usePosStore = defineStore('pos', () => {
     activeTableId,
     activeTable,
     activeTableSubtotal,
+    loadTables,
     setActiveTable,
     clearActiveTable,
 
