@@ -32,12 +32,15 @@ const wasteIngredientId = ref('');
 const wasteQuantity = ref<number | null>(null);
 const wasteReason = ref('Sroki o\'tgan / Buzilgan');
 
-// Mock Audit Logs
-const auditLogs = ref([
-  { id: 'log-101', time: '14:20', cashier: 'Kassir 1', action: 'Gamburger sotildi (Bulochka va Kotlet -1 spisan)', riskLevel: 'LOW' },
-  { id: 'log-102', time: '13:05', cashier: 'Admin', action: 'Chesse Burger retsepti o\'zgartirildi', riskLevel: 'MEDIUM' },
-  { id: 'log-103', time: '11:45', cashier: 'Kassir 2', action: 'Smena yopilishida 5,000 so\'m kamomad', riskLevel: 'HIGH' },
-]);
+import { watch } from 'vue';
+
+// Audit Logs persistent state
+const storedLogs = localStorage.getItem('doston_revision_audits');
+const auditLogs = ref<any[]>(storedLogs ? JSON.parse(storedLogs) : []);
+
+watch(auditLogs, (newVal) => {
+  localStorage.setItem('doston_revision_audits', JSON.stringify(newVal));
+}, { deep: true });
 
 onMounted(() => {
   posStore.checkLowStockAlerts(toast);
@@ -276,6 +279,10 @@ function handleWasteSubmit() {
       </div>
 
       <div class="space-y-2">
+        <div v-if="auditLogs.length === 0" class="p-8 text-center bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 border-dashed">
+          <ShieldAlert class="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Hozircha hech qanday amaliyot bajarilmagan</p>
+        </div>
         <div v-for="log in auditLogs" :key="log.id" class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between text-xs">
           <div class="flex items-center space-x-3">
             <span class="font-mono text-slate-400">{{ log.time }}</span>

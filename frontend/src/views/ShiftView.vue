@@ -226,7 +226,7 @@ function submitOpenShift() {
         </div>
         <div class="flex items-baseline gap-2 mb-1">
           <div class="text-2xl font-black text-slate-900 dark:text-white font-mono">
-            {{ posStore.orderHistory.length || 0 }}
+            {{ shiftStore.currentShiftOrders.length || 0 }}
           </div>
           <span class="text-sm font-bold text-slate-500">ta chek</span>
         </div>

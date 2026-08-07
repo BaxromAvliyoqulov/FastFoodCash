@@ -43,6 +43,13 @@ export const useShiftStore = defineStore('shift', () => {
     localStorage.setItem('doston_shift_audits', JSON.stringify(newVal));
   }, { deep: true });
 
+  const currentShiftOrders = computed(() => {
+    if (!currentShift.value) return [];
+    const posStore = usePosStore();
+    const shiftStartTime = new Date(currentShift.value.openedAt).getTime();
+    return posStore.orderHistory.filter(o => new Date(o.createdAt).getTime() >= shiftStartTime);
+  });
+
   async function fetchActiveShift() {
     const authStore = useAuthStore();
     if (!authStore.user) return;
@@ -144,8 +151,7 @@ export const useShiftStore = defineStore('shift', () => {
     }
 
     // Offline local blind reconciliation
-    const posStore = usePosStore();
-    const shiftOrders = posStore.orderHistory; // Orders during session
+    const shiftOrders = currentShiftOrders.value; // Orders during this specific session
     const totalOrderCash = shiftOrders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + o.totalAmount, 0);
     const totalExpenses = (activeShiftObj.expenses || []).reduce((sum, e) => sum + e.amount, 0);
 
@@ -185,6 +191,7 @@ export const useShiftStore = defineStore('shift', () => {
     currentShift,
     shiftAudits,
     isShiftOpen,
+    currentShiftOrders,
     fetchActiveShift,
     openShift,
     addExpense,
