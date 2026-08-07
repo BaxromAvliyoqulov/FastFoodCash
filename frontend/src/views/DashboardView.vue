@@ -56,26 +56,48 @@ onMounted(() => {
 
 // ─── 1. BOSH SAHIFA STATISTIKASI (KARTALAR) ───────────────────────────────
 
-const periodMultiplier = computed(() => {
-  switch (selectedPeriod.value) {
-    case 'today': return 1;
-    case 'yesterday': return 0.85;
-    case 'week': return 6.8;
-    case 'month': return 28.5;
-    default: return 1;
-  }
+const now = new Date();
+const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+const yesterdayStart = todayStart - 86400000;
+const weekStart = todayStart - 6 * 86400000;
+const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+const filteredHistory = computed(() => {
+  return posStore.orderHistory.filter(o => {
+    const d = new Date(o.createdAt).getTime();
+    switch (selectedPeriod.value) {
+      case 'today': return d >= todayStart;
+      case 'yesterday': return d >= yesterdayStart && d < todayStart;
+      case 'week': return d >= weekStart;
+      case 'month': return d >= monthStart;
+      default: return true;
+    }
+  });
+});
+
+const previousHistory = computed(() => {
+  return posStore.orderHistory.filter(o => {
+    const d = new Date(o.createdAt).getTime();
+    switch (selectedPeriod.value) {
+      case 'today': return d >= yesterdayStart && d < todayStart;
+      case 'yesterday': return d >= yesterdayStart - 86400000 && d < yesterdayStart;
+      case 'week': return d >= weekStart - 7 * 86400000 && d < weekStart;
+      case 'month': 
+        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+        return d >= prevMonthStart && d < monthStart;
+      default: return false;
+    }
+  });
 });
 
 const totalRevenue = computed(() => {
   if (dashboardStats.value.totalRevenue > 0) return dashboardStats.value.totalRevenue;
-  const historySum = posStore.orderHistory.reduce((sum, o) => sum + o.totalAmount, 0);
-  return historySum > 0 ? historySum : Math.round(1480000 * periodMultiplier.value);
+  return filteredHistory.value.reduce((sum, o) => sum + o.totalAmount, 0);
 });
 
 const totalOrdersCount = computed(() => {
   if (dashboardStats.value.totalOrders > 0) return dashboardStats.value.totalOrders;
-  const historyCount = posStore.orderHistory.length;
-  return historyCount > 0 ? historyCount : Math.round(34 * periodMultiplier.value);
+  return filteredHistory.value.length;
 });
 
 const averageTicketSize = computed(() => {
@@ -84,18 +106,33 @@ const averageTicketSize = computed(() => {
 });
 
 const estimatedNetProfit = computed(() => {
-  return Math.round(totalRevenue.value * 0.46);
+  return Math.round(totalRevenue.value * 0.46); // 46% yashirin marja taxmini
 });
 
 // Dynamic Comparison Text & Growth Percentages
 const comparisonData = computed(() => {
-  switch (selectedPeriod.value) {
-    case 'today': return { text: 'kechagiga nisbatan', revVal: 14.8, revPos: true, ordVal: 8.2, ordPos: true };
-    case 'yesterday': return { text: 'oldingi kunga nisbatan', revVal: 3.2, revPos: false, ordVal: 1.5, ordPos: false };
-    case 'week': return { text: 'oldingi haftaga nisbatan', revVal: 12.4, revPos: true, ordVal: 9.1, ordPos: true };
-    case 'month': return { text: 'oldingi oyga nisbatan', revVal: 22.5, revPos: true, ordVal: 15.3, ordPos: true };
-    default: return { text: 'oldingi davrga nisbatan', revVal: 0, revPos: true, ordVal: 0, ordPos: true };
-  }
+  const prevRev = previousHistory.value.reduce((sum, o) => sum + o.totalAmount, 0);
+  const prevOrd = previousHistory.value.length;
+  
+  const revDiff = totalRevenue.value - prevRev;
+  const ordDiff = totalOrdersCount.value - prevOrd;
+  
+  const revPct = prevRev > 0 ? (Math.abs(revDiff) / prevRev) * 100 : 0;
+  const ordPct = prevOrd > 0 ? (Math.abs(ordDiff) / prevOrd) * 100 : 0;
+  
+  let text = 'oldingi davrga nisbatan';
+  if (selectedPeriod.value === 'today') text = 'kechagiga nisbatan';
+  if (selectedPeriod.value === 'yesterday') text = 'oldingi kunga nisbatan';
+  if (selectedPeriod.value === 'week') text = 'oldingi haftaga nisbatan';
+  if (selectedPeriod.value === 'month') text = 'oldingi oyga nisbatan';
+  
+  return { 
+    text, 
+    revVal: Number(revPct.toFixed(1)), 
+    revPos: revDiff >= 0, 
+    ordVal: Number(ordPct.toFixed(1)), 
+    ordPos: ordDiff >= 0 
+  };
 });
 
 // 2. Category Sales Distribution
@@ -108,47 +145,32 @@ const categorySalesDistribution = computed(() => {
     }
   });
 
-  // Calculate from order history or demo distribution
-  posStore.orderHistory.forEach((order: Order) => {
+  filteredHistory.value.forEach((order: Order) => {
     order.items.forEach((item: CartItem) => {
       if (map[item.product.categoryName]) {
         map[item.product.categoryName].total += item.totalPrice;
         map[item.product.categoryName].count += item.quantity;
+      } else {
+        map[item.product.categoryName] = { name: item.product.categoryName, total: item.totalPrice, count: item.quantity };
       }
     });
   });
 
-  // Fallback demo values if fresh store
-  if (Object.values(map).every(v => v.total === 0)) {
-    map['Lavash'] = { name: 'Lavash', total: 420000, count: 12 };
-    map['Burger'] = { name: 'Burger', total: 380000, count: 10 };
-    map['Pizza'] = { name: 'Pizza', total: 320000, count: 4 };
-    map['Hot Dog'] = { name: 'Hot Dog', total: 180000, count: 8 };
-    map['Shirinliklar'] = { name: 'Shirinliklar', total: 185000, count: 7 };
-  }
-
-  const list = Object.values(map).sort((a, b) => b.total - a.total);
+  const list = Object.values(map).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
   const grandTotal = list.reduce((sum, c) => sum + c.total, 0) || 1;
   return list.map(c => ({ ...c, percentage: Math.round((c.total / grandTotal) * 100) }));
 });
 
-// 3. Payment Methods Breakdown (CASH, CARD, CLICK_PAYME, DELIVERY_PARTNER)
+// 3. Payment Methods Breakdown
 const paymentBreakdown = computed(() => {
   let cash = 0, card = 0, clickPayme = 0, delivery = 0;
   
-  if (posStore.orderHistory.length > 0) {
-    posStore.orderHistory.forEach((o: Order) => {
-      if (o.paymentType === 'CASH') cash += o.totalAmount;
-      else if (o.paymentType === 'CARD') card += o.totalAmount;
-      else if (o.paymentType === 'CLICK_PAYME') clickPayme += o.totalAmount;
-      else if (o.paymentType === 'DELIVERY_PARTNER') delivery += o.totalAmount;
-    });
-  } else {
-    cash = 850000;
-    card = 350000;
-    clickPayme = 185000;
-    delivery = 100000;
-  }
+  filteredHistory.value.forEach((o: Order) => {
+    if (o.paymentType === 'CASH') cash += o.totalAmount;
+    else if (o.paymentType === 'CARD') card += o.totalAmount;
+    else if (o.paymentType === 'CLICK_PAYME') clickPayme += o.totalAmount;
+    else if (o.paymentType === 'DELIVERY_PARTNER') delivery += o.totalAmount;
+  });
 
   const total = (cash + card + clickPayme + delivery) || 1;
   return [
@@ -159,49 +181,47 @@ const paymentBreakdown = computed(() => {
   ];
 });
 
-// 4. Dynamic Chart Data based on selected period
+// 4. Dynamic Chart Data
 const chartData = computed(() => {
+  const map: Record<string, number> = {};
+  
   if (selectedPeriod.value === 'week') {
-    return [
-      { label: 'Du', sales: 1200000 },
-      { label: 'Se', sales: 1450000 },
-      { label: 'Ch', sales: 1300000 },
-      { label: 'Pa', sales: 1800000 },
-      { label: 'Ju', sales: 2400000 },
-      { label: 'Sh', sales: 2900000 },
-      { label: 'Ya', sales: 2600000 },
-    ].map(item => ({ ...item, sales: Math.round(item.sales * (periodMultiplier.value / 6.8)) }));
+    const days = ['Yak', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh'];
+    [1, 2, 3, 4, 5, 6, 0].forEach(d => map[days[d]] = 0);
+    filteredHistory.value.forEach(o => {
+      const day = days[new Date(o.createdAt).getDay()];
+      map[day] += o.totalAmount;
+    });
+    return [1, 2, 3, 4, 5, 6, 0].map(d => ({ label: days[d], sales: map[days[d]] }));
   } else if (selectedPeriod.value === 'month') {
-    return [
-      { label: '1-hafta', sales: 9500000 },
-      { label: '2-hafta', sales: 11200000 },
-      { label: '3-hafta', sales: 10800000 },
-      { label: '4-hafta', sales: 12500000 },
-    ].map(item => ({ ...item, sales: Math.round(item.sales * (periodMultiplier.value / 28.5)) }));
+    [1, 2, 3, 4].forEach(w => map[`${w}-hafta`] = 0);
+    filteredHistory.value.forEach(o => {
+      const date = new Date(o.createdAt).getDate();
+      const week = Math.ceil(date / 7) > 4 ? 4 : Math.ceil(date / 7);
+      map[`${week}-hafta`] += o.totalAmount;
+    });
+    return [1, 2, 3, 4].map(w => ({ label: `${w}-hafta`, sales: map[`${w}-hafta`] }));
   } else {
-    // Today or Yesterday (Hourly)
-    return [
-      { label: '09:00', sales: 65000 },
-      { label: '11:00', sales: 140000 },
-      { label: '13:00', sales: 380000 },
-      { label: '15:00', sales: 190000 },
-      { label: '17:00', sales: 240000 },
-      { label: '19:00', sales: 410000 },
-      { label: '21:00', sales: 290000 },
-    ].map(item => ({ ...item, sales: Math.round(item.sales * periodMultiplier.value) }));
+    for (let i = 9; i <= 23; i += 2) map[`${i.toString().padStart(2, '0')}:00`] = 0;
+    filteredHistory.value.forEach(o => {
+      let hour = new Date(o.createdAt).getHours();
+      hour = hour % 2 !== 0 ? hour : hour - 1; 
+      if (hour < 9) hour = 9;
+      if (hour > 23) hour = 23;
+      const key = `${hour.toString().padStart(2, '0')}:00`;
+      if (map[key] !== undefined) map[key] += o.totalAmount;
+    });
+    return Object.keys(map).map(k => ({ label: k, sales: map[k] }));
   }
 });
 
 const maxChartSales = computed(() => Math.max(...chartData.value.map(h => h.sales)) || 1);
 
-// Mini Comparison Graph Data (Current vs Previous)
+// Mini Comparison Graph Data
 const comparisonGraph = computed(() => {
   const current = totalRevenue.value;
-  const growthFactor = comparisonData.value.revPos 
-    ? (100 + comparisonData.value.revVal) / 100 
-    : (100 - comparisonData.value.revVal) / 100;
-  const previous = Math.round(current / (growthFactor || 1));
-  const max = Math.max(current, previous);
+  const previous = previousHistory.value.reduce((sum, o) => sum + o.totalAmount, 0);
+  const max = Math.max(current, previous) || 1;
   return {
     current,
     previous,
@@ -210,26 +230,36 @@ const comparisonGraph = computed(() => {
   };
 });
 
-// 5. Top 10 Bestsellers
+// 5. Top 10 Bestsellers (REAL DATA ONLY)
 const topBestsellers = computed(() => {
   if (dashboardStats.value.topItems.length > 0) return dashboardStats.value.topItems;
-  return [
-    { rank: 1, name: 'Lavash (obichniy)', category: 'Lavash', price: 35000, soldCount: Math.round(38 * periodMultiplier.value), totalRevenue: Math.round(1330000 * periodMultiplier.value), imageUrl: '/images/food/lavash_obichniy.jpg' },
-    { rank: 2, name: 'Donar Pizza (XIT SOTUVDA)', category: 'Pizza', price: 85000, soldCount: Math.round(14 * periodMultiplier.value), totalRevenue: Math.round(1190000 * periodMultiplier.value), imageUrl: '/images/pizza/donar_pizza.png' },
-    { rank: 3, name: 'Chesse Burger', category: 'Burger', price: 37000, soldCount: Math.round(26 * periodMultiplier.value), totalRevenue: Math.round(962000 * periodMultiplier.value), imageUrl: '/images/burger/cheeseburger.png' },
-    { rank: 4, name: 'HOT DOG KAROL', category: 'Hot Dog', price: 25000, soldCount: Math.round(22 * periodMultiplier.value), totalRevenue: Math.round(550000 * periodMultiplier.value), imageUrl: '/images/hotdog/hot_dog_karol.png' },
-    { rank: 5, name: 'Classic Fri', category: 'Qovurilganlar', price: 18000, soldCount: Math.round(28 * periodMultiplier.value), totalRevenue: Math.round(504000 * periodMultiplier.value), imageUrl: '/images/food/classic_fri.jpg' },
-    { rank: 6, name: 'Coca-Cola 0.5L', category: 'Ichimliklar', price: 8000, soldCount: Math.round(55 * periodMultiplier.value), totalRevenue: Math.round(440000 * periodMultiplier.value), imageUrl: '/images/drinks/coca_cola.jpg' },
-    { rank: 7, name: 'Tandir Lavash (Mol go\'shtli)', category: 'Lavash', price: 42000, soldCount: Math.round(10 * periodMultiplier.value), totalRevenue: Math.round(420000 * periodMultiplier.value), imageUrl: '/images/food/lavash_obichniy.jpg' },
-    { rank: 8, name: 'KFC Tovuq Qanotlari', category: 'Qovurilganlar', price: 35000, soldCount: Math.round(11 * periodMultiplier.value), totalRevenue: Math.round(385000 * periodMultiplier.value), imageUrl: '/images/food/classic_fri.jpg' },
-    { rank: 9, name: 'Assorti Pizza', category: 'Pizza', price: 75000, soldCount: Math.round(5 * periodMultiplier.value), totalRevenue: Math.round(375000 * periodMultiplier.value), imageUrl: '/images/pizza/donar_pizza.png' },
-    { rank: 10, name: 'Choy Qora (Choynak)', category: 'Ichimliklar', price: 5000, soldCount: Math.round(45 * periodMultiplier.value), totalRevenue: Math.round(225000 * periodMultiplier.value), imageUrl: '/images/drinks/coca_cola.jpg' },
-  ];
+  
+  const map: Record<string, { name: string; category: string; price: number; soldCount: number; totalRevenue: number; imageUrl: string }> = {};
+  
+  filteredHistory.value.forEach((order: Order) => {
+    order.items.forEach((item: CartItem) => {
+      if (!map[item.product.id]) {
+        map[item.product.id] = {
+          name: item.product.name,
+          category: item.product.categoryName,
+          price: item.product.price,
+          soldCount: 0,
+          totalRevenue: 0,
+          imageUrl: item.product.imageUrl || ''
+        };
+      }
+      map[item.product.id].soldCount += item.quantity;
+      map[item.product.id].totalRevenue += item.totalPrice;
+    });
+  });
+
+  const list = Object.values(map).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+  return list.map((item, index) => ({ ...item, rank: index + 1 }));
 });
 
 // 6. Low Stock Ingredients Warning Widget
 const lowStockIngredients = computed(() => {
-  return posStore.ingredients.filter((ing: Ingredient) => ing.currentStock <= 50);
+  return posStore.ingredients.filter((ing: Ingredient) => ing.currentStock <= (ing.minThreshold || 50));
 });
 </script>
 
