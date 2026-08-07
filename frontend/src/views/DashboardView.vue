@@ -225,8 +225,8 @@ const comparisonGraph = computed(() => {
   return {
     current,
     previous,
-    currentPct: Math.round((current / max) * 100),
-    previousPct: Math.round((previous / max) * 100)
+    currentPct: current === 0 && previous === 0 ? 0 : Math.round((current / max) * 100),
+    previousPct: current === 0 && previous === 0 ? 0 : Math.round((previous / max) * 100)
   };
 });
 
@@ -381,10 +381,10 @@ const lowStockIngredients = computed(() => {
     </div>
 
     <!-- Middle Charts Section: Dynamic Bar Chart & Comparison Mini-Graph -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
       
       <!-- 1. Dynamic Sales Bar Chart (2 columns) -->
-      <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+      <div class="lg:col-span-2 xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h3 class="font-black text-base text-slate-900 dark:text-white flex items-center gap-2">
@@ -422,33 +422,75 @@ const lowStockIngredients = computed(() => {
           </div>
         </div>
 
-        <!-- Custom SVG Bar Chart -->
-        <div class="h-48 sm:h-56 flex items-end justify-between gap-2 sm:gap-4 pt-6 pb-2 px-2 border-b border-slate-200 dark:border-slate-800">
-          <div 
-            v-for="(item, idx) in chartData" 
-            :key="idx" 
-            class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
-          >
-            <!-- Tooltip -->
-            <div class="absolute -top-8 bg-slate-900 text-white text-[10px] font-mono px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-10">
-              {{ item.sales.toLocaleString('uz-UZ') }} so'm
-            </div>
+        <!-- Custom SVG Bar Chart with Y-axis & Grid -->
+        <div class="relative h-56 sm:h-64 mt-6 mb-6">
+          <!-- Y-axis Grid Lines -->
+          <div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
+             <div class="border-b border-dashed border-slate-200 dark:border-slate-700/50 w-full relative flex-1">
+                <span class="absolute -left-2 -top-2.5 -translate-x-full text-[9px] text-slate-400 font-mono">{{ formatMoney(maxChartSales) }}</span>
+             </div>
+             <div class="border-b border-dashed border-slate-200 dark:border-slate-700/50 w-full relative flex-1">
+                <span class="absolute -left-2 -top-2.5 -translate-x-full text-[9px] text-slate-400 font-mono">{{ formatMoney(maxChartSales * 0.75) }}</span>
+             </div>
+             <div class="border-b border-dashed border-slate-200 dark:border-slate-700/50 w-full relative flex-1">
+                <span class="absolute -left-2 -top-2.5 -translate-x-full text-[9px] text-slate-400 font-mono">{{ formatMoney(maxChartSales * 0.5) }}</span>
+             </div>
+             <div class="border-b border-dashed border-slate-200 dark:border-slate-700/50 w-full relative flex-1">
+                <span class="absolute -left-2 -top-2.5 -translate-x-full text-[9px] text-slate-400 font-mono">{{ formatMoney(maxChartSales * 0.25) }}</span>
+             </div>
+             <div class="border-b border-slate-300 dark:border-slate-600 w-full relative h-0">
+                <span class="absolute -left-2 -top-2.5 -translate-x-full text-[9px] text-slate-400 font-mono">0</span>
+             </div>
+          </div>
 
-            <!-- Bar -->
+          <div class="absolute inset-0 flex items-end justify-between gap-2 sm:gap-4 pl-14 pr-2 pb-7">
             <div 
-              class="w-full max-w-[42px] bg-gradient-to-t from-amber-500 to-orange-500 rounded-t-xl group-hover:brightness-110 transition-all duration-500 shadow-md shadow-amber-500/20"
-              :style="{ height: `${(item.sales / maxChartSales) * 100}%` }"
-            ></div>
-            <!-- Dynamic Label -->
-            <span class="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-2 font-mono truncate max-w-full px-1">{{ item.label }}</span>
+              v-for="(item, idx) in chartData" 
+              :key="idx" 
+              class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
+            >
+              <!-- Tooltip -->
+              <div class="absolute -top-10 bg-slate-900 dark:bg-slate-800 border border-slate-700 text-white text-[10px] font-mono px-2.5 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-20">
+                {{ formatMoney(item.sales) }} so'm
+              </div>
+
+              <!-- Bar -->
+              <div 
+                class="w-full max-w-[42px] bg-gradient-to-t from-amber-500 to-orange-500 rounded-t-lg group-hover:brightness-110 group-hover:from-amber-400 transition-all duration-500 shadow-sm shadow-amber-500/20 relative z-10"
+                :style="{ height: `${maxChartSales > 0 ? (item.sales / maxChartSales) * 100 : 0}%`, minHeight: item.sales > 0 ? '4px' : '0px' }"
+              ></div>
+              <!-- Dynamic Label -->
+              <span class="absolute -bottom-6 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono truncate px-1 whitespace-nowrap">{{ item.label }}</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Category Sales Bar Breakdown Widget -->
-        <div class="pt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-          <div v-for="cat in categorySalesDistribution.slice(0, 5)" :key="cat.name" class="p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
-            <div class="text-[10px] text-slate-500 truncate">{{ cat.name }}</div>
-            <div class="font-mono font-bold text-slate-900 dark:text-white">{{ (cat.total / 1000).toFixed(0) }}k so'm</div>
+      <!-- Category Sales Vertical Widget -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <h3 class="font-black text-base text-slate-900 dark:text-white flex items-center gap-2 mb-1">
+            <Layers class="w-5 h-5 text-violet-500" />
+            <span>Toifalar Bo'yicha</span>
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-5">Eng xaridorgir kategoriyalar ulushi</p>
+          
+          <div class="space-y-4">
+            <div v-if="categorySalesDistribution.length === 0" class="text-center py-8 text-slate-400 text-xs">
+              Sotuvlar mavjud emas
+            </div>
+            <div v-for="(cat, i) in categorySalesDistribution.slice(0, 5)" :key="cat.name" class="space-y-1.5">
+               <div class="flex justify-between items-center text-xs font-bold">
+                 <span class="text-slate-900 dark:text-white truncate pr-2">{{ cat.name }}</span>
+                 <span class="font-mono text-slate-600 dark:text-slate-300 shrink-0">{{ (cat.total / 1000).toFixed(0) }}k so'm ({{ cat.percentage }}%)</span>
+               </div>
+               <div class="w-full bg-slate-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden">
+                 <div class="h-full rounded-full transition-all duration-500" 
+                      :class="i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-blue-500' : i === 2 ? 'bg-emerald-500' : i === 3 ? 'bg-violet-500' : 'bg-rose-500'" 
+                      :style="{ width: `${cat.percentage}%` }">
+                 </div>
+               </div>
+            </div>
           </div>
         </div>
       </div>
