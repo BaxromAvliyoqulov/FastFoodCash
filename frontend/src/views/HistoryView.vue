@@ -152,19 +152,40 @@ function triggerReprintReceipt(order: Order) {
   toast.success(`Buyurtma #${order.orderNumber} cheki chop etishga yuborildi!`);
 }
 
-function cancelOrder(order: Order) {
+async function cancelOrder(order: Order) {
   if (!authStore.isAdmin) {
     toast.error('Faqat Menejer yoki Admin buyurtmani bekor qila oladi!');
     return;
   }
   
-  if (confirm(`Haqiqatan ham #${order.orderNumber} raqamli buyurtmani bekor qilmoqchimisiz?`)) {
-    const idx = posStore.orderHistory.findIndex(o => o.id === order.id);
-    if (idx > -1) {
-      posStore.orderHistory.splice(idx, 1);
+  const reason = prompt(`Haqiqatan ham #${order.orderNumber} raqamli buyurtmani bekor qilmoqchimisiz? Sababini kiriting:`);
+  if (reason === null) return; // User cancelled prompt
+  
+  try {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+    const res = await fetch(`${API_URL}/orders/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: order.id,
+        managerId: authStore.user?.id,
+        reason: reason || 'Menejer bekori'
+      })
+    });
+    const body = await res.json();
+    if (res.ok && body.success) {
+      const idx = posStore.orderHistory.findIndex(o => o.id === order.id);
+      if (idx > -1) {
+        posStore.orderHistory[idx].status = 'CANCELLED';
+      }
       toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli bekor qilindi!`);
       closeOrderDetails();
+    } else {
+      toast.error(body.error || 'Buyurtmani bekor qilishda xatolik');
     }
+  } catch (error: any) {
+    console.error(error);
+    toast.error('Tarmoq xatosi');
   }
 }
 </script>
@@ -461,9 +482,15 @@ function cancelOrder(order: Order) {
                 </div>
               </td>
 
-              <!-- Summa -->
-              <td class="py-4 px-4 text-right font-black text-slate-900 dark:text-white text-sm sm:text-base">
-                {{ formatMoney(order.totalAmount) }} <span class="text-[10px] font-bold text-slate-500">so'm</span>
+              <!-- Summa & Status -->
+              <td class="py-4 px-4 text-right">
+                <div v-if="order.status === 'CANCELLED'" class="flex flex-col items-end">
+                  <span class="inline-flex items-center gap-1 px-2 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold uppercase rounded-md border border-rose-500/20 mb-1">Bekor qilingan</span>
+                  <span class="line-through text-slate-400 text-sm sm:text-base font-black">{{ formatMoney(order.totalAmount) }}</span>
+                </div>
+                <div v-else class="font-black text-slate-900 dark:text-white text-sm sm:text-base">
+                  {{ formatMoney(order.totalAmount) }} <span class="text-[10px] font-bold text-slate-500">so'm</span>
+                </div>
               </td>
 
               <!-- Action Buttons -->
@@ -603,7 +630,7 @@ function cancelOrder(order: Order) {
               <span>Chekni Qayta Chop Etish</span>
             </button>
             <button 
-              v-if="authStore.isAdmin"
+              v-if="authStore.isAdmin && selectedOrderForModal.status !== 'CANCELLED'"
               @click="cancelOrder(selectedOrderForModal)"
               class="px-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white font-bold py-3 rounded-2xl transition active:scale-95 text-xs flex items-center space-x-1"
             >

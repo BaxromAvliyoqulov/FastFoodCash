@@ -34,15 +34,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    res.json({
+    return res.json({
       success: true,
-      totalRevenue,
-      totalOrders,
-      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
-      topItems
+      message: 'Dashboard stats yuklandi',
+      data: {
+        totalRevenue,
+        totalOrders,
+        averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+        topItems
+      }
     });
   } catch (error) {
     console.error('Stats error:', error);
-    res.status(500).json({ error: 'Failed to load stats' });
+    return res.status(500).json({ success: false, data: null, error: 'Failed to load stats' });
   }
 };

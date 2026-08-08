@@ -58,9 +58,9 @@ async function saveTable() {
       body: JSON.stringify(form.value)
     });
     
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || 'Xatolik yuz berdi');
+    const body = await res.json();
+    if (!res.ok || !body.success) {
+      throw new Error(body.error || 'Xatolik yuz berdi');
     }
     
     await posStore.loadTables();

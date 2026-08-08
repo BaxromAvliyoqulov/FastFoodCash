@@ -35,11 +35,13 @@ export const useAuthStore = defineStore('auth', () => {
         body: JSON.stringify({ pinCode })
       });
       
-      const data = await response.json();
+      const body = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Server xatoligi');
+      if (!response.ok || !body.success) {
+        throw new Error(body.error || 'Server xatoligi');
       }
+
+      const data = body.data;
 
       isAuthenticated.value = true;
       user.value = data.user;

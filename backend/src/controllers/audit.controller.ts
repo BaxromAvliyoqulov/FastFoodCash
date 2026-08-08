@@ -6,10 +6,10 @@ export const getIngredients = async (req: Request, res: Response) => {
     const ingredients = await prisma.ingredient.findMany({
       orderBy: { name: 'asc' }
     });
-    return res.json(ingredients);
+    return res.json({ success: true, data: ingredients, message: "Ingrediyentlar yuklandi" });
   } catch (error: any) {
     console.error('Get Ingredients Error:', error);
-    return res.status(500).json({ error: 'Ingrediyentlarni olishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Ingrediyentlarni olishda xatolik' });
   }
 };
 
@@ -19,7 +19,7 @@ export const quickRevision = async (req: Request, res: Response) => {
     // items: [{ ingredientId, actualStock }]
 
     if (!items || !Array.isArray(items)) {
-      return res.status(400).json({ error: 'Reviziya ma\'lumotlari kiritilmadi' });
+      return res.status(400).json({ success: false, data: null, error: 'Reviziya ma\'lumotlari kiritilmadi' });
     }
 
     const discrepancies: any[] = [];
@@ -62,26 +62,58 @@ export const quickRevision = async (req: Request, res: Response) => {
     });
 
     return res.json({
+      success: true,
       message: 'Ingrediyentlar reviziyasi yakunlandi',
-      discrepanciesCount: discrepancies.length,
-      discrepancies
+      data: {
+        discrepanciesCount: discrepancies.length,
+        discrepancies
+      }
     });
   } catch (error: any) {
     console.error('Quick Revision Error:', error);
-    return res.status(500).json({ error: 'Reviziya o\'tkazishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Reviziya o\'tkazishda xatolik' });
   }
 };
 
 export const getAuditLogs = async (req: Request, res: Response) => {
   try {
-    const logs = await prisma.auditLog.findMany({
-      take: 50,
-      orderBy: { timestamp: 'desc' },
-      include: { user: true }
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 50));
+    const skip = (page - 1) * limit;
+
+    const [logs, totalCount] = await Promise.all([
+      prisma.auditLog.findMany({
+        skip,
+        take: limit,
+        orderBy: { timestamp: 'desc' },
+        select: {
+          id: true,
+          action: true,
+          detailsJson: true,
+          timestamp: true,
+          user: {
+            select: { id: true, fullName: true, role: true }
+          }
+        }
+      }),
+      prisma.auditLog.count()
+    ]);
+    
+    return res.json({ 
+      success: true, 
+      data: {
+        items: logs,
+        meta: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit)
+        }
+      }, 
+      message: "Audit loglari yuklandi" 
     });
-    return res.json(logs);
   } catch (error: any) {
     console.error('Get Audit Logs Error:', error);
-    return res.status(500).json({ error: 'Audit loglarini olishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Audit loglarini olishda xatolik' });
   }
 };

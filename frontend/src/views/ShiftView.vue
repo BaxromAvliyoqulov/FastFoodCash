@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
-import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
 import { formatMoney } from '../utils/formatters';
 import { 
@@ -17,7 +16,6 @@ import {
 } from 'lucide-vue-next';
 
 const shiftStore = useShiftStore();
-const posStore = usePosStore();
 const toast = useToastStore();
 
 const showCloseModal = ref(false);

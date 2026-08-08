@@ -13,10 +13,10 @@ export const getProducts = async (req: Request, res: Response) => {
       }
     });
 
-    return res.json(products);
+    return res.json({ success: true, data: products, message: "Mahsulotlar yuklandi" });
   } catch (error: any) {
     console.error('Get Products Error:', error);
-    return res.status(500).json({ error: 'Mahsulotlarni yuklashda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Mahsulotlarni yuklashda xatolik' });
   }
 };
 
@@ -33,10 +33,10 @@ export const createProduct = async (req: Request, res: Response) => {
       },
       include: { recipes: { include: { ingredient: true } } }
     });
-    return res.json(newProduct);
+    return res.json({ success: true, data: newProduct, message: "Yangi taom qo'shildi" });
   } catch (error: any) {
     console.error('Create Product Error:', error);
-    return res.status(500).json({ error: 'Taom yaratishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Taom yaratishda xatolik' });
   }
 };
 
@@ -59,10 +59,10 @@ export const updateProduct = async (req: Request, res: Response) => {
       },
       include: { recipes: { include: { ingredient: true } } }
     });
-    return res.json(updated);
+    return res.json({ success: true, data: updated, message: "Taom tahrirlandi" });
   } catch (error: any) {
     console.error('Update Product Error:', error);
-    return res.status(500).json({ error: 'Taom tahrirlashda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Taom tahrirlashda xatolik' });
   }
 };
 
@@ -70,9 +70,9 @@ export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({ where: { id } });
-    return res.json({ success: true });
+    return res.json({ success: true, data: null, message: "Taom o'chirildi" });
   } catch (error: any) {
     console.error('Delete Product Error:', error);
-    return res.status(500).json({ error: "Taom o'chirishda xatolik" });
+    return res.status(500).json({ success: false, data: null, error: "Taom o'chirishda xatolik" });
   }
 };

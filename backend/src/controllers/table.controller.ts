@@ -8,9 +8,9 @@ export const getAllTables = async (req: Request, res: Response) => {
     const tables = await prisma.diningTable.findMany({
       orderBy: { number: 'asc' }
     });
-    res.json(tables);
+    return res.json({ success: true, data: tables, message: "Stollar yuklandi" });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch tables' });
+    return res.status(500).json({ success: false, data: null, error: 'Failed to fetch tables' });
   }
 };
 
@@ -19,14 +19,14 @@ export const createTable = async (req: Request, res: Response) => {
     const { name, number } = req.body;
     const existingTable = await prisma.diningTable.findUnique({ where: { number: parseInt(number) } });
     if (existingTable) {
-      return res.status(400).json({ error: 'Stol raqami oldin kiritilgan!' });
+      return res.status(400).json({ success: false, data: null, error: 'Stol raqami oldin kiritilgan!' });
     }
     const table = await prisma.diningTable.create({
       data: { name, number: parseInt(number) }
     });
-    res.status(201).json(table);
+    return res.status(201).json({ success: true, data: table, message: "Stol yaratildi" });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to create table' });
+    return res.status(500).json({ success: false, data: null, error: 'Failed to create table' });
   }
 };
 
@@ -40,7 +40,7 @@ export const updateTable = async (req: Request, res: Response) => {
         where: { number: parseInt(number), id: { not: id } }
       });
       if (existingTable) {
-        return res.status(400).json({ error: 'Bu raqamli stol allaqachon mavjud!' });
+        return res.status(400).json({ success: false, data: null, error: 'Bu raqamli stol allaqachon mavjud!' });
       }
     }
 
@@ -52,9 +52,9 @@ export const updateTable = async (req: Request, res: Response) => {
         isActive: isActive !== undefined ? isActive : undefined
       }
     });
-    res.json(table);
+    return res.json({ success: true, data: table, message: "Stol yangilandi" });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to update table' });
+    return res.status(500).json({ success: false, data: null, error: 'Failed to update table' });
   }
 };
 
@@ -62,8 +62,8 @@ export const deleteTable = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.diningTable.delete({ where: { id } });
-    res.json({ success: true });
+    return res.json({ success: true, data: null, message: "Stol o'chirildi" });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to delete table' });
+    return res.status(500).json({ success: false, data: null, error: 'Failed to delete table' });
   }
 };

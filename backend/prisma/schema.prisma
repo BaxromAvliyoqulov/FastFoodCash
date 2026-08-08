@@ -78,8 +78,10 @@ model Shift {
 
   cashier     User      @relation(fields: [cashierId], references: [id])
   orders      Order[]
+  expenses    Expense[]
   cashAudit   ShiftCashAudit?
 
+  @@index([status])
   @@map("shifts")
 }
 
@@ -100,6 +102,18 @@ model ShiftCashAudit {
   @@map("shift_cash_audits")
 }
 
+model Expense {
+  id        String   @id @default(uuid())
+  shiftId   String
+  amount    Float
+  reason    String
+  createdAt DateTime @default(now())
+
+  shift     Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
 model Order {
   id          String   @id @default(uuid())
   orderNumber Int
@@ -114,6 +128,9 @@ model Order {
   cashier     User     @relation(fields: [cashierId], references: [id])
   items       OrderItem[]
 
+  @@index([createdAt])
+  @@index([cashierId])
+  @@index([status])
   @@map("orders")
 }
 
@@ -140,6 +157,7 @@ model AuditLog {
 
   user        User     @relation(fields: [userId], references: [id])
 
+  @@index([userId, timestamp])
   @@map("audit_logs")
 }
 

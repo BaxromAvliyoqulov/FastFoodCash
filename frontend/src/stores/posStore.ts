@@ -46,9 +46,9 @@ const fetchTables = async (): Promise<Table[]> => {
   try {
     const res = await fetchWithTimeout(`${API_URL}/tables`);
     if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data.map((t: any) => ({
+      const body = await res.json();
+      if (body.success && Array.isArray(body.data) && body.data.length > 0) {
+        return body.data.map((t: any) => ({
           id: t.id,
           number: t.number,
           name: t.name,
@@ -121,22 +121,32 @@ export const usePosStore = defineStore('pos', () => {
     try {
       const res = await fetchWithTimeout(`${API_URL}/products`);
       if (res.ok) {
-        const backendProducts = await res.json();
-        // ✅ FAQAT stopList holatini backend ma'lumotlaridan sinxronlaymiz.
-        // Narx, nom, rasm — barchasi frontend (initialProducts) dan olinadi.
+        const body = await res.json();
+        const backendProducts = body.success ? body.data : [];
+        
+        // Asosiy ma'lumotlarni (nom, narx, isStopList) backenddan olamiz.
+        // Murakkab modifier va retsentlarni frontend dan saqlab qolamiz.
         products.value = initialProducts.map(localProd => {
           const backendMatch = backendProducts.find((bp: any) =>
-            bp.name?.toLowerCase().trim() === localProd.name?.toLowerCase().trim() ||
-            bp.id === localProd.id
+            bp.id === localProd.id || 
+            bp.name?.toLowerCase().trim() === localProd.name?.toLowerCase().trim()
           );
-          return {
-            ...localProd,
-            isStopList: backendMatch?.isStopList ?? localProd.isStopList ?? false
-          };
+          
+          if (backendMatch) {
+            return {
+              ...localProd,
+              id: backendMatch.id, // Ensure we use backend ID
+              name: backendMatch.name,
+              price: backendMatch.price,
+              categoryName: backendMatch.categoryName || localProd.categoryName,
+              imageUrl: backendMatch.imageUrl || localProd.imageUrl,
+              isStopList: backendMatch.isStopList
+            };
+          }
+          return localProd;
         });
       }
     } catch (e) {
-      // Backend offline — initialProducts bilan davom etamiz
       console.warn('Backend offline — frontendning mahalliy menyu ma\'lumotlari ishlatilmoqda:', e);
     }
   }
@@ -148,6 +158,20 @@ export const usePosStore = defineStore('pos', () => {
   const activeOrderNumber = ref(101);
   const orderHistory = ref<Order[]>([]);
   const selectedOrderType = ref<OrderType>('DINE_IN');
+
+  async function fetchOrders() {
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/orders`);
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success) {
+          orderHistory.value = body.data;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend API unreachable, using local orders history:', e);
+    }
+  }
 
   // ─── Operation Mode: ZAL | SABOY ─────────────────────────────────────────────
   const operationMode = ref<OperationMode>(
@@ -301,7 +325,7 @@ export const usePosStore = defineStore('pos', () => {
         id: 'cart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         product,
         quantity: 1,
-        selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price })),
+        selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price, ingredientDeduction: m.ingredientDeduction })),
         unitPrice,
         totalPrice: unitPrice
       });
@@ -350,7 +374,12 @@ export const usePosStore = defineStore('pos', () => {
         paymentType,
         items: cart.value.map(item => ({
           productId: item.product.id,
-          quantity: item.quantity
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          ingredientDeductions: item.selectedModifiers?.flatMap(m => 
+            m.ingredientDeduction ? [{ ingredientId: m.ingredientDeduction.ingredientId, quantity: m.ingredientDeduction.quantity * item.quantity }] : []
+          ) || []
         }))
       };
 
@@ -360,18 +389,18 @@ export const usePosStore = defineStore('pos', () => {
         body: JSON.stringify(payload)
       }, 8000);
       
-      const data = await res.json();
+      const body = await res.json();
       
-      if (res.ok) {
-        orderHistory.value.unshift(data.order);
+      if (res.ok && body.success) {
+        orderHistory.value.unshift(body.data.order);
         clearCart();
         
         // Optimistically deduct local ingredients (backend already does it, but we want UI to reflect instantly if we don't re-fetch)
         _deductIngredients(cart.value);
         
-        return data.order;
+        return body.data.order;
       } else {
-        alert(data.error || 'Buyurtma saqlashda xatolik');
+        alert(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
     } catch (e) {
@@ -409,7 +438,7 @@ export const usePosStore = defineStore('pos', () => {
         id: 'tcart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         product,
         quantity: 1,
-        selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price })),
+        selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price, ingredientDeduction: m.ingredientDeduction })),
         unitPrice,
         totalPrice: unitPrice
       });
@@ -475,7 +504,12 @@ export const usePosStore = defineStore('pos', () => {
         paymentType,
         items: table.cart.map(item => ({
           productId: item.product.id,
-          quantity: item.quantity
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          ingredientDeductions: item.selectedModifiers?.flatMap(m => 
+            m.ingredientDeduction ? [{ ingredientId: m.ingredientDeduction.ingredientId, quantity: m.ingredientDeduction.quantity * item.quantity }] : []
+          ) || []
         }))
       };
 
@@ -485,10 +519,10 @@ export const usePosStore = defineStore('pos', () => {
         body: JSON.stringify(payload)
       });
       
-      const data = await res.json();
+      const body = await res.json();
       
-      if (res.ok) {
-        orderHistory.value.unshift(data.order);
+      if (res.ok && body.success) {
+        orderHistory.value.unshift(body.data.order);
         
         // Optimistically deduct
         _deductIngredients(table.cart);
@@ -506,9 +540,9 @@ export const usePosStore = defineStore('pos', () => {
           localStorage.removeItem('doston_pos_active_table');
         }
 
-        return data.order;
+        return body.data.order;
       } else {
-        alert(data.error || 'Buyurtma saqlashda xatolik');
+        alert(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
     } catch (e) {
@@ -556,13 +590,16 @@ export const usePosStore = defineStore('pos', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
         });
-        if (res.ok) {
-          const updated = await res.json();
+        const body = await res.json();
+        if (res.ok && body.success) {
+          const updated = body.data;
           const index = products.value.findIndex(p => p.id === productData.id);
           if (index > -1) {
             products.value[index] = { ...products.value[index], ...updated } as Product;
           }
           toast.success('Taom saqlandi!', 3000);
+        } else {
+          toast.error(`Xatolik: ${body.error || res.statusText || 'Noma\'lum xato'}`, 5000);
         }
       } else {
         res = await fetchWithTimeout(`${API_URL}/products`, {
@@ -570,16 +607,14 @@ export const usePosStore = defineStore('pos', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
         });
-        if (res.ok) {
-          const newProd = await res.json();
+        const body = await res.json();
+        if (res.ok && body.success) {
+          const newProd = body.data;
           products.value.unshift(newProd as Product);
           toast.success('Yangi taom qo\'shildi!', 3000);
+        } else {
+          toast.error(`Xatolik: ${body.error || res.statusText || 'Noma\'lum xato'}`, 5000);
         }
-      }
-      
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toast.error(`Xatolik: ${err.error || res.statusText || 'Noma\'lum xato'}`, 5000);
       }
     } catch (e: any) {
       console.error(e);
@@ -639,6 +674,7 @@ export const usePosStore = defineStore('pos', () => {
     categories,
     visibleCategories,
     fetchProducts,
+    fetchOrders,
     selectedCategory,
     selectedOrderType,
     searchQuery,

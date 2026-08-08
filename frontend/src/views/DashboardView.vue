@@ -38,9 +38,9 @@ async function fetchDashboardStats() {
     loadingStats.value = true;
     const res = await fetch(`${API_URL}/stats/dashboard`);
     if (res.ok) {
-      const data = await res.json();
-      if (data.success) {
-        dashboardStats.value = data;
+      const body = await res.json();
+      if (body.success) {
+        dashboardStats.value = body.data;
       }
     }
   } catch (error) {

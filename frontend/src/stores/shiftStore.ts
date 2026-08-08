@@ -56,10 +56,10 @@ export const useShiftStore = defineStore('shift', () => {
     try {
       const res = await fetchWithTimeout(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data.activeShift) {
+        const body = await res.json();
+        if (body.success && body.data.activeShift) {
           currentShift.value = {
-            ...data.activeShift,
+            ...body.data.activeShift,
             cashierName: authStore.user.fullName,
             expenses: currentShift.value?.expenses || []
           };
@@ -88,9 +88,11 @@ export const useShiftStore = defineStore('shift', () => {
         body: JSON.stringify({ cashierId, initialCash })
       });
       if (res.ok) {
-        const data = await res.json();
-        currentShift.value = { ...data.shift, cashierName, expenses: [] };
-        return;
+        const body = await res.json();
+        if (body.success) {
+          currentShift.value = { ...body.data.shift, cashierName, expenses: [] };
+          return;
+        }
       }
     } catch (e) {
       console.warn('Backend API unreachable, opening shift locally:', e);
@@ -137,14 +139,17 @@ export const useShiftStore = defineStore('shift', () => {
           declaredCash,
           declaredCard,
           declaredQr,
-          notes
+          notes,
+          expenses: activeShiftObj.expenses || []
         })
       }, 8000);
       if (res.ok) {
-        const data = await res.json();
-        shiftAudits.value.unshift(data.audit);
-        currentShift.value = null;
-        return data.audit;
+        const body = await res.json();
+        if (body.success) {
+          shiftAudits.value.unshift(body.data.audit);
+          currentShift.value = null;
+          return body.data.audit;
+        }
       }
     } catch (e) {
       console.warn('Backend API unreachable, performing local blind reconciliation:', e);

@@ -6,7 +6,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const { cashierId, shiftId, paymentType, items } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Buyurtma savatchasi bo\'sh bo\'lishi mumkin emas' });
+      return res.status(400).json({ success: false, data: null, error: 'Buyurtma savatchasi bo\'sh bo\'lishi mumkin emas' });
     }
 
     let activeShiftId = shiftId;
@@ -15,7 +15,7 @@ export const createOrder = async (req: Request, res: Response) => {
         where: { cashierId, status: 'OPEN' }
       });
       if (!activeShift) {
-        return res.status(400).json({ error: 'Aktiv smena topilmadi! Avval smena oching.' });
+        return res.status(400).json({ success: false, data: null, error: 'Aktiv smena topilmadi! Avval smena oching.' });
       }
       activeShiftId = activeShift.id;
     }
@@ -39,14 +39,15 @@ export const createOrder = async (req: Request, res: Response) => {
     for (const item of items) {
       const product = productMap.get(item.productId);
       if (!product) {
-        return res.status(400).json({ error: `Mahsulot topilmadi: ${item.productId}` });
+        return res.status(400).json({ success: false, data: null, error: `Mahsulot topilmadi: ${item.productId}` });
       }
-      const itemTotal = product.price * item.quantity;
+      const unitPrice = item.unitPrice ?? product.price;
+      const itemTotal = item.totalPrice ?? (unitPrice * item.quantity);
       totalAmount += itemTotal;
       orderItemsData.push({
         productId: product.id,
         quantity: item.quantity,
-        unitPrice: product.price,
+        unitPrice,
         totalPrice: itemTotal
       });
     }
@@ -96,55 +97,201 @@ export const createOrder = async (req: Request, res: Response) => {
             });
           }
         }
+
+        // 4. Deduct modifier ingredients if any (from frontend complex recipes logic)
+        if (item.ingredientDeductions && Array.isArray(item.ingredientDeductions)) {
+          for (const mod of item.ingredientDeductions) {
+            if (mod.ingredientId && mod.quantity) {
+              await tx.ingredient.update({
+                where: { id: mod.ingredientId },
+                data: {
+                  currentStock: {
+                    decrement: mod.quantity
+                  }
+                }
+              });
+            }
+          }
+        }
       }
 
       return newOrder;
     });
 
     return res.status(201).json({
+      success: true,
       message: 'Buyurtma rasmiylashtirildi',
-      order: result
+      data: result
     });
 
   } catch (error: any) {
     console.error('Create Order Error:', error);
-    return res.status(500).json({ error: 'Buyurtma urishda xatolik yuz berdi' });
+    return res.status(500).json({ success: false, data: null, error: 'Buyurtma urishda xatolik yuz berdi' });
   }
 };
 
 export const cancelOrder = async (req: Request, res: Response) => {
   try {
-    const { orderId, managerPin, reason } = req.body;
+    const { orderId, managerPin, managerId, reason } = req.body;
 
-    if (!managerPin) {
-      return res.status(400).json({ error: 'Menejer PIN-kodi kiritilishi shart' });
+    if (!managerPin && !managerId) {
+      return res.status(400).json({ success: false, data: null, error: 'Menejer PIN-kodi yoki ID kiritilishi shart' });
     }
 
-    const manager = await prisma.user.findFirst({
-      where: { pinCode: managerPin, role: { in: ['MANAGER', 'ADMIN'] } }
-    });
-
-    if (!manager) {
-      return res.status(403).json({ error: 'Noto\'g\'ri Menejer PIN-kodi!' });
+    let manager;
+    if (managerId) {
+      manager = await prisma.user.findUnique({
+        where: { id: managerId }
+      });
+    } else if (managerPin) {
+      manager = await prisma.user.findFirst({
+        where: { pinCode: managerPin, role: { in: ['MANAGER', 'ADMIN'] } }
+      });
     }
 
-    const updatedOrder = await prisma.order.update({
+    if (!manager || !['MANAGER', 'ADMIN'].includes(manager.role)) {
+      return res.status(403).json({ success: false, data: null, error: 'Ruxsat etilmagan foydalanuvchi!' });
+    }
+
+    const order = await prisma.order.findUnique({
       where: { id: orderId },
-      data: { status: 'CANCELLED' }
-    });
-
-    // Write to Anti-Fraud Audit Log
-    await prisma.auditLog.create({
-      data: {
-        userId: manager.id,
-        action: 'CANCEL_ORDER',
-        detailsJson: JSON.stringify({ orderId, orderNumber: updatedOrder.orderNumber, reason: reason || 'Menejer bekori' })
+      include: {
+        items: {
+          include: {
+            product: {
+              include: { recipes: true }
+            }
+          }
+        }
       }
     });
 
-    return res.json({ message: 'Buyurtma bekor qilindi', order: updatedOrder });
+    if (!order) {
+      return res.status(404).json({ success: false, data: null, error: 'Buyurtma topilmadi' });
+    }
+
+    if (order.status === 'CANCELLED') {
+      return res.status(400).json({ success: false, data: null, error: 'Bu buyurtma allaqachon bekor qilingan' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED' }
+      });
+
+      // Return ingredients back to stock
+      for (const item of order.items) {
+        if (item.product && item.product.recipes) {
+          for (const recipe of item.product.recipes) {
+            const qtyToReturn = recipe.quantityRequired * item.quantity;
+            await tx.ingredient.update({
+              where: { id: recipe.ingredientId },
+              data: {
+                currentStock: {
+                  increment: qtyToReturn
+                }
+              }
+            });
+          }
+        }
+      }
+
+      // Write to Anti-Fraud Audit Log
+      await tx.auditLog.create({
+        data: {
+          userId: manager.id,
+          action: 'CANCEL_ORDER',
+          detailsJson: JSON.stringify({ orderId, orderNumber: updatedOrder.orderNumber, reason: reason || 'Menejer bekori' })
+        }
+      });
+
+      return updatedOrder;
+    });
+
+    return res.json({ success: true, message: 'Buyurtma bekor qilindi', data: result });
   } catch (error: any) {
     console.error('Cancel Order Error:', error);
-    return res.status(500).json({ error: 'Buyurtmani bekor qilishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Buyurtmani bekor qilishda xatolik' });
+  }
+};
+
+export const getOrders = async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 50));
+    const skip = (page - 1) * limit;
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          orderNumber: true,
+          totalAmount: true,
+          paymentType: true,
+          status: true,
+          createdAt: true,
+          cashier: {
+            select: { fullName: true }
+          },
+          items: {
+            select: {
+              quantity: true,
+              unitPrice: true,
+              totalPrice: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.order.count()
+    ]);
+
+    // Format for frontend
+    const formattedOrders = orders.map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      cashierName: o.cashier.fullName,
+      totalAmount: o.totalAmount,
+      paymentType: o.paymentType,
+      status: o.status,
+      createdAt: o.createdAt,
+      items: o.items.map(i => ({
+        product: {
+          id: i.product.id,
+          name: i.product.name,
+          price: i.product.price
+        },
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        totalPrice: i.totalPrice
+      }))
+    }));
+
+    return res.json({ 
+      success: true, 
+      message: 'Buyurtmalar tarixi yuklandi', 
+      data: {
+        items: formattedOrders,
+        meta: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit)
+        }
+      } 
+    });
+  } catch (error: any) {
+    console.error('Get Orders Error:', error);
+    return res.status(500).json({ success: false, data: null, error: 'Buyurtmalar tarixini yuklashda xatolik' });
   }
 };

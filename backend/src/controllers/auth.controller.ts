@@ -5,7 +5,7 @@ export const loginByPin = async (req: Request, res: Response) => {
   try {
     const { pinCode } = req.body;
     if (!pinCode) {
-      return res.status(400).json({ error: 'PIN kod kiritilishi shart' });
+      return res.status(400).json({ success: false, data: null, error: 'PIN kod kiritilishi shart' });
     }
 
     const user = await prisma.user.findFirst({
@@ -13,7 +13,7 @@ export const loginByPin = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: 'Noto\'g\'ri PIN-kod!' });
+      return res.status(401).json({ success: false, data: null, error: 'Noto\'g\'ri PIN-kod!' });
     }
 
     // Check active shift for this cashier
@@ -25,17 +25,20 @@ export const loginByPin = async (req: Request, res: Response) => {
     }
 
     return res.json({
+      success: true,
       message: 'Muvaffaqiyatli kirildi',
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        phone: user.phone,
-        role: user.role
-      },
-      activeShift
+      data: {
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          phone: user.phone,
+          role: user.role
+        },
+        activeShift
+      }
     });
   } catch (error: any) {
     console.error('Auth Login Error:', error);
-    return res.status(500).json({ error: 'Server xatoligi' });
+    return res.status(500).json({ success: false, data: null, error: 'Server xatoligi' });
   }
 };

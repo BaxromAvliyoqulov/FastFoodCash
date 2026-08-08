@@ -53,6 +53,10 @@ export interface SelectedModifier {
   modifierId: string;
   name: string;
   price: number;
+  ingredientDeduction?: {
+    ingredientId: string;
+    quantity: number;
+  };
 }
 
 export interface CartItem {

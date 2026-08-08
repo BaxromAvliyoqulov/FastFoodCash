@@ -12,15 +12,19 @@ export const getActiveShift = async (req: Request, res: Response) => {
         status: 'OPEN'
       },
       include: {
-        cashier: true,
+        cashier: {
+          select: { id: true, fullName: true, phone: true }
+        },
+        expenses: true,
         orders: {
-          where: { status: 'COMPLETED' }
+          where: { status: 'COMPLETED' },
+          select: { paymentType: true, totalAmount: true } // Only needed fields for summary
         }
       }
     });
 
     if (!shift) {
-      return res.status(200).json({ activeShift: null });
+      return res.status(200).json({ success: true, data: { activeShift: null }, message: 'Aktiv smena topilmadi' });
     }
 
     // Calculate total orders revenue for preview
@@ -37,20 +41,24 @@ export const getActiveShift = async (req: Request, res: Response) => {
       .reduce((sum, o) => sum + o.totalAmount, 0);
 
     return res.json({
-      activeShift: {
-        ...shift,
-        ordersCount: shift.orders.length,
-        summary: {
-          totalCash,
-          totalCard,
-          totalQr,
-          totalRevenue: totalCash + totalCard + totalQr
+      success: true,
+      message: 'Aktiv smena topildi',
+      data: {
+        activeShift: {
+          ...shift,
+          ordersCount: shift.orders.length,
+          summary: {
+            totalCash,
+            totalCard,
+            totalQr,
+            totalRevenue: totalCash + totalCard + totalQr
+          }
         }
       }
     });
   } catch (error: any) {
     console.error('Get Active Shift Error:', error);
-    return res.status(500).json({ error: 'Smena ma\'lumotlarini olishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Smena ma\'lumotlarini olishda xatolik' });
   }
 };
 
@@ -64,7 +72,7 @@ export const openShift = async (req: Request, res: Response) => {
     });
 
     if (existing) {
-      return res.status(400).json({ error: 'Sizda allaqachon ochiq smena mavjud!' });
+      return res.status(400).json({ success: false, data: null, error: 'Sizda allaqachon ochiq smena mavjud!' });
     }
 
     const shift = await prisma.shift.create({
@@ -75,35 +83,44 @@ export const openShift = async (req: Request, res: Response) => {
       }
     });
 
-    return res.status(201).json({ message: 'Smena muvaffaqiyatli ochildi', shift });
+    return res.status(201).json({ success: true, message: 'Smena muvaffaqiyatli ochildi', data: { shift } });
   } catch (error: any) {
     console.error('Open Shift Error:', error);
-    return res.status(500).json({ error: 'Smena ochishda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Smena ochishda xatolik' });
   }
 };
 
 export const closeShiftBlind = async (req: Request, res: Response) => {
   try {
-    const { shiftId, declaredCash, declaredCard, declaredQr, notes } = req.body;
+    const { shiftId, declaredCash, declaredCard, declaredQr, notes, expenses } = req.body;
 
     const shift = await prisma.shift.findUnique({
       where: { id: shiftId },
       include: { 
-        cashier: true,
-        orders: { where: { status: 'COMPLETED' } } 
+        cashier: {
+          select: { id: true, fullName: true, phone: true }
+        },
+        expenses: true,
+        orders: { 
+          where: { status: 'COMPLETED' },
+          select: { paymentType: true, totalAmount: true } 
+        } 
       }
     });
 
     if (!shift || shift.status !== 'OPEN') {
-      return res.status(400).json({ error: 'Ochiq smena topilmadi yoki allaqachon yopilgan' });
+      return res.status(400).json({ success: false, data: null, error: 'Ochiq smena topilmadi yoki allaqachon yopilgan' });
     }
 
-    // 1. Calculate EXPECTED figures from backend data (Hidden from Cashier during input)
+    // Process expenses sent from frontend if any were not synced
+    const totalFrontendExpenses = (expenses || []).reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+    
+    // 1. Calculate EXPECTED figures from backend data
     const totalCashOrders = shift.orders
       .filter(o => o.paymentType === 'CASH')
       .reduce((sum, o) => sum + o.totalAmount, 0);
 
-    const expectedCash = shift.initialCash + totalCashOrders;
+    const expectedCash = shift.initialCash + totalCashOrders - totalFrontendExpenses;
 
     const decCash = Number(declaredCash) || 0;
     const decCard = Number(declaredCard) || 0;
@@ -112,14 +129,26 @@ export const closeShiftBlind = async (req: Request, res: Response) => {
     const difference = decCash - expectedCash; // Negative = shortage (kamchilik)
 
     let auditStatus: 'BALANCED' | 'SHORTAGE' | 'SURPLUS' = 'BALANCED';
-    if (difference < 0) {
+    if (difference < -100) { // allowing small rounding
       auditStatus = 'SHORTAGE';
-    } else if (difference > 0) {
+    } else if (difference > 100) {
       auditStatus = 'SURPLUS';
     }
 
     // 2. Perform Transaction to update shift and save audit record
     const result = await prisma.$transaction(async (tx) => {
+      // Clear old expenses and save the full list from frontend
+      if (expenses && expenses.length > 0) {
+        await tx.expense.deleteMany({ where: { shiftId: shift.id } });
+        await tx.expense.createMany({
+          data: expenses.map((e: any) => ({
+            shiftId: shift.id,
+            amount: Number(e.amount),
+            reason: e.reason
+          }))
+        });
+      }
+
       const audit = await tx.shiftCashAudit.create({
         data: {
           shiftId: shift.id,
@@ -151,8 +180,8 @@ export const closeShiftBlind = async (req: Request, res: Response) => {
               shiftId: shift.id,
               status: auditStatus,
               difference,
-              declaredCash: decCash,
-              expectedCash
+              expectedCash,
+              declaredCash: decCash
             })
           }
         });
