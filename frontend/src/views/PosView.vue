@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import { useShiftStore } from '../stores/shiftStore';
 import { useToastStore } from '../stores/toastStore';
@@ -9,6 +9,7 @@ import ModifierModal from '../components/ModifierModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptModal from '../components/ReceiptModal.vue';
 import KitchenReceiptModal from '../components/KitchenReceiptModal.vue';
+import ExpenseModal from '../components/ExpenseModal.vue';
 import PosHeader from '../components/pos/PosHeader.vue';
 import PosCategoriesBar from '../components/pos/PosCategoriesBar.vue';
 import PosProductGrid from '../components/pos/PosProductGrid.vue';
@@ -36,11 +37,44 @@ const kitchenReceiptData = ref<{ tableNumber: number | null, items: CartItem[] }
 const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
 const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId);
+const showExpenseModal = ref(false);
+
+// --- Hotkeys Logic ---
+function handleGlobalKeydown(e: KeyboardEvent) {
+  // Ignore if user is typing in an input/textarea
+  if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+  if (e.key === 'F1') {
+    e.preventDefault();
+    if (activeCart.value.length > 0 && !showPaymentModal.value && !showExpenseModal.value) {
+      showPaymentModal.value = true;
+    }
+  } else if (e.key === 'F2') {
+    e.preventDefault();
+    if (activeCart.value.length > 0) {
+      clearActiveCart();
+    }
+  } else if (e.key === 'F4') {
+    e.preventDefault();
+    if (!showPaymentModal.value && !showExpenseModal.value) {
+      switchMode(posStore.operationMode === 'SABOY' ? 'ZAL' : 'SABOY');
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown);
+});
 
 function resetModals() {
   showPaymentModal.value = false;
   showReceiptModal.value = false;
   showKitchenReceiptModal.value = false;
+  showExpenseModal.value = false;
   lastCompletedOrder.value = null;
   activeModifierProduct.value = null;
 }
@@ -165,6 +199,7 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
         @toggle-mobile-cart="mobileCartOpen = !mobileCartOpen"
         @switch-mode="switchMode"
         @back-to-table-map="backToTableMap"
+        @open-expense="showExpenseModal = true"
       />
 
       <!-- ZAL MODE: Stol xaritasi -->
@@ -230,16 +265,17 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2.5">
               <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <span class="text-white font-black text-sm">{{ (authStore.user?.fullName || 'K')[0].toUpperCase() }}</span>
+                <span class="text-white font-black text-sm">{{ (authStore.user?.role === 'ADMIN' ? 'A' : 'K') }}</span>
               </div>
               <div>
-                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none">Kassir</p>
-                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.fullName || 'Kassa' }}</p>
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : 'Kassir' }}</p>
+                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.role === 'ADMIN' ? 'Administrator' : authStore.user?.fullName }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button v-if="activeCart.length > 0" @click="clearActiveCart" class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center justify-center transition-all active:scale-95">
+              <button v-if="activeCart.length > 0" @click="clearActiveCart" class="relative w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center justify-center transition-all active:scale-95" title="Savatni tozalash [F2]">
                 <Trash2 class="w-3.5 h-3.5" />
+                <span class="absolute -top-2 -right-2 bg-rose-200 dark:bg-rose-500 text-rose-700 dark:text-white text-[8px] font-bold px-1 rounded border border-rose-300 dark:border-rose-400 shadow-sm pointer-events-none">F2</span>
               </button>
               <button @click="mobileCartOpen = false" class="lg:hidden w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center">✕</button>
             </div>
@@ -270,21 +306,21 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       <!-- Empty cart -->
       <div v-else-if="activeCart.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <div class="relative mb-5">
-          <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 flex items-center justify-center shadow-2xl">
-            <Utensils class="w-10 h-10 text-slate-600" />
+          <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/50 flex items-center justify-center shadow-2xl">
+            <Utensils class="w-10 h-10 text-slate-400 dark:text-slate-600" />
           </div>
           <div class="absolute -top-2 -right-2 w-4 h-4 bg-amber-500/20 rounded-full animate-bounce"></div>
           <div class="absolute -bottom-1 -left-3 w-3 h-3 bg-orange-500/20 rounded-full animate-bounce" style="animation-delay:0.3s"></div>
         </div>
-        <p class="text-base font-black text-slate-400 mb-1.5">Savat bo'sh</p>
-        <p class="text-xs text-slate-600 leading-relaxed max-w-[180px]">
+        <p class="text-base font-black text-slate-500 dark:text-slate-400 mb-1.5">Savat bo'sh</p>
+        <p class="text-xs text-slate-500 dark:text-slate-600 leading-relaxed max-w-[180px]">
           <template v-if="posStore.operationMode === 'ZAL'">Taomlarni qo'shing va oshxonaga yuboring</template>
           <template v-else>Chap tomondagi taomlarni bosib savatchaga qo'shing</template>
         </p>
         <div class="flex flex-wrap gap-1.5 justify-center mt-4">
-          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🍔 Burger</span>
-          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🥪 Lavash</span>
-          <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-xl text-[10px] text-slate-500">🍕 Pizza</span>
+          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🍔 Burger</span>
+          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🥪 Lavash</span>
+          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🍕 Pizza</span>
         </div>
       </div>
 
@@ -321,7 +357,7 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       <!-- Waiter note -->
       <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && activeCart.length > 0" class="shrink-0 px-3 pb-1 pt-2">
         <label class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5"><MessageSquare class="w-3 h-3" /> Ofitsiant izohi</label>
-        <textarea :value="posStore.activeTable?.waiterNote" @input="(e) => posStore.setWaiterNote(posStore.activeTableId!, (e.target as HTMLTextAreaElement).value)" placeholder="Allergy bor, alohida tarelka..." rows="2" class="w-full bg-slate-800 border border-slate-700 focus:border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none resize-none transition-colors" />
+        <textarea :value="posStore.activeTable?.waiterNote" @input="(e) => posStore.setWaiterNote(posStore.activeTableId!, (e.target as HTMLTextAreaElement).value)" placeholder="Allergy bor, alohida tarelka..." rows="2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none resize-none transition-colors" />
       </div>
 
       <!-- FOOTER -->
@@ -345,19 +381,21 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
         <!-- Buttons -->
         <template v-if="posStore.operationMode === 'ZAL'">
           <div class="grid grid-cols-2 gap-2">
-            <button :disabled="activeCart.length === 0" @click="saveTableOrder" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/30 text-slate-300 hover:text-white py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 active:scale-95">
+            <button :disabled="activeCart.length === 0" @click="saveTableOrder" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 active:scale-95">
               <Utensils class="w-4 h-4" /> Oshxona
             </button>
-            <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 active:scale-95">
+            <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 active:scale-95">
               <CreditCard class="w-4 h-4" /> To'lov
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
             </button>
           </div>
         </template>
         <template v-else>
-          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
+          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
             <CreditCard class="w-5 h-5" />
             <span v-if="activeCart.length > 0">To'lov — {{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
             <span v-else>Savat bo'sh</span>
+            <span v-if="activeCart.length > 0" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
           </button>
         </template>
       </div>
@@ -368,5 +406,6 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
     <PaymentModal v-if="showPaymentModal" :total-amount="activeSubtotal" @close="showPaymentModal = false" @success="handlePaymentSuccess" />
     <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
     <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
+    <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />
   </div>
 </template>

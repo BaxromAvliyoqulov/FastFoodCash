@@ -4,6 +4,7 @@ import { prisma } from '../db';
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({
+      where: { isDeleted: false },
       include: {
         recipes: {
           include: {
@@ -69,8 +70,11 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.product.delete({ where: { id } });
-    return res.json({ success: true, data: null, message: "Taom o'chirildi" });
+    await prisma.product.update({ 
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() }
+    });
+    return res.json({ success: true, data: null, message: "Taom o'chirildi (Soft Delete)" });
   } catch (error: any) {
     console.error('Delete Product Error:', error);
     return res.status(500).json({ success: false, data: null, error: "Taom o'chirishda xatolik" });

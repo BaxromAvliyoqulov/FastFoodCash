@@ -394,18 +394,47 @@ export const usePosStore = defineStore('pos', () => {
       if (res.ok && body.success) {
         orderHistory.value.unshift(body.data.order);
         clearCart();
-        
-        // Optimistically deduct local ingredients (backend already does it, but we want UI to reflect instantly if we don't re-fetch)
         _deductIngredients(cart.value);
-        
         return body.data.order;
       } else {
         alert(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
-    } catch (e) {
-      console.error(e);
-      return null;
+    } catch (e: any) {
+      console.warn('Backend unavailable. Order saved offline!', e);
+      
+      // B2B Enterprise Mastery: Offline Queue
+      const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
+      const tempOrder = {
+        id: 'offline-' + Date.now(),
+        orderNumber: Date.now() % 10000,
+        totalAmount: cartSubtotal.value,
+        paymentType,
+        status: 'COMPLETED',
+        createdAt: new Date().toISOString(),
+        items: cart.value.map(c => ({ product: c.product, quantity: c.quantity, totalPrice: c.totalPrice })),
+        offlinePayload: {
+          cashierId: authStore.user?.id || 'default',
+          shiftId,
+          paymentType,
+          items: cart.value.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice
+          }))
+        }
+      };
+      
+      offlineOrders.push(tempOrder);
+      localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
+      
+      orderHistory.value.unshift(tempOrder as any);
+      _deductIngredients(cart.value);
+      clearCart();
+      
+      toast.success('Internet yo\'q. Buyurtma oflayn saqlandi!', 3000);
+      return tempOrder as any;
     }
   }
 
@@ -545,9 +574,51 @@ export const usePosStore = defineStore('pos', () => {
         alert(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
-    } catch (e) {
-      console.error(e);
-      return null;
+    } catch (e: any) {
+      console.warn('Backend unavailable. Table Order saved offline!', e);
+      
+      const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
+      const tempOrder = {
+        id: 'offline-' + Date.now(),
+        orderNumber: Date.now() % 10000,
+        totalAmount: table.cart.reduce((sum, i) => sum + i.totalPrice, 0),
+        paymentType,
+        status: 'COMPLETED',
+        createdAt: new Date().toISOString(),
+        items: table.cart.map(c => ({ product: c.product, quantity: c.quantity, totalPrice: c.totalPrice })),
+        offlinePayload: {
+          cashierId: authStore.user?.id || 'default',
+          shiftId,
+          paymentType,
+          items: table.cart.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice
+          }))
+        }
+      };
+      
+      offlineOrders.push(tempOrder);
+      localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
+      
+      orderHistory.value.unshift(tempOrder as any);
+      _deductIngredients(table.cart);
+
+      table.cart = [];
+      table.status = 'FREE';
+      table.orderNumber = undefined;
+      table.openedAt = null;
+      table.totalPaid = 0;
+      table.waiterNote = '';
+
+      if (activeTableId.value === tableId) {
+        activeTableId.value = null;
+        localStorage.removeItem('doston_pos_active_table');
+      }
+      
+      toast.success('Internet yo\'q. Stol oflayn yopildi!', 3000);
+      return tempOrder as any;
     }
   }
 

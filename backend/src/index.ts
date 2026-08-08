@@ -7,12 +7,15 @@ import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
 import { getAllTables, createTable, updateTable, deleteTable } from './controllers/table.controller';
 import { getDashboardStats } from './controllers/stats.controller';
-
+import { setupSwagger } from './swagger';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// Setup Swagger
+setupSwagger(app);
 
 // Health Check
 app.get('/health', (req, res) => {

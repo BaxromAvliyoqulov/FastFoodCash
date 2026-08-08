@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: 'toggle-mobile-cart'): void;
   (e: 'switch-mode', mode: 'SABOY' | 'ZAL'): void;
   (e: 'back-to-table-map'): void;
+  (e: 'open-expense'): void;
 }>();
 
 const posStore = usePosStore();
@@ -28,10 +29,12 @@ const posStore = usePosStore();
     <!-- SABOY / ZAL MODE TOGGLE -->
     <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0">
       <button @click="emit('switch-mode', 'ZAL')" :class="['px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold', posStore.operationMode === 'ZAL' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
-        <span class="text-base">🏛️</span><span>Zal</span>
+        <span class="text-base">🏛️</span><span class="hidden sm:inline">Zal</span>
+        <span class="ml-1 text-[10px] text-slate-400 border border-slate-300 dark:border-slate-700 rounded px-1 hidden lg:inline">F4</span>
       </button>
       <button @click="emit('switch-mode', 'SABOY')" :class="['px-5 py-2 rounded-xl transition-all flex items-center space-x-2 text-sm font-bold', posStore.operationMode === 'SABOY' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700']">
-        <span class="text-base">🛍️</span><span>Saboy</span>
+        <span class="text-base">🛍️</span><span class="hidden sm:inline">Saboy</span>
+        <span class="ml-1 text-[10px] text-slate-400 border border-slate-300 dark:border-slate-700 rounded px-1 hidden lg:inline">F4</span>
       </button>
     </div>
 
@@ -42,11 +45,18 @@ const posStore = usePosStore();
       <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
     </button>
 
-    <!-- Mobile cart button -->
-    <button @click="emit('toggle-mobile-cart')" class="lg:hidden ml-auto relative bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg shrink-0">
-      <ShoppingBag class="w-4 h-4" />
-      <span>{{ activeCartLength }}</span>
-      <span v-if="activeSubtotal > 0" class="bg-black/20 px-1.5 py-0.5 rounded-lg font-mono text-[10px]">{{ (activeSubtotal / 1000).toFixed(0) }}k</span>
-    </button>
+    <div class="ml-auto flex items-center gap-2">
+      <!-- Expense Button -->
+      <button @click="emit('open-expense')" class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-colors">
+        <span>💸</span><span class="hidden sm:inline">Rasxod</span>
+      </button>
+
+      <!-- Mobile cart button -->
+      <button @click="emit('toggle-mobile-cart')" class="lg:hidden relative bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg shrink-0">
+        <ShoppingBag class="w-4 h-4" />
+        <span>{{ activeCartLength }}</span>
+        <span v-if="activeSubtotal > 0" class="bg-black/20 px-1.5 py-0.5 rounded-lg font-mono text-[10px]">{{ (activeSubtotal / 1000).toFixed(0) }}k</span>
+      </button>
+    </div>
   </div>
 </template>
