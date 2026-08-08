@@ -7,7 +7,10 @@ import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
 import { getAllTables, createTable, updateTable, deleteTable } from './controllers/table.controller';
 import { getDashboardStats } from './controllers/stats.controller';
+import { getSystemHealth, exportDatabaseBackup } from './controllers/system.controller';
+import { processTelegramCommand } from './utils/telegramBot';
 import { setupSwagger } from './swagger';
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -24,6 +27,31 @@ app.get('/health', (req, res) => {
     service: 'FastFoodCash API Server (NOVA Engine)',
     timestamp: new Date().toISOString()
   });
+});
+
+// System & DevOps Routes
+app.get('/api/v1/system/health', getSystemHealth);
+app.post('/api/v1/system/backup', exportDatabaseBackup);
+
+// Telegram Interactive Webhook
+app.post('/api/v1/telegram/webhook', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (message && message.text) {
+      const reply = await processTelegramCommand(message.text, String(message.chat.id));
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      if (token && token !== 'your_bot_token_here') {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: message.chat.id, text: reply, parse_mode: 'HTML' })
+        });
+      }
+    }
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(200).json({ ok: true });
+  }
 });
 
 // API Routes
@@ -61,3 +89,4 @@ app.delete('/api/v1/tables/:id', deleteTable);
 app.listen(PORT, () => {
   console.log(`🚀 FastFoodCash API server running on port ${PORT}`);
 });
+

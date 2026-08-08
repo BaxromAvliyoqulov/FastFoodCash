@@ -46,6 +46,12 @@ const posStore = usePosStore();
     </button>
 
     <div class="ml-auto flex items-center gap-2">
+      <!-- USD Dual Currency Badge -->
+      <div v-if="activeSubtotal > 0" class="hidden xl:flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold" title="AQSH Dollaridagi taxminiy qiymat (Kurs: 12,900 so'm)">
+        <span>💵</span>
+        <span>${{ (activeSubtotal / 12900).toFixed(2) }}</span>
+      </div>
+
       <!-- Expense Button -->
       <button @click="emit('open-expense')" class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-colors">
         <span>💸</span><span class="hidden sm:inline">Rasxod</span>

@@ -41,3 +41,13 @@ export function formatTime(dateVal: string | number | Date | null | undefined): 
     return String(dateVal);
   }
 }
+
+export function formatDualCurrency(amount: number | string | null | undefined, usdRate = 12900): string {
+  if (amount === undefined || amount === null || Number.isNaN(Number(amount))) {
+    return "0 so'm ($0.00)";
+  }
+  const num = Number(amount);
+  const usd = (num / usdRate).toFixed(2);
+  return `${num.toLocaleString('uz-UZ')} so'm ($${usd})`;
+}
+
