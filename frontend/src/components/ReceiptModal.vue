@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import type { Order } from '../types/pos';
-import { Printer, X, Flame, QrCode } from 'lucide-vue-next';
+import { Printer, X, Flame } from 'lucide-vue-next';
 import { formatMoney } from '../utils/formatters';
 
 const props = defineProps<{
@@ -160,35 +160,9 @@ const formattedDate = computed(() => {
               </div>
             </div>
 
-            <!-- Soliq Fiskal Atributlari (Uzbekistan Fiscal Standards) -->
-            <div class="py-2 border-b border-dashed border-slate-400 space-y-0.5 text-[9px] font-mono text-slate-700">
-              <div class="flex justify-between">
-                <span>FISKAL CHEK №:</span>
-                <span class="font-bold">{{ order.orderNumber * 1489 }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>FM (Fiskal Modul):</span>
-                <span>FN8800{{ String(order.orderNumber).padStart(6, '0') }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>FD (Fiskal Hujjat):</span>
-                <span>000{{ order.orderNumber }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span>STIR (INN):</span>
-                <span>309876543</span>
-              </div>
-            </div>
-
-            <!-- Footer QR Code & Soliq Uz Fiscal Sign -->
-            <div class="text-center pt-3 space-y-2">
-              <div class="flex flex-col items-center justify-center space-y-1">
-                <div class="w-20 h-20 border-2 border-slate-900 rounded-xl p-1.5 flex items-center justify-center bg-white shadow-inner">
-                  <QrCode class="w-full h-full text-slate-900" />
-                </div>
-                <span class="text-[8px] font-mono text-slate-500">SOLIQ.UZ | SKANERLANG</span>
-              </div>
-              <p class="text-[10px] font-black uppercase text-slate-900 tracking-wider">XARIDINGIZ UCHUN RAHMAT!</p>
+            <!-- Footer Thank You Message -->
+            <div class="text-center pt-4 space-y-2">
+              <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider">XARIDINGIZ UCHUN RAHMAT!</p>
               <p class="text-[9px] text-slate-600 font-medium">Yana kelib turing! | @doston_burger</p>
               <div class="text-[8px] text-slate-400 font-mono tracking-widest pt-1">***********************************</div>
             </div>

@@ -5,6 +5,7 @@ import HistoryView from './HistoryView.vue';
 import MenuView from './MenuView.vue';
 import RevisionView from './RevisionView.vue';
 import ShiftView from './ShiftView.vue';
+import PrinterSettingsView from './PrinterSettingsView.vue';
 import { usePosStore } from '../stores/posStore';
 import { useShiftStore } from '../stores/shiftStore';
 import { 
@@ -13,6 +14,7 @@ import {
   FolderKanban, 
   Package, 
   Receipt,
+  Printer,
   Crown,
   Loader2
 } from 'lucide-vue-next';
@@ -35,6 +37,7 @@ const tabs = [
   { id: 'menu',      label: 'Menyu & Kategoriyalar', icon: FolderKanban },
   { id: 'revision',  label: "Ombor Qoldig'i",        icon: Package },
   { id: 'shift',     label: 'Smena & Z-Report',      icon: Receipt },
+  { id: 'printer',   label: 'Printer Sozlamalari',   icon: Printer },
 ];
 
 // F5 reload safe data initialization with strict try-finally safety net
@@ -100,11 +103,12 @@ onMounted(async () => {
 
     <!-- ── Admin Content Area ──────────────────────────────── -->
     <main v-else class="flex-1 min-h-0 overflow-y-auto relative p-0">
-      <DashboardView v-if="adminActiveTab === 'dashboard'" />
-      <HistoryView   v-else-if="adminActiveTab === 'history'" />
-      <MenuView      v-else-if="adminActiveTab === 'menu'" />
-      <RevisionView  v-else-if="adminActiveTab === 'revision'" />
-      <ShiftView     v-else-if="adminActiveTab === 'shift'" />
+      <DashboardView       v-if="adminActiveTab === 'dashboard'" />
+      <HistoryView         v-else-if="adminActiveTab === 'history'" />
+      <MenuView            v-else-if="adminActiveTab === 'menu'" />
+      <RevisionView        v-else-if="adminActiveTab === 'revision'" />
+      <ShiftView           v-else-if="adminActiveTab === 'shift'" />
+      <PrinterSettingsView v-else-if="adminActiveTab === 'printer'" />
     </main>
 
   </div>

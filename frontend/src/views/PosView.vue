@@ -4,7 +4,7 @@ import { usePosStore } from '../stores/posStore';
 import { useShiftStore } from '../stores/shiftStore';
 import { useToastStore } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
-import type { Product, Modifier, PaymentType, CartItem } from '../types/pos';
+import type { Product, Modifier, PaymentType, CartItem, Order } from '../types/pos';
 import ModifierModal from '../components/ModifierModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptModal from '../components/ReceiptModal.vue';
@@ -177,29 +177,37 @@ function removeItem(cartItemId: string) {
 function saveTableOrder() {
   if (posStore.operationMode === 'ZAL' && posStore.activeTable) {
     const tableNum = posStore.activeTable.number;
+    const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
     kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
     toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
     showTableProducts.value = false;
     posStore.clearActiveTable();
-    showKitchenReceiptModal.value = true;
+    if (isKitchenPrinterOn) {
+      showKitchenReceiptModal.value = true;
+    }
   }
 }
 
-function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
+async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
   if (!shiftStore.currentShift) {
     alert('Smena ochilmagan! Avval smenani oching.');
     return;
   }
-  let order;
+  let order: Order | null = null;
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-    order = posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
+    order = await posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
   } else {
-    order = posStore.submitOrder(paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
+    order = await posStore.submitOrder(paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
   }
   if (order) {
+    const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
     lastCompletedOrder.value = order;
     showPaymentModal.value = false;
-    showReceiptModal.value = true;
+    if (isKassaPrinterOn) {
+      showReceiptModal.value = true;
+    } else {
+      toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli saqlandi!`);
+    }
     if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
       posStore.clearActiveTable();
       showTableProducts.value = false;
