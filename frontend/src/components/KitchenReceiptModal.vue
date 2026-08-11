@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, onUnmounted, nextTick, computed } from 'vue';
 import type { CartItem } from '../types/pos';
-import { Printer, X, ChefHat } from 'lucide-vue-next';
+import { Printer, X, ChefHat, Clock } from 'lucide-vue-next';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -16,21 +16,53 @@ const emit = defineEmits<{
 
 const receiptWidth = ref<'80mm' | '58mm'>('80mm');
 const now = ref(new Date());
+const elapsedSeconds = ref(0);
+let timerInterval: any = null;
+
+const formattedTimer = computed(() => {
+  const m = Math.floor(elapsedSeconds.value / 60).toString().padStart(2, '0');
+  const s = (elapsedSeconds.value % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+});
+
+const isDelayed = computed(() => elapsedSeconds.value >= 600); // > 10 minutes warning
+
+function startTimer() {
+  stopTimer();
+  elapsedSeconds.value = 0;
+  timerInterval = setInterval(() => {
+    elapsedSeconds.value++;
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
 
 function triggerPrint() {
   window.print();
 }
 
-// Auto-print when modal opens
+// Auto-print and start timer when modal opens
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     now.value = new Date();
+    startTimer();
     nextTick(() => {
       setTimeout(() => {
         triggerPrint();
-      }, 300); // short delay to ensure DOM renders before print dialog
+      }, 300);
     });
+  } else {
+    stopTimer();
   }
+});
+
+onUnmounted(() => {
+  stopTimer();
 });
 </script>
 
@@ -48,7 +80,7 @@ watch(() => props.isOpen, (newVal) => {
         <div class="print:hidden p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
           <div class="flex items-center space-x-2">
             <ChefHat class="w-5 h-5 text-amber-500" />
-            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Oshxona Cheki (Kitchen Ticket)</h3>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">Oshxona Cheki (Kitchen Ticket)</h3>
           </div>
 
           <!-- Paper Width Toggle Buttons -->
@@ -73,6 +105,22 @@ watch(() => props.isOpen, (newVal) => {
           >
             <X class="w-5 h-5" />
           </button>
+        </div>
+
+        <!-- Visual KDS Real-Time Prep Timer Banner -->
+        <div 
+          :class="[
+            'print:hidden px-4 py-2.5 flex items-center justify-between text-xs font-black transition-all border-b',
+            isDelayed 
+              ? 'bg-rose-500 text-white animate-pulse border-rose-600 shadow-md shadow-rose-500/30' 
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+          ]"
+        >
+          <div class="flex items-center space-x-2">
+            <Clock class="w-4 h-4 animate-spin shrink-0" />
+            <span>{{ isDelayed ? "🚨 TAYYORLASH VAQTI 10M OSHDI! KITCHEN DELAY" : "⏱️ Oshxona Tayyorlash Vaqti:" }}</span>
+          </div>
+          <span class="font-mono text-sm tracking-wider px-2 py-0.5 bg-black/10 rounded-lg">{{ formattedTimer }} min</span>
         </div>
 
         <!-- Printable Thermal Receipt Container -->
@@ -178,7 +226,7 @@ watch(() => props.isOpen, (newVal) => {
     border: none !important;
     margin: 0 !important;
     padding: 10px !important;
-    color: black !important; /* Ensure high contrast for thermal */
+    color: black !important;
   }
 }
 </style>

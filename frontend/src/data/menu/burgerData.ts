@@ -7,7 +7,7 @@ export const burgerProducts: Product[] = [
     categoryName: 'Burger',
     name: 'Gamburger',
     price: 35000,
-    imageUrl: '/images/burger/gamburger.png',
+    imageUrl: '/images/burger/gamburger.webp',
     recipe: [
       { ingredientId: 'ing-2', ingredientName: 'Burger Bulochkasi', quantityRequired: 1, unit: 'PIECE' },
       { ingredientId: 'ing-1', ingredientName: "Mol Go'shti Kotletasi", quantityRequired: 1, unit: 'PIECE' }
@@ -19,7 +19,7 @@ export const burgerProducts: Product[] = [
     categoryName: 'Burger',
     name: 'Chesse Burger',
     price: 37000,
-    imageUrl: '/images/burger/cheeseburger.png',
+    imageUrl: '/images/burger/cheeseburger.webp',
     recipe: [
       { ingredientId: 'ing-2', ingredientName: 'Burger Bulochkasi', quantityRequired: 1, unit: 'PIECE' },
       { ingredientId: 'ing-1', ingredientName: "Mol Go'shti Kotletasi", quantityRequired: 1, unit: 'PIECE' },
@@ -81,7 +81,7 @@ export const burgerProducts: Product[] = [
     categoryName: 'Burger',
     name: 'Club Sandwich',
     price: 40000,
-    imageUrl: '/images/burger/club_sandwich.png',
+    imageUrl: '/images/burger/club_sandwich.webp',
     recipe: [
       { ingredientId: 'ing-5', ingredientName: "Tovuq Go'shti File", quantityRequired: 0.120, unit: 'KG' },
       { ingredientId: 'ing-9', ingredientName: 'Kartoshka Frite', quantityRequired: 0.100, unit: 'KG' }

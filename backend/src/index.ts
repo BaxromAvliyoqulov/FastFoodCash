@@ -54,8 +54,11 @@ app.post('/api/v1/telegram/webhook', async (req, res) => {
   }
 });
 
+import { loginRateLimiter } from './middleware/rateLimiter';
+import { validate, loginSchema, createOrderSchema, openShiftSchema, closeShiftSchema } from './middleware/validate';
+
 // API Routes
-app.post('/api/v1/auth/login', loginByPin);
+app.post('/api/v1/auth/login', loginRateLimiter, validate(loginSchema), loginByPin);
 
 // Products
 app.get('/api/v1/products', getProducts);
@@ -64,12 +67,12 @@ app.put('/api/v1/products/:id', updateProduct);
 app.delete('/api/v1/products/:id', deleteProduct);
 
 app.get('/api/v1/orders', getOrders);
-app.post('/api/v1/orders', createOrder);
+app.post('/api/v1/orders', validate(createOrderSchema), createOrder);
 app.post('/api/v1/orders/cancel', cancelOrder);
 
 app.get('/api/v1/shifts/active', getActiveShift);
-app.post('/api/v1/shifts/open', openShift);
-app.post('/api/v1/shifts/close-blind', closeShiftBlind);
+app.post('/api/v1/shifts/open', validate(openShiftSchema), openShift);
+app.post('/api/v1/shifts/close-blind', validate(closeShiftSchema), closeShiftBlind);
 
 // Ingredients & Audit
 app.get('/api/v1/ingredients', getIngredients);
