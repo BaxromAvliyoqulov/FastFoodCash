@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import type { Table } from '../types/pos';
-import { Users, ChevronRight, Clock, X, DoorOpen } from 'lucide-vue-next';
+import { 
+  Clock, X, Crown, Armchair, CheckCircle2, Layers
+} from 'lucide-vue-next';
 
 const posStore = usePosStore();
 
 const emit = defineEmits<{
   (e: 'table-selected', tableId: string): void;
 }>();
+
+// Active Filter: Zone & Status
+const activeTab = ref<'ALL' | 'ZAL' | 'ROOMS'>('ALL');
+const statusFilter = ref<'ALL' | 'FREE' | 'OCCUPIED'>('ALL');
 
 // ─── Real-time timer ──────────────────────────────────────────────────────────
 const now = ref(Date.now());
@@ -24,7 +30,27 @@ onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
 });
 
-// Qancha vaqt o'tgani (masalan: "23 daqiqa" yoki "1s 5d")
+function isRoomTable(table: Table): boolean {
+  const name = (table.name || '').toLowerCase();
+  return name.includes('xona') || name.includes('vip') || table.number >= 16;
+}
+
+// Separate tables into Zal vs Rooms
+const mainHallTables = computed(() => {
+  return posStore.tables.filter(t => t.isActive && !isRoomTable(t) && matchStatus(t));
+});
+
+const vipRoomTables = computed(() => {
+  return posStore.tables.filter(t => t.isActive && isRoomTable(t) && matchStatus(t));
+});
+
+function matchStatus(table: Table): boolean {
+  if (statusFilter.value === 'FREE') return table.status === 'FREE';
+  if (statusFilter.value === 'OCCUPIED') return table.status === 'OCCUPIED';
+  return true;
+}
+
+// Qancha vaqt o'tgani
 function elapsedTime(table: Table): string {
   if (!table.openedAt) return '';
   const ms = now.value - table.openedAt;
@@ -35,10 +61,9 @@ function elapsedTime(table: Table): string {
 
   if (hours > 0) return `${hours}s ${remMins}d`;
   if (mins > 0) return `${mins} daqiqa`;
-  return `${totalSec} soniya`;
+  return `${totalSec}s`;
 }
 
-// Boshlanish vaqti (masalan: "17:15")
 function startedAt(table: Table): string {
   if (!table.openedAt) return '';
   return new Date(table.openedAt).toLocaleTimeString('uz-UZ', {
@@ -46,7 +71,6 @@ function startedAt(table: Table): string {
   });
 }
 
-// Stol jami summasi
 function tableSubtotal(table: Table): number {
   return table.cart.reduce((s, i) => s + i.totalPrice, 0);
 }
@@ -61,7 +85,7 @@ function handleCloseTable(tableId: string, event: Event) {
   const table = posStore.tables.find(t => t.id === tableId);
   if (!table) return;
   const confirm = window.confirm(
-    `${table.number}-Stolni yopmoqchimisiz?\n` +
+    `${table.name || table.number + '-Stol'}ni yopmoqchimisiz?\n` +
     `Sessiyada to'langan: ${table.totalPaid.toLocaleString('uz-UZ')} so'm\n` +
     `Stol bo'sh holatga qaytadi.`
   );
@@ -75,123 +99,304 @@ function handleCloseTable(tableId: string, event: Event) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
-    <!-- Header -->
-    <div class="shrink-0 px-4 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
-            <Users class="w-4 h-4 text-amber-500" />
+  <div class="h-full flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
+    
+    <!-- ── 1. TOP HEADER & FILTER BAR ── -->
+    <div class="shrink-0 p-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/25">
+            <Armchair class="w-5 h-5" />
           </div>
           <div>
-            <h2 class="font-extrabold text-sm text-slate-900 dark:text-white">Zal — Stol Xaritasi</h2>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">Stol bosing → buyurtma kiriting</p>
+            <h2 class="font-black text-base text-slate-900 dark:text-white tracking-wide">
+              Zal & Xonalar Xaritasi
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Stol yoki Xonani bosing → Kassa biriktiriladi
+            </p>
           </div>
         </div>
+
+        <!-- Quick Counters -->
         <div class="flex items-center gap-2">
-          <span class="text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-xl">
-            🟢 {{ posStore.tables.filter(t => t.status === 'FREE').length }} bo'sh
+          <span 
+            @click="statusFilter = statusFilter === 'FREE' ? 'ALL' : 'FREE'"
+            :class="[
+              'text-xs font-black px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
+              statusFilter === 'FREE' 
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+            ]"
+          >
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>🟢 {{ posStore.tables.filter(t => t.isActive && t.status === 'FREE').length }} bo'sh</span>
           </span>
-          <span class="text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-xl">
-            🟡 {{ posStore.tables.filter(t => t.status === 'OCCUPIED').length }} band
+
+          <span 
+            @click="statusFilter = statusFilter === 'OCCUPIED' ? 'ALL' : 'OCCUPIED'"
+            :class="[
+              'text-xs font-black px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
+              statusFilter === 'OCCUPIED' 
+                ? 'bg-rose-600 text-white border-rose-600 shadow-md' 
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
+            ]"
+          >
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            <span>🔴 {{ posStore.tables.filter(t => t.isActive && t.status === 'OCCUPIED').length }} band</span>
           </span>
         </div>
       </div>
-    </div>
 
-    <!-- Table Grid -->
-    <div class="flex-1 overflow-y-auto p-4">
-      <div class="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
-        <button
-          v-for="table in posStore.tables.filter(t => t.isActive)"
-          :key="table.id"
-          @click="selectTable(table)"
+      <!-- Zone Partition Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto scrollbar-none pt-1">
+        <button 
+          @click="activeTab = 'ALL'"
           :class="[
-            'relative flex flex-col rounded-3xl border-2 p-4 text-left transition-all duration-200 cursor-pointer group overflow-hidden min-h-[140px]',
-            posStore.activeTableId === table.id
-              ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 shadow-[0_0_25px_rgba(245,158,11,0.3)] scale-[1.03] ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-950 z-10'
-              : table.status === 'FREE'
-                ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-300 hover:shadow-lg hover:-translate-y-1'
-                : 'border-amber-400/80 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 hover:border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-[1.01]'
+            'px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
+            activeTab === 'ALL'
+              ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
           ]"
         >
-          <!-- Close button for occupied tables -->
-          <button
-            v-if="table.status === 'OCCUPIED'"
-            @click="handleCloseTable(table.id, $event)"
-            class="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white flex items-center justify-center transition-all z-10 opacity-0 group-hover:opacity-100"
-          >
-            <X class="w-4 h-4" />
-          </button>
+          <Layers class="w-3.5 h-3.5 text-amber-500" />
+          <span>Barchasi ({{ posStore.tables.filter(t => t.isActive).length }})</span>
+        </button>
 
-          <!-- Table number and status -->
-          <div class="flex items-start gap-3 w-full mb-3" :class="table.status === 'OCCUPIED' ? 'pr-6' : ''">
-            <div
-              :class="[
-                'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black transition-colors shrink-0',
-                posStore.activeTableId === table.id || table.status === 'OCCUPIED'
-                  ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shadow-inner'
-              ]"
-            >
-              {{ table.number }}
-            </div>
-            <div class="min-w-0 pt-0.5">
-              <p class="font-extrabold text-sm text-slate-900 dark:text-white leading-none truncate">{{ table.name || `${table.number}-Stol` }}</p>
-              <div
-                :class="[
-                  'text-[10px] font-bold px-2 py-0.5 rounded-full mt-1.5 inline-flex items-center gap-1.5',
-                  table.status === 'FREE'
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                ]"
-              >
-                <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse']"></span>
-                <span>{{ table.status === 'FREE' ? 'Bo\'sh' : 'Band (Zaynit)' }}</span>
-              </div>
-            </div>
-          </div>
+        <button 
+          @click="activeTab = 'ZAL'"
+          :class="[
+            'px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
+            activeTab === 'ZAL'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+          ]"
+        >
+          <Armchair class="w-3.5 h-3.5 text-emerald-500" />
+          <span>🏛️ Asosiy Zal (15 stol)</span>
+        </button>
 
-          <!-- Bottom content fixed at bottom -->
-          <div class="mt-auto w-full">
-            <template v-if="table.status === 'FREE'">
-              <div class="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-slate-500 mt-auto">
-                <DoorOpen class="w-4 h-4" />
-                <span>Buyurtma yo'q</span>
-              </div>
-            </template>
-            <template v-else>
-              <div class="flex items-center justify-between gap-1 w-full">
-                <div class="flex flex-col min-w-0">
-                  <div class="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 truncate">
-                    <Clock class="w-3.5 h-3.5 shrink-0" />
-                    <span class="truncate">{{ startedAt(table) }} – <span class="tabular-nums">{{ elapsedTime(table) }}</span></span>
-                  </div>
-                  <div class="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {{ table.cart.length > 0 ? table.cart.length + ' ta taom savatda' : 'Savat bo\'sh' }}
-                  </div>
-                </div>
-                <div v-if="tableSubtotal(table) > 0" class="text-sm font-black text-amber-600 dark:text-amber-400 font-mono shrink-0 ml-1">
-                  {{ (tableSubtotal(table) / 1000).toFixed(0) }}k
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <!-- Hover arrow -->
-          <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-60 transition-opacity">
-            <ChevronRight class="w-4 h-4 text-amber-500" />
-          </div>
+        <button 
+          @click="activeTab = 'ROOMS'"
+          :class="[
+            'px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap',
+            activeTab === 'ROOMS'
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+          ]"
+        >
+          <Crown class="w-3.5 h-3.5 text-amber-400" />
+          <span>👑 VIP Xonalar (6 xona)</span>
         </button>
       </div>
     </div>
 
-    <!-- Bottom hint -->
-    <div class="shrink-0 px-4 py-2.5 border-t border-slate-200 dark:border-slate-800/80 bg-white/50 dark:bg-slate-900/30">
-      <p class="text-[11px] text-center text-slate-400 dark:text-slate-600">
-        Stol bosing → taom qo'shing → to'lov → stol ochiq qoladi &nbsp;|&nbsp;
-        <span class="text-rose-400">✕</span> — stolni yopish (mijoz ketganda)
+    <!-- ── 2. SEPARATED STOLLAR & XONALAR SCROLLABLE BODY ── -->
+    <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-7">
+      
+      <!-- 🏛️ SECTION 1: ASOSIY ZAL STOLLARI -->
+      <div v-if="(activeTab === 'ALL' || activeTab === 'ZAL') && mainHallTables.length > 0" class="space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h3 class="font-black text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+              🏛️ Asosiy Zal Stollari
+            </h3>
+          </div>
+          <span class="text-xs font-bold text-slate-400 font-mono">{{ mainHallTables.length }} ta stol</span>
+        </div>
+
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(185px,1fr))] gap-4">
+          <button
+            v-for="table in mainHallTables"
+            :key="table.id"
+            @click="selectTable(table)"
+            :class="[
+              'relative flex flex-col rounded-3xl border-2 p-4 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[145px] hover:-translate-y-1 hover:shadow-xl',
+              posStore.activeTableId === table.id
+                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 via-amber-50 to-orange-100 dark:from-amber-900/40 dark:to-orange-950/40 shadow-xl shadow-amber-500/20 ring-4 ring-amber-500/30 scale-[1.03] z-10'
+                : table.status === 'FREE'
+                ? 'border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/20 dark:border-emerald-500/30 hover:border-emerald-500 shadow-sm'
+                : 'border-rose-500/60 bg-rose-500/15 dark:bg-rose-950/40 ring-1 ring-rose-500/30 shadow-lg shadow-rose-500/10'
+            ]"
+          >
+            <!-- Close button for occupied tables -->
+            <button
+              v-if="table.status === 'OCCUPIED'"
+              @click="handleCloseTable(table.id, $event)"
+              class="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
+              title="Stolni yopish"
+            >
+              <X class="w-4 h-4" />
+            </button>
+
+            <!-- Table Number & Status Pill -->
+            <div class="flex items-start gap-3 w-full mb-3" :class="table.status === 'OCCUPIED' ? 'pr-6' : ''">
+              <div
+                :class="[
+                  'w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-black transition-colors shrink-0 shadow-md',
+                  table.status === 'OCCUPIED'
+                    ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
+                    : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/25'
+                ]"
+              >
+                {{ table.number }}
+              </div>
+              
+              <div class="min-w-0 pt-0.5">
+                <p class="font-black text-sm text-slate-900 dark:text-white leading-none truncate">
+                  {{ table.name || `${table.number}-Stol` }}
+                </p>
+
+                <div
+                  :class="[
+                    'text-[10px] font-black px-2 py-0.5 rounded-full mt-1.5 inline-flex items-center gap-1 uppercase tracking-wider',
+                    table.status === 'FREE'
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                  ]"
+                >
+                  <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-rose-500 animate-ping']"></span>
+                  <span>{{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Content (Timer / Subtotal) -->
+            <div class="mt-auto w-full pt-2 border-t" :class="table.status === 'OCCUPIED' ? 'border-rose-500/20' : 'border-emerald-500/20'">
+              <template v-if="table.status === 'FREE'">
+                <div class="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 class="w-3.5 h-3.5" />
+                  <span>Joy tayyor</span>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                    <span class="flex items-center gap-1">
+                      <Clock class="w-3 h-3" />
+                      <span>{{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
+                    </span>
+                    <span v-if="tableSubtotal(table) > 0" class="font-mono font-black text-xs text-rose-600 dark:text-rose-400">
+                      {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 👑 SECTION 2: ALOHIDA VIP XONALAR & KABINETLAR -->
+      <div v-if="(activeTab === 'ALL' || activeTab === 'ROOMS') && vipRoomTables.length > 0" class="space-y-3 pt-2">
+        <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
+          <div class="flex items-center gap-2">
+            <Crown class="w-4 h-4 text-amber-500" />
+            <h3 class="font-black text-sm text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+              👑 Alohida VIP Xonalar & Kabinetlar
+            </h3>
+          </div>
+          <span class="text-xs font-bold font-mono bg-amber-500/10 text-amber-500 px-2.5 py-0.5 rounded-full">
+            {{ vipRoomTables.length }} ta xona
+          </span>
+        </div>
+
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+          <button
+            v-for="table in vipRoomTables"
+            :key="table.id"
+            @click="selectTable(table)"
+            :class="[
+              'relative flex flex-col rounded-3xl border-2 p-4 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[155px] hover:-translate-y-1.5 hover:shadow-2xl',
+              posStore.activeTableId === table.id
+                ? 'border-amber-500 bg-gradient-to-br from-amber-500/30 via-orange-950/40 to-slate-950 shadow-2xl shadow-amber-500/30 ring-4 ring-amber-500/40 scale-[1.03] z-10'
+                : table.status === 'FREE'
+                ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:bg-slate-900 hover:border-amber-500 shadow-md shadow-amber-500/5'
+                : 'border-rose-500/70 bg-gradient-to-br from-rose-500/20 via-rose-950/40 to-slate-950 ring-2 ring-rose-500/40 shadow-xl shadow-rose-500/20'
+            ]"
+          >
+            <!-- Close button for occupied VIP rooms -->
+            <button
+              v-if="table.status === 'OCCUPIED'"
+              @click="handleCloseTable(table.id, $event)"
+              class="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
+              title="Xonani yopish"
+            >
+              <X class="w-4 h-4" />
+            </button>
+
+            <!-- VIP Badge Header Tag -->
+            <div class="flex items-center justify-between mb-2">
+              <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                <Crown class="w-3 h-3 text-amber-500" /> VIP XONA
+              </span>
+
+              <span 
+                :class="[
+                  'text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider',
+                  table.status === 'FREE' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                ]"
+              >
+                {{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}
+              </span>
+            </div>
+
+            <!-- Table Number & Name -->
+            <div class="flex items-center space-x-3 my-2">
+              <div 
+                :class="[
+                  'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black font-mono shadow-md shrink-0',
+                  table.status === 'OCCUPIED'
+                    ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
+                    : 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white shadow-amber-500/30'
+                ]"
+              >
+                {{ table.number }}
+              </div>
+
+              <div>
+                <h4 class="font-black text-base text-slate-900 dark:text-white leading-tight">
+                  {{ table.name }}
+                </h4>
+                <p class="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                  ⭐ VIP Xizmat
+                </p>
+              </div>
+            </div>
+
+            <!-- Bottom Content -->
+            <div class="mt-auto w-full pt-2 border-t border-amber-500/20">
+              <template v-if="table.status === 'FREE'">
+                <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  🟢 Xona tayyor
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="flex items-center justify-between text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                  <span>⏱️ {{ elapsedTime(table) }}</span>
+                  <span v-if="tableSubtotal(table) > 0" class="font-mono font-black text-xs">
+                    💰 {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
+                  </span>
+                </div>
+              </template>
+            </div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 3. BOTTOM HINT ── -->
+    <div class="shrink-0 px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md">
+      <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 font-medium">
+        💡 Stol / Xonaga bosing → Taom qo'shing → To'lov qiling &nbsp;|&nbsp;
+        <span class="text-rose-500 font-bold">✕</span> — Stolni yopish
       </p>
     </div>
+
   </div>
 </template>
