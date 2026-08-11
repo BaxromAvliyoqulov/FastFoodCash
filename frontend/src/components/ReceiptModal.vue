@@ -13,20 +13,40 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-const receiptWidth = ref<'80mm' | '58mm'>('80mm');
+const receiptWidth = ref<'80mm' | '58mm'>(
+  (localStorage.getItem('doston_pos_paper_width') as any) || '80mm'
+);
+const receiptTitle = ref(localStorage.getItem('doston_pos_receipt_title') || 'DOSTON BURGER');
+const receiptAddress = ref(localStorage.getItem('doston_pos_receipt_address') || 'Toshkent sh., Chilonzor 5-mavze');
+const receiptPhone = ref(localStorage.getItem('doston_pos_receipt_phone') || '+998 90 123 45 67');
+const receiptFooter = ref(localStorage.getItem('doston_pos_receipt_footer') || 'Wi-Fi: doston2026 | Yoqimli ishtaha! 🍔');
+
+function setWidth(w: '80mm' | '58mm') {
+  receiptWidth.value = w;
+  localStorage.setItem('doston_pos_paper_width', w);
+}
 
 function triggerPrint() {
   window.print();
 }
 
-// Auto-print logic
+// Auto-print logic & dynamic parameter refresh
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
-    nextTick(() => {
-      setTimeout(() => {
-        triggerPrint();
-      }, 300);
-    });
+    receiptWidth.value = (localStorage.getItem('doston_pos_paper_width') as any) || '80mm';
+    receiptTitle.value = localStorage.getItem('doston_pos_receipt_title') || 'DOSTON BURGER';
+    receiptAddress.value = localStorage.getItem('doston_pos_receipt_address') || 'Toshkent sh., Chilonzor 5-mavze';
+    receiptPhone.value = localStorage.getItem('doston_pos_receipt_phone') || '+998 90 123 45 67';
+    receiptFooter.value = localStorage.getItem('doston_pos_receipt_footer') || 'Wi-Fi: doston2026 | Yoqimli ishtaha! 🍔';
+
+    const autoPrint = localStorage.getItem('doston_pos_auto_print') !== 'false';
+    if (autoPrint) {
+      nextTick(() => {
+        setTimeout(() => {
+          triggerPrint();
+        }, 300);
+      });
+    }
   }
 });
 
@@ -56,14 +76,14 @@ const formattedDate = computed(() => {
           <!-- Paper Width Toggle Buttons -->
           <div class="flex items-center bg-slate-200 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
             <button 
-              @click="receiptWidth = '80mm'"
-              :class="['px-2.5 py-1 rounded-lg transition-all', receiptWidth === '80mm' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400']"
+              @click="setWidth('80mm')"
+              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer', receiptWidth === '80mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
             >
               80mm
             </button>
             <button 
-              @click="receiptWidth = '58mm'"
-              :class="['px-2.5 py-1 rounded-lg transition-all', receiptWidth === '58mm' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400']"
+              @click="setWidth('58mm')"
+              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer', receiptWidth === '58mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
             >
               58mm
             </button>
@@ -71,7 +91,7 @@ const formattedDate = computed(() => {
 
           <button 
             @click="emit('close')"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X class="w-5 h-5" />
           </button>
@@ -83,8 +103,8 @@ const formattedDate = computed(() => {
           <div 
             id="printable-receipt"
             :class="[
-              'bg-white text-slate-900 font-mono text-xs p-4 sm:p-5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-lg print:border-none print:shadow-none print:p-2 print:m-0 print:w-full transition-all duration-300',
-              receiptWidth === '80mm' ? 'w-full max-w-[340px]' : 'w-full max-w-[260px]'
+              'bg-white text-slate-900 font-mono rounded-2xl border border-slate-300 dark:border-slate-800 shadow-lg print:border-none print:shadow-none print:m-0 print:w-full transition-all duration-300',
+              receiptWidth === '80mm' ? 'w-full max-w-[340px] text-xs p-4 sm:p-5' : 'w-full max-w-[240px] text-[10px] p-3 leading-tight'
             ]"
           >
             <!-- Receipt Header Logo & Details -->
@@ -93,14 +113,16 @@ const formattedDate = computed(() => {
                 <div class="w-6 h-6 rounded-lg bg-slate-900 text-amber-500 flex items-center justify-center font-bold">
                   <Flame class="w-4 h-4 fill-amber-500" />
                 </div>
-                <span class="font-black text-sm tracking-wider uppercase">DOSTON BURGER</span>
+                <span class="font-black tracking-wider uppercase" :class="receiptWidth === '58mm' ? 'text-xs' : 'text-sm'">
+                  {{ receiptTitle }}
+                </span>
               </div>
-              <p class="text-[10px] font-sans font-medium text-slate-600">Fast Food & Family Restaurant</p>
-              <p class="text-[10px] text-slate-600 font-mono mt-0.5">+998 (94) 322 10 25 | @doston_burger</p>
+              <p class="text-[10px] font-sans font-medium text-slate-600">{{ receiptAddress }}</p>
+              <p class="text-[10px] text-slate-600 font-mono mt-0.5">Tel: {{ receiptPhone }}</p>
             </div>
 
             <!-- Meta Order Info -->
-            <div class="py-2.5 border-b border-dashed border-slate-400 space-y-1 text-[11px]">
+            <div class="py-2.5 border-b border-dashed border-slate-400 space-y-1" :class="receiptWidth === '58mm' ? 'text-[9px]' : 'text-[11px]'">
               <div class="flex justify-between">
                 <span class="text-slate-600">Buyurtma #:</span>
                 <span class="font-bold text-slate-900">#{{ order.orderNumber }}</span>
@@ -115,23 +137,23 @@ const formattedDate = computed(() => {
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-600">To'lov Turi:</span>
-                <span class="font-bold uppercase text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300">
+                <span class="font-bold uppercase text-slate-900 bg-slate-100 px-1 py-0.5 rounded border border-slate-300">
                   {{ order.paymentType }}
                 </span>
               </div>
             </div>
 
             <!-- Items Table Header -->
-            <div class="py-2 border-b border-slate-400 font-bold text-[11px] flex justify-between">
+            <div class="py-2 border-b border-slate-400 font-bold flex justify-between" :class="receiptWidth === '58mm' ? 'text-[10px]' : 'text-[11px]'">
               <span>Nomi / Miqdor</span>
               <span>Summa</span>
             </div>
 
             <!-- Itemized Table List -->
-            <div class="py-2 border-b border-dashed border-slate-400 space-y-2 text-[11px]">
+            <div class="py-2 border-b border-dashed border-slate-400 space-y-2" :class="receiptWidth === '58mm' ? 'text-[9px]' : 'text-[11px]'">
               <div v-for="item in order.items" :key="item.id" class="space-y-0.5">
                 <div class="flex justify-between font-semibold">
-                  <span class="truncate max-w-[170px]">{{ item.product.name }}</span>
+                  <span class="truncate" :class="receiptWidth === '58mm' ? 'max-w-[120px]' : 'max-w-[170px]'">{{ item.product.name }}</span>
                   <span>{{ formatMoney(item.totalPrice) }}</span>
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-600">
@@ -145,8 +167,8 @@ const formattedDate = computed(() => {
             </div>
 
             <!-- Totals & Change -->
-            <div class="py-2.5 border-b border-slate-900 space-y-1 text-[11px]">
-              <div class="flex justify-between font-bold text-sm pt-1">
+            <div class="py-2.5 border-b border-slate-900 space-y-1" :class="receiptWidth === '58mm' ? 'text-[10px]' : 'text-[11px]'">
+              <div class="flex justify-between font-bold pt-1" :class="receiptWidth === '58mm' ? 'text-xs' : 'text-sm'">
                 <span>JAMI SUMMA:</span>
                 <span class="text-slate-900 font-extrabold">{{ formatMoney(order.totalAmount) }} SO'M</span>
               </div>
@@ -161,9 +183,11 @@ const formattedDate = computed(() => {
             </div>
 
             <!-- Footer Thank You Message -->
-            <div class="text-center pt-4 space-y-2">
-              <p class="text-[11px] font-black uppercase text-slate-900 tracking-wider">XARIDINGIZ UCHUN RAHMAT!</p>
-              <p class="text-[9px] text-slate-600 font-medium">Yana kelib turing! | @doston_burger</p>
+            <div class="text-center pt-3 space-y-1">
+              <p class="font-black uppercase text-slate-900 tracking-wider" :class="receiptWidth === '58mm' ? 'text-[9px]' : 'text-[11px]'">
+                XARIDINGIZ UCHUN RAHMAT!
+              </p>
+              <p class="text-[9px] text-slate-600 font-medium">{{ receiptFooter }}</p>
               <div class="text-[8px] text-slate-400 font-mono tracking-widest pt-1">***********************************</div>
             </div>
 
@@ -175,14 +199,14 @@ const formattedDate = computed(() => {
         <div class="print:hidden p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
           <button 
             @click="triggerPrint"
-            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs"
+            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs cursor-pointer"
           >
             <Printer class="w-4 h-4" />
-            <span>Chop Etish (Print Chek)</span>
+            <span>Chop etish (Print)</span>
           </button>
           <button 
             @click="emit('close')"
-            class="px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-2xl active:scale-95 transition-all text-xs"
+            class="px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl transition-all text-xs cursor-pointer"
           >
             Yopish
           </button>
@@ -205,12 +229,9 @@ const formattedDate = computed(() => {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100% !important;
-    max-width: 100% !important;
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 10px !important;
   }
 }
 </style>

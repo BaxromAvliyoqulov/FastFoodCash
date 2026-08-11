@@ -45,6 +45,12 @@ const receiptFooter = ref(localStorage.getItem('doston_pos_receipt_footer') || '
 const showTestModal = ref(false);
 const testTarget = ref<'Kassa' | 'Oshxona'>('Kassa');
 
+function selectPaperWidth(w: '80mm' | '58mm') {
+  paperWidth.value = w;
+  localStorage.setItem('doston_pos_paper_width', w);
+  toast.success(`Chek qog'ozi eni ${w} o'zgardi! 🧾`);
+}
+
 function saveSettings() {
   localStorage.setItem('doston_pos_printer_kassa', String(kassaPrinterEnabled.value));
   localStorage.setItem('doston_pos_printer_kitchen', String(kitchenPrinterEnabled.value));
@@ -271,7 +277,7 @@ function executeSystemPrint() {
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Chek Qog'ozi Eni (Width):</label>
               <div class="grid grid-cols-2 gap-3">
                 <button 
-                  @click="paperWidth = '80mm'"
+                  @click="selectPaperWidth('80mm')"
                   :class="[
                     'py-3.5 px-4 rounded-2xl font-black text-xs border transition-all cursor-pointer flex items-center justify-center gap-2',
                     paperWidth === '80mm'
@@ -283,7 +289,7 @@ function executeSystemPrint() {
                   <span>80 mm (Standart Kassa)</span>
                 </button>
                 <button 
-                  @click="paperWidth = '58mm'"
+                  @click="selectPaperWidth('58mm')"
                   :class="[
                     'py-3.5 px-4 rounded-2xl font-black text-xs border transition-all cursor-pointer flex items-center justify-center gap-2',
                     paperWidth === '58mm'
