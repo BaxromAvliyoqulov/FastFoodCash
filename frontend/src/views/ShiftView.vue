@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
 import { useToastStore } from '../stores/toastStore';
 import { formatMoney } from '../utils/formatters';
@@ -12,7 +12,11 @@ import {
   DollarSign, 
   ShieldAlert,
   Lock,
-  LockOpen
+  LockOpen,
+  Banknote,
+  CreditCard,
+  QrCode,
+  X
 } from 'lucide-vue-next';
 
 const shiftStore = useShiftStore();
@@ -22,7 +26,6 @@ const showCloseModal = ref(false);
 const declaredCashInput = ref<number | null>(null);
 const declaredCardInput = ref<number | null>(null);
 const declaredQrInput = ref<number | null>(null);
-const managerPinInput = ref('');
 const pinError = ref('');
 const auditNotes = ref('');
 
@@ -59,42 +62,33 @@ function handleAddExpense() {
   showExpenseModal.value = false;
 }
 
+const totalDeclaredSum = computed(() => {
+  return (declaredCashInput.value || 0) + (declaredCardInput.value || 0) + (declaredQrInput.value || 0);
+});
+
 function handleCloseShiftSubmit() {
   pinError.value = '';
 
-  if (declaredCashInput.value === null || declaredCardInput.value === null || declaredQrInput.value === null) {
-    toast.warning('Barcha sanab kiritilgan tushumlarni to\'liq to\'ldiring!');
-    return;
-  }
-
-  if (!managerPinInput.value) {
-    pinError.value = 'Menejer PIN kodini kiritish majburiy!';
-    toast.error('PIN kod kiritilmagan');
-    return;
-  }
-
-  if (!shiftStore.verifyManagerPin(managerPinInput.value)) {
-    pinError.value = 'PIN kod noto\'g\'ri! Faqat menejer yopa oladi.';
-    toast.error('Menejer PIN kodi noto\'g\'ri!');
+  if (declaredCashInput.value === null && declaredCardInput.value === null && declaredQrInput.value === null) {
+    toast.warning('Sanab kiritilgan summalarni kiriting!');
     return;
   }
 
   const result = shiftStore.closeShiftBlindReconciliation(
-    declaredCashInput.value,
-    declaredCardInput.value,
-    declaredQrInput.value,
+    declaredCashInput.value || 0,
+    declaredCardInput.value || 0,
+    declaredQrInput.value || 0,
     auditNotes.value
   );
 
   lastAuditResult.value = result;
   showCloseModal.value = false;
-  toast.success('Smena muvaffaqiyatli yopildi va Z-Report yaratildi!');
+  toast.success('Smena muvaffaqiyatli yopildi va Z-Report yaratildi! 🧾');
   
   // Clear inputs for next time
   declaredCashInput.value = null;
   declaredCardInput.value = null;
   declaredQrInput.value = null;
-  managerPinInput.value = '';
 }
 
 function submitOpenShift() {
@@ -347,75 +341,111 @@ function submitOpenShift() {
       </div>
     </div>
 
-    <!-- BLIND CASH RECONCILIATION MODAL -->
-    <div v-if="showCloseModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 sm:p-7 shadow-2xl space-y-6">
+    <!-- BLIND CASH RECONCILIATION MODAL (INTERACTIVE & MODERN) -->
+    <div v-if="showCloseModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div class="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 sm:p-7 shadow-2xl space-y-6 transition-all">
         
-        <div class="border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full mb-2">
-            <Lock class="w-3.5 h-3.5" />
-            <span>KO'R-KASSIR AUDIT REJIMIY</span>
+        <!-- Header -->
+        <div class="border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center justify-between">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-black rounded-full mb-2">
+              <Receipt class="w-3.5 h-3.5 text-amber-500" />
+              <span>SMENANI YOPISH & AUDIT</span>
+            </div>
+            <h3 class="text-xl font-black text-slate-900 dark:text-white tracking-wide">Smenani Yopish (Z-Report)</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kassadagi sanalgan naqd va terminal tushumlarini kiriting</p>
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">Smenani Yopish (Z-Report Audit)</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Kassadagi haqiqiy naqd pul va terminal cheklari summasini sanab kiriting</p>
+
+          <button 
+            @click="showCloseModal = false"
+            class="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+          >
+            <X class="w-5 h-5" />
+          </button>
         </div>
 
+        <!-- Live Total Counter Summary Card -->
+        <div class="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Jami Sanalgan Pul:</span>
+            <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ totalDeclaredSum.toLocaleString('uz-UZ') }} so'm</span>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 font-black text-sm">
+            Z
+          </div>
+        </div>
+
+        <!-- Input Fields Grid -->
         <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Kassada Sanalgan Haqiqiy Naqd Pul (Naqd kassa + float):</label>
-            <input 
-              type="text" 
-              :value="declaredCashInput ? declaredCashInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-              @input="declaredCashInput = formatMoneyInput($event)"
-              placeholder="Masalan: 1 450 000"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-lg font-bold font-mono focus:border-amber-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Uzcard/Humo POS Terminal Summasi:</label>
-            <input 
-              type="text" 
-              :value="declaredCardInput ? declaredCardInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-              @input="declaredCardInput = formatMoneyInput($event)"
-              placeholder="Masalan: 850 000"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-lg font-bold font-mono focus:border-amber-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Click/Payme & QR To'lovlar Summasi:</label>
-            <input 
-              type="text" 
-              :value="declaredQrInput ? declaredQrInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-              @input="declaredQrInput = formatMoneyInput($event)"
-              placeholder="Masalan: 320 000"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-lg font-bold font-mono focus:border-amber-500 focus:outline-none"
-            />
-          </div>
-
-          <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex justify-between">
-              <span>Menejer PIN Kodi (Tasdiqlash uchun):</span>
-              <span v-if="pinError" class="text-rose-500">{{ pinError }}</span>
+          <!-- 1. CASH INPUT -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Banknote class="w-4 h-4 text-emerald-500" />
+              <span>Sanatilgan Naqd Pul (Kassadagi float bilan):</span>
             </label>
-            <input 
-              type="password" 
-              v-model="managerPinInput"
-              placeholder="••••"
-              maxlength="4"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-2xl tracking-[1em] text-center font-bold font-mono focus:border-rose-500 focus:outline-none transition-colors"
-              :class="{ 'border-rose-500 bg-rose-50 dark:bg-rose-900/10': pinError }"
-            />
+            <div class="relative">
+              <input 
+                type="text" 
+                :value="declaredCashInput ? declaredCashInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
+                @input="declaredCashInput = formatMoneyInput($event)"
+                placeholder="Masalan: 1 450 000"
+                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-amber-500 focus:outline-none transition shadow-sm"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
+            </div>
+          </div>
+
+          <!-- 2. CARD INPUT -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <CreditCard class="w-4 h-4 text-blue-500" />
+              <span>Uzcard / Humo Terminal Summasi:</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="text" 
+                :value="declaredCardInput ? declaredCardInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
+                @input="declaredCardInput = formatMoneyInput($event)"
+                placeholder="Masalan: 850 000"
+                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-blue-500 focus:outline-none transition shadow-sm"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
+            </div>
+          </div>
+
+          <!-- 3. QR INPUT -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <QrCode class="w-4 h-4 text-purple-500" />
+              <span>Click / Payme & QR To'lovlar:</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="text" 
+                :value="declaredQrInput ? declaredQrInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
+                @input="declaredQrInput = formatMoneyInput($event)"
+                placeholder="Masalan: 320 000"
+                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-purple-500 focus:outline-none transition shadow-sm"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
+            </div>
           </div>
         </div>
 
-        <div class="flex items-center space-x-3 pt-3">
-          <button @click="showCloseModal = false; pinError = ''" class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold text-sm transition">
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button 
+            @click="showCloseModal = false" 
+            class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3.5 rounded-2xl font-bold text-xs transition cursor-pointer"
+          >
             Bekor qilish
           </button>
-          <button @click="handleCloseShiftSubmit" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-rose-600/25 transition">
-            Z-Report Auditini Olish
+          <button 
+            @click="handleCloseShiftSubmit" 
+            class="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white py-3.5 rounded-2xl font-black text-xs shadow-lg shadow-rose-600/25 active:scale-95 transition cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Receipt class="w-4 h-4" />
+            <span>Z-Reportni Yopish</span>
           </button>
         </div>
 
