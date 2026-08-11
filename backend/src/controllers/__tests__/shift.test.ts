@@ -59,8 +59,8 @@ describe('Shift Controller - Blind Reconciliation & Expenses Audit', () => {
         declaredCash: 130000, // Expected = 100k + 80k - 50k = 130k
         declaredCard: 40000,
         declaredQr: 0,
-        notes: 'Hamma narsa to\'g\'ri',
-        expenses: [{ amount: 50000, reason: 'Go\'sht xaridi' }]
+        notes: "Hamma narsa to'g'ri",
+        expenses: [{ amount: 50000, reason: "Go'sht xaridi" }]
       }
     } as any;
 
@@ -73,12 +73,15 @@ describe('Shift Controller - Blind Reconciliation & Expenses Audit', () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
+        success: true,
         message: expect.stringContaining('muvaffaqiyatli yopildi'),
-        audit: expect.objectContaining({
-          expectedCash: 130000, // 100000 + 80000 - 50000
-          declaredCash: 130000,
-          difference: 0,
-          status: 'BALANCED'
+        data: expect.objectContaining({
+          audit: expect.objectContaining({
+            expectedCash: 130000, // 100000 + 80000 - 50000
+            declaredCash: 130000,
+            difference: 0,
+            status: 'BALANCED'
+          })
         })
       })
     );
@@ -117,11 +120,14 @@ describe('Shift Controller - Blind Reconciliation & Expenses Audit', () => {
 
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        audit: expect.objectContaining({
-          expectedCash: 150000,
-          declaredCash: 120000,
-          difference: -30000,
-          status: 'SHORTAGE'
+        success: true,
+        data: expect.objectContaining({
+          audit: expect.objectContaining({
+            expectedCash: 150000,
+            declaredCash: 120000,
+            difference: -30000,
+            status: 'SHORTAGE'
+          })
         })
       })
     );
