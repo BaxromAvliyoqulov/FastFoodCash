@@ -32,11 +32,11 @@ const themeStore = useThemeStore();
   <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 shadow-sm dark:shadow-2xl transition-colors duration-300 relative z-30">
     <!-- Brand Logo & System Identity -->
     <div class="flex items-center space-x-3 shrink-0">
-      <div class="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-orange-500/25 shrink-0 flex items-center justify-center bg-slate-900/50">
+      <div class="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-orange-500/20 shrink-0">
         <img 
-          src="/favicon.svg" 
+          src="/doston-burger-logo.png" 
           alt="Doston Burger Logo" 
-          class="w-9 h-9 object-contain"
+          class="w-full h-full object-cover"
           draggable="false"
         />
       </div>
