@@ -6,6 +6,7 @@ import TablesView from './views/TablesView.vue';
 import ShiftView from './views/ShiftView.vue';
 import LoginView from './views/LoginView.vue';
 import AdminLayout from './views/AdminLayout.vue';
+import KdsView from './views/KdsView.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import { useThemeStore } from './stores/themeStore';
 import { useAuthStore } from './stores/authStore';
@@ -64,6 +65,7 @@ onMounted(() => {
     <main class="flex-1 min-h-0 overflow-hidden relative">
       <PosView v-if="activeTab === 'pos'" />
       <TablesView v-else-if="activeTab === 'tables'" />
+      <KdsView v-else-if="activeTab === 'kds'" />
       <AdminLayout v-else-if="activeTab === 'admin'" />
       <ShiftView v-else-if="activeTab === 'shift'" />
     </main>

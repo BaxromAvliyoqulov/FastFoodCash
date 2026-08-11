@@ -160,15 +160,36 @@ const formattedDate = computed(() => {
               </div>
             </div>
 
-            <!-- Footer QR Code & Thank You Message -->
-            <div class="text-center pt-3 space-y-2">
-              <div class="flex justify-center">
-                <div class="w-16 h-16 border border-slate-400 rounded-lg p-1 flex items-center justify-center bg-slate-50">
-                  <QrCode class="w-12 h-12 text-slate-800" />
-                </div>
+            <!-- Soliq Fiskal Atributlari (Uzbekistan Fiscal Standards) -->
+            <div class="py-2 border-b border-dashed border-slate-400 space-y-0.5 text-[9px] font-mono text-slate-700">
+              <div class="flex justify-between">
+                <span>FISKAL CHEK №:</span>
+                <span class="font-bold">{{ order.orderNumber * 1489 }}</span>
               </div>
-              <p class="text-[10px] font-bold uppercase text-slate-800 tracking-wider">XARIDINGIZ UCHUN RAHMAT!</p>
-              <p class="text-[9px] text-slate-500">Yana kelib turing! | @doston_burger</p>
+              <div class="flex justify-between">
+                <span>FM (Fiskal Modul):</span>
+                <span>FN8800{{ String(order.orderNumber).padStart(6, '0') }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>FD (Fiskal Hujjat):</span>
+                <span>000{{ order.orderNumber }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>STIR (INN):</span>
+                <span>309876543</span>
+              </div>
+            </div>
+
+            <!-- Footer QR Code & Soliq Uz Fiscal Sign -->
+            <div class="text-center pt-3 space-y-2">
+              <div class="flex flex-col items-center justify-center space-y-1">
+                <div class="w-20 h-20 border-2 border-slate-900 rounded-xl p-1.5 flex items-center justify-center bg-white shadow-inner">
+                  <QrCode class="w-full h-full text-slate-900" />
+                </div>
+                <span class="text-[8px] font-mono text-slate-500">SOLIQ.UZ | SKANERLANG</span>
+              </div>
+              <p class="text-[10px] font-black uppercase text-slate-900 tracking-wider">XARIDINGIZ UCHUN RAHMAT!</p>
+              <p class="text-[9px] text-slate-600 font-medium">Yana kelib turing! | @doston_burger</p>
               <div class="text-[8px] text-slate-400 font-mono tracking-widest pt-1">***********************************</div>
             </div>
 

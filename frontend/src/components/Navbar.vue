@@ -12,7 +12,8 @@ import {
   Moon,
   LogOut,
   LayoutDashboard,
-  Crown
+  Crown,
+  ChefHat
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -81,6 +82,20 @@ const themeStore = useThemeStore();
       >
         <LayoutDashboard class="w-4 h-4" />
         <span>Stollar</span>
+      </button>
+
+      <!-- KITCHEN DISPLAY SYSTEM (KDS) -->
+      <button 
+        @click="emit('change-tab', 'kds')"
+        :class="[
+          'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
+          activeTab === 'kds' 
+            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30 scale-[1.02]' 
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-900'
+        ]"
+      >
+        <ChefHat class="w-4 h-4" />
+        <span>Oshxona (KDS)</span>
       </button>
 
       <!-- SMENA FOR CASHIER ONLY (IF NOT ADMIN) -->

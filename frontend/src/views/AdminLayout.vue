@@ -37,14 +37,23 @@ const tabs = [
   { id: 'shift',     label: 'Smena & Z-Report',      icon: Receipt },
 ];
 
-// F5 dan keyin ham ma'lumotlar yuklanishini ta'minlaydi
+// F5 reload safe data initialization with strict try-finally safety net
 onMounted(async () => {
-  await Promise.all([
-    posStore.fetchOrders(),
-    posStore.fetchProducts(),
-    shiftStore.fetchActiveShift(),
-  ]);
-  isDataReady.value = true;
+  try {
+    // Timeout of 2.5s maximum to avoid blocking UI if backend is offline or slow
+    const fetchPromise = Promise.all([
+      posStore.fetchOrders(),
+      posStore.fetchProducts(),
+      shiftStore.fetchActiveShift(),
+    ]);
+
+    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
+    await Promise.race([fetchPromise, timeoutPromise]);
+  } catch (err) {
+    console.warn('Admin layout async sync warning:', err);
+  } finally {
+    isDataReady.value = true;
+  }
 });
 </script>
 
@@ -80,17 +89,17 @@ onMounted(async () => {
       </div>
     </nav>
 
-    <!-- ── Loading State (F5 dan keyin ma'lumot yuklanayotganda) ── -->
+    <!-- ── Loading State ───────────────────────────────────── -->
     <div 
       v-if="!isDataReady"
-      class="flex-1 flex flex-col items-center justify-center gap-4 text-slate-400 dark:text-slate-600"
+      class="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600 min-h-[300px]"
     >
-      <Loader2 class="w-10 h-10 animate-spin text-amber-500" />
-      <p class="text-sm font-semibold">Ma'lumotlar yuklanmoqda...</p>
+      <Loader2 class="w-8 h-8 animate-spin text-amber-500" />
+      <p class="text-xs font-semibold">Tizim ma'lumotlari yuklanmoqda...</p>
     </div>
 
     <!-- ── Admin Content Area ──────────────────────────────── -->
-    <main v-else class="flex-1 min-h-0 overflow-hidden relative">
+    <main v-else class="flex-1 min-h-0 overflow-y-auto relative p-0">
       <DashboardView v-if="adminActiveTab === 'dashboard'" />
       <HistoryView   v-else-if="adminActiveTab === 'history'" />
       <MenuView      v-else-if="adminActiveTab === 'menu'" />
