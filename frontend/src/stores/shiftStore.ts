@@ -6,8 +6,8 @@ import { usePosStore } from './posStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
-// Render.com cold start da qotib qolishni oldini olish uchun 5s timeout
-async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 5000): Promise<Response> {
+// Render.com cold start da qotib qolishni oldini olish uchun 3s timeout
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 3000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -53,6 +53,7 @@ export const useShiftStore = defineStore('shift', () => {
   async function fetchActiveShift() {
     const authStore = useAuthStore();
     if (!authStore.user) return;
+    
     try {
       const res = await fetchWithTimeout(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
       if (res.ok) {
@@ -64,45 +65,24 @@ export const useShiftStore = defineStore('shift', () => {
             expenses: currentShift.value?.expenses || []
           };
           return;
-        } else {
-          currentShift.value = null;
-          localStorage.removeItem('doston_current_shift');
-          return;
         }
       }
     } catch (e) {
-      console.warn('Backend API unreachable, using local shift state:', e);
+      console.warn('Backend API unreachable, preserving local shift state:', e);
     }
 
-    // Offline fallback: keep currentShift if active, else create mock shift if user opens shift
+    // Preserve local OPEN shift if present
     if (currentShift.value && currentShift.value.status === 'OPEN') {
       currentShift.value.cashierName = authStore.user.fullName;
     }
   }
 
-  async function openShift(initialCash: number, _cashierName: string = 'ADMIN') {
+  // Chaqmoq tezligida (0ms instant UI update) smena ochish
+  function openShift(initialCash: number, _cashierName: string = 'ADMIN') {
     const authStore = useAuthStore();
     const cashierName = authStore.user?.fullName || _cashierName;
     const cashierId = authStore.user?.id || 'admin-1';
 
-    try {
-      const res = await fetchWithTimeout(`${API_URL}/shifts/open`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cashierId, initialCash })
-      });
-      if (res.ok) {
-        const body = await res.json();
-        if (body.success) {
-          currentShift.value = { ...body.data.shift, cashierName, expenses: [] };
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('Backend API unreachable, opening shift locally:', e);
-    }
-
-    // Offline local open shift
     const localShift: Shift = {
       id: 'shift-' + Date.now(),
       cashierName,
@@ -114,7 +94,25 @@ export const useShiftStore = defineStore('shift', () => {
       totalQrSales: 0,
       expenses: []
     };
+
+    // Instant local state update
     currentShift.value = localShift;
+
+    // Background async sync to backend API (non-blocking)
+    fetchWithTimeout(`${API_URL}/shifts/open`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cashierId, initialCash })
+    }).then(async (res) => {
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data?.shift?.id && currentShift.value) {
+          currentShift.value.id = body.data.shift.id;
+        }
+      }
+    }).catch(err => {
+      console.warn('Background shift open sync warning:', err);
+    });
   }
 
   function addExpense(amount: number, reason: string) {
@@ -129,40 +127,20 @@ export const useShiftStore = defineStore('shift', () => {
     }
   }
 
-  async function closeShiftBlindReconciliation(declaredCash: number, declaredCard: number, declaredQr: number, notes?: string) {
-    if (!currentShift.value) return null;
-    const activeShiftObj = currentShift.value;
-    const shiftId = activeShiftObj.id;
+  function closeShiftBlindReconciliation(declaredCash: number, declaredCard: number, declaredQr: number, notes?: string): ShiftCashAudit {
+    const activeShiftObj = currentShift.value || {
+      id: 'shift-' + Date.now(),
+      cashierName: 'Kassir',
+      openedAt: new Date().toISOString(),
+      initialCash: 0,
+      status: 'OPEN' as const,
+      totalCashSales: 0,
+      totalCardSales: 0,
+      totalQrSales: 0,
+      expenses: []
+    };
 
-    try {
-      const res = await fetchWithTimeout(`${API_URL}/shifts/close-blind`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftId,
-          declaredCash,
-          declaredCard,
-          declaredQr,
-          notes,
-          expenses: activeShiftObj.expenses || []
-        })
-      }, 8000);
-      if (res.ok) {
-        const body = await res.json();
-        const audit = body.data?.audit || body.audit;
-        if (audit) {
-          shiftAudits.value.unshift(audit);
-          currentShift.value = null;
-          localStorage.removeItem('doston_current_shift');
-          return audit;
-        }
-      }
-    } catch (e) {
-      console.warn('Backend API unreachable, performing local blind reconciliation:', e);
-    }
-
-    // Offline local blind reconciliation
-    const shiftOrders = currentShiftOrders.value; // Orders during this specific session
+    const shiftOrders = currentShiftOrders.value;
     const totalOrderCash = shiftOrders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + o.totalAmount, 0);
     const totalExpenses = (activeShiftObj.expenses || []).reduce((sum, e) => sum + e.amount, 0);
 
@@ -175,27 +153,46 @@ export const useShiftStore = defineStore('shift', () => {
     if (difference < -100) status = 'SHORTAGE';
     else if (difference > 100) status = 'SURPLUS';
 
-    const localAudit: ShiftCashAudit = {
+    const audit: ShiftCashAudit = {
       id: 'aud-' + Date.now().toString().slice(-6),
       shiftId: activeShiftObj.id,
       expectedCash,
       declaredCash: declaredCashNum,
       declaredCard: Number(declaredCard) || 0,
       declaredQr: Number(declaredQr) || 0,
-      difference,
       totalExpenses,
+      difference,
       status,
       notes: notes || '',
-      createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+      createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
     };
 
-    shiftAudits.value.unshift(localAudit);
+    // Instant local shift closure
+    shiftAudits.value.unshift(audit);
     currentShift.value = null;
-    return localAudit;
+    localStorage.removeItem('doston_current_shift');
+
+    // Background async sync to backend
+    fetchWithTimeout(`${API_URL}/shifts/close-blind`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shiftId: activeShiftObj.id,
+        declaredCash,
+        declaredCard,
+        declaredQr,
+        notes,
+        expenses: activeShiftObj.expenses || []
+      })
+    }).catch(err => {
+      console.warn('Background shift close sync warning:', err);
+    });
+
+    return audit;
   }
 
   function verifyManagerPin(pin: string): boolean {
-    return managerPins.has(pin.trim()) || pin.length >= 4;
+    return managerPins.has(pin);
   }
 
   return {

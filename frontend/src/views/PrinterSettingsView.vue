@@ -36,7 +36,7 @@ function saveSettings() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-slate-100 dark:bg-slate-950 p-4 sm:p-6 space-y-6 overflow-y-auto font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100">
+  <div class="w-full min-h-full bg-slate-100 dark:bg-slate-950 p-4 sm:p-6 space-y-6 font-['Plus_Jakarta_Sans',sans-serif] text-slate-900 dark:text-slate-100">
     
     <!-- Top Header -->
     <div class="flex items-center justify-between bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">

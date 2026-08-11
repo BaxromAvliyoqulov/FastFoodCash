@@ -15,8 +15,7 @@ import {
   Package, 
   Receipt,
   Printer,
-  Crown,
-  Loader2
+  Crown
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
@@ -24,7 +23,6 @@ const shiftStore = useShiftStore();
 
 // Retrieve last admin tab or default to dashboard
 const adminActiveTab = ref(localStorage.getItem('doston_pos_admin_tab') || 'dashboard');
-const isDataReady = ref(false);
 
 function changeAdminTab(tab: string) {
   adminActiveTab.value = tab;
@@ -40,23 +38,11 @@ const tabs = [
   { id: 'printer',   label: 'Printer Sozlamalari',   icon: Printer },
 ];
 
-// F5 reload safe data initialization with strict try-finally safety net
-onMounted(async () => {
-  try {
-    // Timeout of 2.5s maximum to avoid blocking UI if backend is offline or slow
-    const fetchPromise = Promise.all([
-      posStore.fetchOrders(),
-      posStore.fetchProducts(),
-      shiftStore.fetchActiveShift(),
-    ]);
-
-    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2500));
-    await Promise.race([fetchPromise, timeoutPromise]);
-  } catch (err) {
-    console.warn('Admin layout async sync warning:', err);
-  } finally {
-    isDataReady.value = true;
-  }
+// Non-blocking background data synchronization on mount
+onMounted(() => {
+  posStore.fetchOrders();
+  posStore.fetchProducts();
+  shiftStore.fetchActiveShift();
 });
 </script>
 
@@ -64,7 +50,7 @@ onMounted(async () => {
   <div class="h-full flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden">
 
     <!-- ── Admin Top Navbar ────────────────────────────────── -->
-    <nav class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center gap-2 shadow-sm">
+    <nav class="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center gap-2 shadow-sm relative z-20">
       <!-- Admin Badge -->
       <div class="flex items-center gap-2 pr-4 border-r border-slate-200 dark:border-slate-800 py-2 shrink-0">
         <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
@@ -92,17 +78,8 @@ onMounted(async () => {
       </div>
     </nav>
 
-    <!-- ── Loading State ───────────────────────────────────── -->
-    <div 
-      v-if="!isDataReady"
-      class="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600 min-h-[300px]"
-    >
-      <Loader2 class="w-8 h-8 animate-spin text-amber-500" />
-      <p class="text-xs font-semibold">Tizim ma'lumotlari yuklanmoqda...</p>
-    </div>
-
-    <!-- ── Admin Content Area ──────────────────────────────── -->
-    <main v-else class="flex-1 min-h-0 overflow-y-auto relative p-0">
+    <!-- ── Admin Content Area (Non-blocking 0ms render) ────── -->
+    <main class="flex-1 min-h-0 overflow-y-auto relative p-0">
       <DashboardView       v-if="adminActiveTab === 'dashboard'" />
       <HistoryView         v-else-if="adminActiveTab === 'history'" />
       <MenuView            v-else-if="adminActiveTab === 'menu'" />

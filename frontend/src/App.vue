@@ -61,7 +61,7 @@ onMounted(() => {
     <Navbar class="shrink-0" :activeTab="activeTab" @changeTab="handleTabChange" />
 
     <!-- Main Content Area (Fills remaining height) -->
-    <main class="flex-1 min-h-0 overflow-hidden relative">
+    <main class="flex-1 min-h-0 overflow-y-auto relative">
       <PosView v-if="activeTab === 'pos'" />
       <TablesView v-else-if="activeTab === 'tables'" />
       <AdminLayout v-else-if="activeTab === 'admin'" />
