@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import DashboardView from './DashboardView.vue';
 import HistoryView from './HistoryView.vue';
 import MenuView from './MenuView.vue';
 import RevisionView from './RevisionView.vue';
 import ShiftView from './ShiftView.vue';
+import { usePosStore } from '../stores/posStore';
+import { useShiftStore } from '../stores/shiftStore';
 import { 
   BarChart3, 
   History, 
   FolderKanban, 
   Package, 
   Receipt,
-  Crown
+  Crown,
+  Loader2
 } from 'lucide-vue-next';
+
+const posStore = usePosStore();
+const shiftStore = useShiftStore();
 
 // Retrieve last admin tab or default to dashboard
 const adminActiveTab = ref(localStorage.getItem('doston_pos_admin_tab') || 'dashboard');
+const isDataReady = ref(false);
 
 function changeAdminTab(tab: string) {
   adminActiveTab.value = tab;
@@ -29,6 +36,16 @@ const tabs = [
   { id: 'revision',  label: "Ombor Qoldig'i",        icon: Package },
   { id: 'shift',     label: 'Smena & Z-Report',      icon: Receipt },
 ];
+
+// F5 dan keyin ham ma'lumotlar yuklanishini ta'minlaydi
+onMounted(async () => {
+  await Promise.all([
+    posStore.fetchOrders(),
+    posStore.fetchProducts(),
+    shiftStore.fetchActiveShift(),
+  ]);
+  isDataReady.value = true;
+});
 </script>
 
 <template>
@@ -63,8 +80,17 @@ const tabs = [
       </div>
     </nav>
 
+    <!-- ── Loading State (F5 dan keyin ma'lumot yuklanayotganda) ── -->
+    <div 
+      v-if="!isDataReady"
+      class="flex-1 flex flex-col items-center justify-center gap-4 text-slate-400 dark:text-slate-600"
+    >
+      <Loader2 class="w-10 h-10 animate-spin text-amber-500" />
+      <p class="text-sm font-semibold">Ma'lumotlar yuklanmoqda...</p>
+    </div>
+
     <!-- ── Admin Content Area ──────────────────────────────── -->
-    <main class="flex-1 min-h-0 overflow-hidden relative">
+    <main v-else class="flex-1 min-h-0 overflow-hidden relative">
       <DashboardView v-if="adminActiveTab === 'dashboard'" />
       <HistoryView   v-else-if="adminActiveTab === 'history'" />
       <MenuView      v-else-if="adminActiveTab === 'menu'" />
