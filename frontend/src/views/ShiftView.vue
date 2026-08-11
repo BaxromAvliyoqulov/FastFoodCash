@@ -197,9 +197,9 @@ function submitOpenShift() {
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jami Xarajatlar</span>
         </div>
         <div class="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mb-1 truncate">
-          {{ formatMoney(shiftStore.currentShift?.expenses?.reduce((s, e) => s + e.amount, 0)) }} <span class="text-sm font-sans text-slate-500">so'm</span>
+          {{ formatMoney(Array.isArray(shiftStore.currentShift?.expenses) ? shiftStore.currentShift?.expenses.reduce((s, e) => s + (e?.amount || 0), 0) : 0) }} <span class="text-sm font-sans text-slate-500">so'm</span>
         </div>
-        <div class="text-xs text-slate-500 font-medium">{{ shiftStore.currentShift?.expenses?.length || 0 }} ta xarajat kiritilgan</div>
+        <div class="text-xs text-slate-500 font-medium">{{ Array.isArray(shiftStore.currentShift?.expenses) ? shiftStore.currentShift?.expenses.length : 0 }} ta xarajat kiritilgan</div>
       </div>
 
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 relative overflow-hidden group hover:shadow-xl transition-all shadow-sm">
@@ -212,7 +212,7 @@ function submitOpenShift() {
         </div>
         <div class="flex items-baseline gap-2 mb-1">
           <div class="text-2xl font-black text-slate-900 dark:text-white font-mono">
-            {{ shiftStore.currentShiftOrders.length || 0 }}
+            {{ shiftStore.currentShiftOrders?.length || 0 }}
           </div>
           <span class="text-sm font-bold text-slate-500">ta chek</span>
         </div>
@@ -262,8 +262,8 @@ function submitOpenShift() {
           </div>
           <div>
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Farq (Diff):</span>
-            <span :class="['font-black font-mono text-lg', lastAuditResult.difference < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400']">
-              {{ lastAuditResult.difference > 0 ? '+' : '' }}{{ formatMoney(lastAuditResult.difference) }} <span class="text-[10px] font-sans">so'm</span>
+            <span :class="['font-black font-mono text-lg', (lastAuditResult.difference || 0) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400']">
+              {{ (lastAuditResult.difference || 0) > 0 ? '+' : '' }}{{ formatMoney(lastAuditResult.difference) }} <span class="text-[10px] font-sans">so'm</span>
             </span>
           </div>
         </div>
@@ -282,7 +282,7 @@ function submitOpenShift() {
 
       <div class="overflow-x-auto max-w-full">
         <!-- Empty State (Beautiful and Engaging) -->
-        <div v-if="shiftStore.shiftAudits.length === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center">
+        <div v-if="!shiftStore.shiftAudits || shiftStore.shiftAudits.length === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center">
           <div class="w-24 h-24 mb-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-4 border-white dark:border-slate-900 shadow-xl relative">
             <Receipt class="w-10 h-10 text-slate-400" />
             <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center">
@@ -293,9 +293,6 @@ function submitOpenShift() {
           <p class="text-sm text-slate-500 max-w-sm mx-auto">
             Siz hali birorta ham smenani yopmagansiz. Smenani yopganingizdan so'ng, to'liq kassa hisoboti shu yerda chiroyli tarzda paydo bo'ladi.
           </p>
-          <button v-if="shiftStore.isShiftOpen" @click="showCloseModal = true" class="mt-6 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:underline flex items-center gap-1">
-            Z-Report qanday ishlashini ko'rish uchun smenani yoping <ArrowUpRight class="w-4 h-4" />
-          </button>
         </div>
 
         <!-- Table -->
@@ -314,10 +311,10 @@ function submitOpenShift() {
             <tr v-for="audit in shiftStore.shiftAudits" :key="audit.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
               <td class="py-4 px-6 font-bold text-slate-900 dark:text-white">{{ audit.id }}</td>
               <td class="py-4 px-6 text-slate-500 font-medium">{{ audit.createdAt }}</td>
-              <td class="py-4 px-6 font-mono font-bold">{{ audit.expectedCash.toLocaleString('uz-UZ') }} <span class="text-[10px] text-slate-400 font-sans">so'm</span></td>
-              <td class="py-4 px-6 font-mono font-bold">{{ audit.declaredCash.toLocaleString('uz-UZ') }} <span class="text-[10px] text-slate-400 font-sans">so'm</span></td>
-              <td :class="['py-4 px-6 font-mono font-black', audit.difference < 0 ? 'text-rose-500' : 'text-emerald-500']">
-                {{ audit.difference > 0 ? '+' : '' }}{{ audit.difference.toLocaleString('uz-UZ') }} <span class="text-[10px] opacity-70 font-sans">so'm</span>
+              <td class="py-4 px-6 font-mono font-bold">{{ formatMoney(audit.expectedCash) }} <span class="text-[10px] text-slate-400 font-sans">so'm</span></td>
+              <td class="py-4 px-6 font-mono font-bold">{{ formatMoney(audit.declaredCash) }} <span class="text-[10px] text-slate-400 font-sans">so'm</span></td>
+              <td :class="['py-4 px-6 font-mono font-black', (audit.difference || 0) < 0 ? 'text-rose-500' : 'text-emerald-500']">
+                {{ (audit.difference || 0) > 0 ? '+' : '' }}{{ formatMoney(audit.difference) }} <span class="text-[10px] opacity-70 font-sans">so'm</span>
               </td>
               <td class="py-4 px-6 text-right">
                 <span :class="[

@@ -44,10 +44,20 @@ export const useShiftStore = defineStore('shift', () => {
   }, { deep: true });
 
   const currentShiftOrders = computed(() => {
-    if (!currentShift.value) return [];
-    const posStore = usePosStore();
-    const shiftStartTime = new Date(currentShift.value.openedAt).getTime();
-    return posStore.orderHistory.filter(o => new Date(o.createdAt).getTime() >= shiftStartTime);
+    if (!currentShift.value || !currentShift.value.openedAt) return [];
+    try {
+      const posStore = usePosStore();
+      const shiftStartTime = new Date(currentShift.value.openedAt).getTime();
+      if (Number.isNaN(shiftStartTime)) return [];
+      return (posStore.orderHistory || []).filter(o => {
+        if (!o || !o.createdAt) return false;
+        const t = new Date(o.createdAt).getTime();
+        return !Number.isNaN(t) && t >= shiftStartTime;
+      });
+    } catch (err) {
+      console.warn('Error computing currentShiftOrders:', err);
+      return [];
+    }
   });
 
   async function fetchActiveShift() {

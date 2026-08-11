@@ -83,9 +83,8 @@ const themeStore = useThemeStore();
         <span>Stollar</span>
       </button>
 
-      <!-- SMENA FOR CASHIER ONLY (IF NOT ADMIN) -->
+      <!-- SMENA TAB -->
       <button 
-        v-if="!authStore.isAdmin"
         @click="emit('change-tab', 'shift')"
         :class="[
           'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
