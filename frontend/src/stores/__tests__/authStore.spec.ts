@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useAuthStore } from '../authStore';
 
 // Mock fetch
-const originalFetch = global.fetch;
+const originalFetch = globalThis.fetch;
 
 describe('Auth Store', () => {
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe('Auth Store', () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
   });
 
@@ -55,7 +55,7 @@ describe('Auth Store', () => {
   it('handles successful login', async () => {
     const mockUser = { id: '1', fullName: 'Cashier 1', phone: '12345', role: 'CASHIER' };
     
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
         success: true,
@@ -76,7 +76,7 @@ describe('Auth Store', () => {
   });
 
   it('handles failed login', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({
         success: false,

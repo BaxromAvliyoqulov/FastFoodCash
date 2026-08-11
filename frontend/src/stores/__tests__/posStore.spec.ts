@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { usePosStore } from '../posStore';
 import type { Product, Modifier } from '../../types/pos';
@@ -15,6 +15,7 @@ describe('POS Store - Cart & Operation Mode Logic', () => {
     categoryName: 'Burgerlar',
     name: 'Gamburger',
     price: 25000,
+    imageUrl: '/images/food/gamburger.jpg',
     recipe: [],
     availableModifiers: []
   };

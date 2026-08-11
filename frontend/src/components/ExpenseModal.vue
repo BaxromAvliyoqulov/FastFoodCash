@@ -5,7 +5,7 @@ import { useToastStore } from '../stores/toastStore';
 import { X, DollarSign, PenLine } from 'lucide-vue-next';
 import { formatMoney } from '../utils/formatters';
 
-const props = defineProps<{ isOpen: boolean }>();
+defineProps<{ isOpen: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const shiftStore = useShiftStore();
