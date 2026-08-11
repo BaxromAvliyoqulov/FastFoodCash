@@ -15,7 +15,6 @@ import {
   LockOpen,
   Banknote,
   CreditCard,
-  QrCode,
   X
 } from 'lucide-vue-next';
 
@@ -25,8 +24,6 @@ const toast = useToastStore();
 const showCloseModal = ref(false);
 const declaredCashInput = ref<number | null>(null);
 const declaredCardInput = ref<number | null>(null);
-const declaredQrInput = ref<number | null>(null);
-const pinError = ref('');
 const auditNotes = ref('');
 
 const showExpenseModal = ref(false);
@@ -63,13 +60,11 @@ function handleAddExpense() {
 }
 
 const totalDeclaredSum = computed(() => {
-  return (declaredCashInput.value || 0) + (declaredCardInput.value || 0) + (declaredQrInput.value || 0);
+  return (declaredCashInput.value || 0) + (declaredCardInput.value || 0);
 });
 
 function handleCloseShiftSubmit() {
-  pinError.value = '';
-
-  if (declaredCashInput.value === null && declaredCardInput.value === null && declaredQrInput.value === null) {
+  if (declaredCashInput.value === null && declaredCardInput.value === null) {
     toast.warning('Sanab kiritilgan summalarni kiriting!');
     return;
   }
@@ -77,7 +72,7 @@ function handleCloseShiftSubmit() {
   const result = shiftStore.closeShiftBlindReconciliation(
     declaredCashInput.value || 0,
     declaredCardInput.value || 0,
-    declaredQrInput.value || 0,
+    0,
     auditNotes.value
   );
 
@@ -88,7 +83,6 @@ function handleCloseShiftSubmit() {
   // Clear inputs for next time
   declaredCashInput.value = null;
   declaredCardInput.value = null;
-  declaredQrInput.value = null;
 }
 
 function submitOpenShift() {
@@ -408,24 +402,6 @@ function submitOpenShift() {
                 @input="declaredCardInput = formatMoneyInput($event)"
                 placeholder="Masalan: 850 000"
                 class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-blue-500 focus:outline-none transition shadow-sm"
-              />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
-            </div>
-          </div>
-
-          <!-- 3. QR INPUT -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <QrCode class="w-4 h-4 text-purple-500" />
-              <span>Click / Payme & QR To'lovlar:</span>
-            </label>
-            <div class="relative">
-              <input 
-                type="text" 
-                :value="declaredQrInput ? declaredQrInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-                @input="declaredQrInput = formatMoneyInput($event)"
-                placeholder="Masalan: 320 000"
-                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-purple-500 focus:outline-none transition shadow-sm"
               />
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
             </div>
