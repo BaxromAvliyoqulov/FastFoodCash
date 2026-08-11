@@ -301,7 +301,7 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── SABOY: addToCart ─────────────────────────────────────────────────────────
-  function addToCart(product: Product, selectedModifiers: Modifier[] = []) {
+  function addToCart(product: Product, selectedModifiers: Modifier[] = [], customQuantity: number = 1) {
     const cat = categories.value.find(c => c.id === product.categoryId);
     if (product.isStopList || cat?.isHidden) {
       alert(`"${product.name}" vaqtinchalik yopilgan (Stop-List)! Ushbu taomni sotish taqiqlangan.`);
@@ -317,17 +317,16 @@ export const usePosStore = defineStore('pos', () => {
     });
 
     if (existingIndex > -1) {
-      cart.value[existingIndex].quantity += 1;
-      cart.value[existingIndex].totalPrice =
-        cart.value[existingIndex].quantity * cart.value[existingIndex].unitPrice;
+      cart.value[existingIndex].quantity = Number((cart.value[existingIndex].quantity + customQuantity).toFixed(3));
+      cart.value[existingIndex].totalPrice = Math.round(cart.value[existingIndex].quantity * cart.value[existingIndex].unitPrice);
     } else {
       cart.value.push({
         id: 'cart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         product,
-        quantity: 1,
+        quantity: customQuantity,
         selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price, ingredientDeduction: m.ingredientDeduction })),
         unitPrice,
-        totalPrice: unitPrice
+        totalPrice: Math.round(customQuantity * unitPrice)
       });
     }
   }
@@ -439,7 +438,7 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── ZAL: addToTableCart ──────────────────────────────────────────────────────
-  function addToTableCart(tableId: string, product: Product, selectedModifiers: Modifier[] = []) {
+  function addToTableCart(tableId: string, product: Product, selectedModifiers: Modifier[] = [], customQuantity: number = 1) {
     const cat = categories.value.find(c => c.id === product.categoryId);
     if (product.isStopList || cat?.isHidden) {
       alert(`"${product.name}" vaqtinchalik yopilgan (Stop-List)!`);
@@ -459,17 +458,16 @@ export const usePosStore = defineStore('pos', () => {
     });
 
     if (existingIndex > -1) {
-      table.cart[existingIndex].quantity += 1;
-      table.cart[existingIndex].totalPrice =
-        table.cart[existingIndex].quantity * table.cart[existingIndex].unitPrice;
+      table.cart[existingIndex].quantity = Number((table.cart[existingIndex].quantity + customQuantity).toFixed(3));
+      table.cart[existingIndex].totalPrice = Math.round(table.cart[existingIndex].quantity * table.cart[existingIndex].unitPrice);
     } else {
       table.cart.push({
         id: 'tcart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         product,
-        quantity: 1,
+        quantity: customQuantity,
         selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price, ingredientDeduction: m.ingredientDeduction })),
         unitPrice,
-        totalPrice: unitPrice
+        totalPrice: Math.round(customQuantity * unitPrice)
       });
     }
 

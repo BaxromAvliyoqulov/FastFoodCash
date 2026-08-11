@@ -10,6 +10,7 @@ import PaymentModal from '../components/PaymentModal.vue';
 import ReceiptModal from '../components/ReceiptModal.vue';
 import KitchenReceiptModal from '../components/KitchenReceiptModal.vue';
 import ExpenseModal from '../components/ExpenseModal.vue';
+import WeightedProductModal from '../components/WeightedProductModal.vue';
 import PosHeader from '../components/pos/PosHeader.vue';
 import PosCategoriesBar from '../components/pos/PosCategoriesBar.vue';
 import PosProductGrid from '../components/pos/PosProductGrid.vue';
@@ -30,6 +31,7 @@ const authStore = useAuthStore();
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 const activeModifierProduct = ref<Product | null>(null);
+const activeWeightedProduct = ref<Product | null>(null);
 const showPaymentModal = ref(false);
 const showReceiptModal = ref(false);
 const showKitchenReceiptModal = ref(false);
@@ -104,13 +106,33 @@ const activeSubtotal = computed(() =>
   posStore.operationMode === 'ZAL' ? posStore.activeTableSubtotal : posStore.cartSubtotal
 );
 
+function isWeightedProduct(prod: Product): boolean {
+  if (prod.isWeighted || prod.unit === 'KG') return true;
+  const name = prod.name.toLowerCase();
+  return name.includes('1 kg') || name.includes('1kg') || name.includes('(1 kg)') || name.includes('baliq');
+}
+
 function handleProductClick(product: Product) {
+  if (isWeightedProduct(product)) {
+    activeWeightedProduct.value = product;
+    return;
+  }
   if (posStore.operationMode === 'ZAL') {
     if (!posStore.activeTableId) return;
     posStore.addToTableCart(posStore.activeTableId, product);
   } else {
     posStore.addToCart(product);
   }
+}
+
+function confirmWeightedProduct(product: Product, weightKg: number) {
+  if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+    posStore.addToTableCart(posStore.activeTableId, product, [], weightKg);
+  } else {
+    posStore.addToCart(product, [], weightKg);
+  }
+  toast.success(`"${product.name}" (${weightKg} kg) savatga qo'shildi!`);
+  activeWeightedProduct.value = null;
 }
 
 function openModifiersModal(product: Product, event: Event) {
@@ -334,7 +356,9 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
               <div v-if="item.selectedModifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
                 <span v-for="mod in item.selectedModifiers" :key="mod.modifierId" class="text-[9px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded-md">+{{ mod.name }}</span>
               </div>
-              <p class="text-[11px] text-slate-500 mt-1 font-mono font-medium">{{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ item.quantity }}</p>
+              <p class="text-[11px] text-slate-500 mt-1 font-mono font-medium">
+                {{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ isWeightedProduct(item.product) ? item.quantity + ' kg' : item.quantity }}
+              </p>
             </div>
             <div class="shrink-0 text-right">
               <p class="text-sm font-black text-amber-600 dark:text-amber-400 font-mono leading-tight">{{ item.totalPrice.toLocaleString('uz-UZ') }}</p>
@@ -343,9 +367,9 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           </div>
           <div class="flex items-center justify-between mt-2.5 pl-3.5">
             <div class="flex items-center bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 shadow-sm">
-              <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-rose-500/20 transition-all active:scale-90"><Minus class="w-3.5 h-3.5" /></button>
-              <span class="text-sm font-black text-slate-900 dark:text-white font-mono w-8 text-center">{{ item.quantity }}</span>
-              <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/20 transition-all active:scale-90"><Plus class="w-3.5 h-3.5" /></button>
+              <button @click="updateQty(item.id, isWeightedProduct(item.product) ? -0.100 : -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-rose-500/20 transition-all active:scale-90"><Minus class="w-3.5 h-3.5" /></button>
+              <span class="text-xs font-black text-slate-900 dark:text-white font-mono min-w-[36px] px-1 text-center">{{ isWeightedProduct(item.product) ? item.quantity + 'kg' : item.quantity }}</span>
+              <button @click="updateQty(item.id, isWeightedProduct(item.product) ? 0.100 : 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/20 transition-all active:scale-90"><Plus class="w-3.5 h-3.5" /></button>
             </div>
             <button @click="removeItem(item.id)" class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500/60 dark:text-rose-500/60 hover:text-rose-500 dark:hover:text-rose-400 border border-rose-100 dark:border-rose-500/10 transition-all active:scale-90 flex items-center justify-center">
               <Trash2 class="w-3.5 h-3.5" />
@@ -364,7 +388,7 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       <div class="shrink-0 p-4 space-y-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent">
         <div v-if="activeCart.length > 0" class="flex justify-between text-xs text-slate-500">
           <span>{{ activeCart.length }} xil taom</span>
-          <span class="font-mono">{{ activeCart.reduce((s, i) => s + i.quantity, 0) }} dona</span>
+          <span class="font-mono">{{ activeCart.reduce((s, i) => s + (isWeightedProduct(i.product) ? 1 : i.quantity), 0) }} d/kg</span>
         </div>
         <!-- Total card -->
         <div class="relative overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 px-4 py-3">
@@ -407,5 +431,6 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
     <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
     <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
     <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />
+    <WeightedProductModal :is-open="!!activeWeightedProduct" :product="activeWeightedProduct" @close="activeWeightedProduct = null" @confirm="confirmWeightedProduct" />
   </div>
 </template>

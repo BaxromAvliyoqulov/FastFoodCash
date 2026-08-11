@@ -43,6 +43,8 @@ export interface Product {
   categoryName: string;
   name: string;
   price: number;
+  unit?: 'PIECE' | 'KG' | 'GRAM';
+  isWeighted?: boolean;
   imageUrl: string;
   recipe: RecipeItem[];
   availableModifiers?: Modifier[];
