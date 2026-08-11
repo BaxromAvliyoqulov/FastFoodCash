@@ -53,14 +53,9 @@ function matchStatus(table: Table): boolean {
   return true;
 }
 
-// Occupancy Infographics Metrics
 const totalActiveTablesCount = computed(() => activeTablesList.value.length);
 const freeCount = computed(() => activeTablesList.value.filter(t => t.status === 'FREE').length);
 const occupiedCount = computed(() => activeTablesList.value.filter(t => t.status === 'OCCUPIED').length);
-const occupancyRate = computed(() => {
-  if (totalActiveTablesCount.value === 0) return 0;
-  return Math.round((occupiedCount.value / totalActiveTablesCount.value) * 100);
-});
 
 const totalActiveSalesSum = computed(() => {
   return activeTablesList.value.reduce((sum, t) => sum + tableSubtotal(t), 0);
@@ -121,7 +116,7 @@ function handleCloseTable(tableId: string, event: Event) {
 <template>
   <div class="h-full flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
     
-    <!-- ── 1. TOP HEADER & INFOGRAPHIC STATUS BAR ── -->
+    <!-- ── 1. TOP HEADER & METRIC BAR ── -->
     <div class="shrink-0 p-4 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md space-y-3">
       
       <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -131,39 +126,20 @@ function handleCloseTable(tableId: string, event: Event) {
             <Armchair class="w-5 h-5" />
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <h2 class="font-black text-base text-slate-900 dark:text-white tracking-wide">
-                Zal & Xonalar Monitori
-              </h2>
-              <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                INFOGRAPHICS
-              </span>
-            </div>
+            <h2 class="font-black text-base text-slate-900 dark:text-white tracking-wide">
+              Zal & Xonalar Xaritasi
+            </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
               Stol yoki Xonani bosing → Kassada buyurtma kiriting
             </p>
           </div>
         </div>
 
-        <!-- Occupancy Progress Bar & Sales Metric Pills -->
+        <!-- Metric Pills & Status Filters -->
         <div class="flex flex-wrap items-center gap-2.5">
           
-          <!-- Infographic Occupancy Rate Pill -->
-          <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div class="flex flex-col text-left">
-              <span class="text-[10px] font-bold text-slate-400 uppercase">Zal Bandligi:</span>
-              <span class="text-xs font-black font-mono text-slate-900 dark:text-white">{{ occupancyRate }}%</span>
-            </div>
-
-            <!-- Mini Visual Progress Bar -->
-            <div class="w-20 h-2 bg-emerald-200 dark:bg-emerald-950 rounded-full overflow-hidden flex">
-              <div :style="{ width: `${occupancyRate}%` }" class="bg-rose-500 h-full transition-all duration-500"></div>
-              <div :style="{ width: `${100 - occupancyRate}%` }" class="bg-emerald-500 h-full transition-all duration-500"></div>
-            </div>
-          </div>
-
           <!-- Total Active Sales Sum Pill -->
-          <div v-if="totalActiveSalesSum > 0" class="flex items-center gap-1.5 bg-rose-500/15 text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-xl border border-rose-500/30 font-black text-xs font-mono">
+          <div v-if="totalActiveSalesSum > 0" class="flex items-center gap-1.5 bg-rose-500/15 text-rose-600 dark:text-rose-400 px-3.5 py-1.5 rounded-xl border border-rose-500/30 font-black text-xs font-mono">
             <Activity class="w-3.5 h-3.5" />
             <span>💰 {{ totalActiveSalesSum.toLocaleString('uz-UZ') }} so'm</span>
           </div>
@@ -173,7 +149,7 @@ function handleCloseTable(tableId: string, event: Event) {
             <button 
               @click="statusFilter = statusFilter === 'FREE' ? 'ALL' : 'FREE'"
               :class="[
-                'text-xs font-black px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
+                'text-xs font-black px-3.5 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
                 statusFilter === 'FREE' 
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
                   : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
@@ -186,7 +162,7 @@ function handleCloseTable(tableId: string, event: Event) {
             <button 
               @click="statusFilter = statusFilter === 'OCCUPIED' ? 'ALL' : 'OCCUPIED'"
               :class="[
-                'text-xs font-black px-3 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
+                'text-xs font-black px-3.5 py-1.5 rounded-xl border transition cursor-pointer flex items-center gap-1.5',
                 statusFilter === 'OCCUPIED' 
                   ? 'bg-rose-600 text-white border-rose-600 shadow-md' 
                   : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
@@ -265,101 +241,85 @@ function handleCloseTable(tableId: string, event: Event) {
             :key="table.id"
             @click="selectTable(table)"
             :class="[
-              'relative flex flex-col rounded-3xl border-2 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[155px] hover:-translate-y-1 hover:shadow-xl',
+              'relative flex flex-col rounded-3xl p-4 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[155px] hover:-translate-y-1 hover:shadow-xl border-t-4',
               posStore.activeTableId === table.id
-                ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 via-amber-50 to-orange-100 dark:from-amber-900/40 dark:to-orange-950/40 shadow-xl shadow-amber-500/20 ring-4 ring-amber-500/30 scale-[1.03] z-10'
+                ? 'border-t-amber-500 border-x-2 border-b-2 border-amber-500/80 bg-gradient-to-br from-amber-500/20 via-amber-50 to-orange-100 dark:from-amber-900/40 dark:to-orange-950/40 shadow-xl shadow-amber-500/20 ring-4 ring-amber-500/30 scale-[1.03] z-10'
                 : table.status === 'FREE'
-                ? 'border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/20 dark:border-emerald-500/30 hover:border-emerald-500 shadow-sm'
-                : 'border-rose-500/60 bg-rose-500/15 dark:bg-rose-950/40 ring-1 ring-rose-500/30 shadow-lg shadow-rose-500/10'
+                ? 'border-t-emerald-500 border-x border-b border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20 hover:border-emerald-500 shadow-sm'
+                : 'border-t-rose-600 border-x-2 border-b-2 border-rose-500/60 bg-rose-500/15 dark:bg-rose-950/40 ring-1 ring-rose-500/30 shadow-lg shadow-rose-500/10'
             ]"
           >
-            <!-- TOP ACCENT STATUS EDGE BAR -->
-            <div 
-              :class="[
-                'w-full transition-all',
-                posStore.activeTableId === table.id
-                  ? 'h-1.5 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 animate-pulse'
-                  : table.status === 'FREE'
-                  ? 'h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500'
-                  : 'h-1.5 bg-gradient-to-r from-rose-500 via-red-500 to-rose-600 animate-pulse'
-              ]"
-            ></div>
+            <!-- Close button for occupied tables -->
+            <button
+              v-if="table.status === 'OCCUPIED'"
+              @click="handleCloseTable(table.id, $event)"
+              class="absolute top-3 right-3 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
+              title="Stolni yopish"
+            >
+              <X class="w-4 h-4" />
+            </button>
 
-            <div class="p-4 flex-1 flex flex-col justify-between">
-              
-              <!-- Close button for occupied tables -->
-              <button
-                v-if="table.status === 'OCCUPIED'"
-                @click="handleCloseTable(table.id, $event)"
-                class="absolute top-3 right-3 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
-                title="Stolni yopish"
+            <!-- Table Number & Status Pill -->
+            <div class="flex items-start gap-3 w-full mb-3" :class="table.status === 'OCCUPIED' ? 'pr-6' : ''">
+              <div
+                :class="[
+                  'w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-black transition-colors shrink-0 shadow-md',
+                  table.status === 'OCCUPIED'
+                    ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
+                    : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/25'
+                ]"
               >
-                <X class="w-4 h-4" />
-              </button>
+                {{ table.number }}
+              </div>
+              
+              <div class="min-w-0 pt-0.5">
+                <p class="font-black text-sm text-slate-900 dark:text-white leading-none truncate">
+                  {{ table.name || `${table.number}-Stol` }}
+                </p>
 
-              <!-- Table Number & Status Pill -->
-              <div class="flex items-start gap-3 w-full mb-3" :class="table.status === 'OCCUPIED' ? 'pr-6' : ''">
                 <div
                   :class="[
-                    'w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-black transition-colors shrink-0 shadow-md',
-                    table.status === 'OCCUPIED'
-                      ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
-                      : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/25'
+                    'text-[10px] font-black px-2 py-0.5 rounded-full mt-1.5 inline-flex items-center gap-1 uppercase tracking-wider',
+                    table.status === 'FREE'
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
                   ]"
                 >
-                  {{ table.number }}
-                </div>
-                
-                <div class="min-w-0 pt-0.5">
-                  <p class="font-black text-sm text-slate-900 dark:text-white leading-none truncate">
-                    {{ table.name || `${table.number}-Stol` }}
-                  </p>
-
-                  <div
-                    :class="[
-                      'text-[10px] font-black px-2 py-0.5 rounded-full mt-1.5 inline-flex items-center gap-1 uppercase tracking-wider',
-                      table.status === 'FREE'
-                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
-                    ]"
-                  >
-                    <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-rose-500 animate-ping']"></span>
-                    <span>{{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}</span>
-                  </div>
+                  <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-rose-500 animate-ping']"></span>
+                  <span>{{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}</span>
                 </div>
               </div>
+            </div>
 
-              <!-- Bottom Content (Infographics: Timer / Items Count / Subtotal) -->
-              <div class="mt-auto w-full pt-2 border-t" :class="table.status === 'OCCUPIED' ? 'border-rose-500/20' : 'border-emerald-500/20'">
-                <template v-if="table.status === 'FREE'">
-                  <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            <!-- Bottom Content (Infographics: Timer / Items Count / Subtotal) -->
+            <div class="mt-auto w-full pt-2 border-t" :class="table.status === 'OCCUPIED' ? 'border-rose-500/20' : 'border-emerald-500/20'">
+              <template v-if="table.status === 'FREE'">
+                <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span class="flex items-center gap-1">
+                    <CheckCircle2 class="w-3.5 h-3.5" />
+                    <span>Joy tayyor</span>
+                  </span>
+                  <span class="text-[10px] font-mono opacity-70">🪑 4 o'rin</span>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-rose-600/90 dark:text-rose-400/90">
                     <span class="flex items-center gap-1">
-                      <CheckCircle2 class="w-3.5 h-3.5" />
-                      <span>Joy tayyor</span>
+                      <Clock class="w-3 h-3 text-rose-500" />
+                      <span>{{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
                     </span>
-                    <span class="text-[10px] font-mono opacity-70">🪑 4 o'rin</span>
+                    <span v-if="tableCartCount(table) > 0" class="flex items-center gap-0.5 font-mono">
+                      <Utensils class="w-3 h-3" /> {{ tableCartCount(table) }} taom
+                    </span>
                   </div>
-                </template>
 
-                <template v-else>
-                  <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] font-bold text-rose-600/90 dark:text-rose-400/90">
-                      <span class="flex items-center gap-1">
-                        <Clock class="w-3 h-3 text-rose-500" />
-                        <span>{{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
-                      </span>
-                      <span v-if="tableCartCount(table) > 0" class="flex items-center gap-0.5 font-mono">
-                        <Utensils class="w-3 h-3" /> {{ tableCartCount(table) }} taom
-                      </span>
-                    </div>
-
-                    <div v-if="tableSubtotal(table) > 0" class="text-xs font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 text-right">
-                      💰 {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
-                    </div>
+                  <div v-if="tableSubtotal(table) > 0" class="text-xs font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 text-right">
+                    💰 {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
                   </div>
-                </template>
-              </div>
-
+                </div>
+              </template>
             </div>
           </button>
         </div>
@@ -385,94 +345,88 @@ function handleCloseTable(tableId: string, event: Event) {
             :key="table.id"
             @click="selectTable(table)"
             :class="[
-              'relative flex flex-col rounded-3xl border-2 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[160px] hover:-translate-y-1.5 hover:shadow-2xl',
+              'relative flex flex-col rounded-3xl p-4 text-left transition-all duration-300 cursor-pointer group overflow-hidden min-h-[160px] hover:-translate-y-1.5 hover:shadow-2xl border-t-4 border-t-amber-500',
               posStore.activeTableId === table.id
-                ? 'border-amber-500 bg-gradient-to-br from-amber-500/30 via-orange-950/40 to-slate-950 shadow-2xl shadow-amber-500/30 ring-4 ring-amber-500/40 scale-[1.03] z-10'
+                ? 'border-x-2 border-b-2 border-amber-500 bg-gradient-to-br from-amber-500/30 via-orange-950/40 to-slate-950 shadow-2xl shadow-amber-500/30 ring-4 ring-amber-500/40 scale-[1.03] z-10'
                 : table.status === 'FREE'
-                ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:bg-slate-900 hover:border-amber-500 shadow-md shadow-amber-500/5'
-                : 'border-rose-500/70 bg-gradient-to-br from-rose-500/20 via-rose-950/40 to-slate-950 ring-2 ring-rose-500/40 shadow-xl shadow-rose-500/20'
+                ? 'border-x border-b border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:bg-slate-900 hover:border-amber-500 shadow-md shadow-amber-500/5'
+                : 'border-x-2 border-b-2 border-rose-500/70 bg-gradient-to-br from-rose-500/20 via-rose-950/40 to-slate-950 ring-2 ring-rose-500/40 shadow-xl shadow-rose-500/20'
             ]"
           >
-            <!-- TOP GOLDEN STATUS EDGE BAR FOR VIP -->
-            <div class="w-full h-1.5 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500"></div>
+            <!-- Close button for occupied VIP rooms -->
+            <button
+              v-if="table.status === 'OCCUPIED'"
+              @click="handleCloseTable(table.id, $event)"
+              class="absolute top-3 right-3 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
+              title="Xonani yopish"
+            >
+              <X class="w-4 h-4" />
+            </button>
 
-            <div class="p-4 flex-1 flex flex-col justify-between">
-              
-              <!-- Close button for occupied VIP rooms -->
-              <button
-                v-if="table.status === 'OCCUPIED'"
-                @click="handleCloseTable(table.id, $event)"
-                class="absolute top-3 right-3 w-7 h-7 rounded-xl bg-rose-600 text-white flex items-center justify-center transition-all z-10 opacity-80 hover:opacity-100 shadow-md"
-                title="Xonani yopish"
+            <!-- VIP Badge Header Tag -->
+            <div class="flex items-center justify-between mb-2">
+              <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                <Crown class="w-3 h-3 text-amber-500" /> VIP XONA
+              </span>
+
+              <span 
+                :class="[
+                  'text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider',
+                  table.status === 'FREE' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                ]"
               >
-                <X class="w-4 h-4" />
-              </button>
-
-              <!-- VIP Badge Header Tag -->
-              <div class="flex items-center justify-between mb-2">
-                <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                  <Crown class="w-3 h-3 text-amber-500" /> VIP XONA
-                </span>
-
-                <span 
-                  :class="[
-                    'text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider',
-                    table.status === 'FREE' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
-                  ]"
-                >
-                  {{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}
-                </span>
-              </div>
-
-              <!-- Table Number & Name -->
-              <div class="flex items-center space-x-3 my-2">
-                <div 
-                  :class="[
-                    'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black font-mono shadow-md shrink-0',
-                    table.status === 'OCCUPIED'
-                      ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
-                      : 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white shadow-amber-500/30'
-                  ]"
-                >
-                  {{ table.number }}
-                </div>
-
-                <div>
-                  <h4 class="font-black text-base text-slate-900 dark:text-white leading-tight">
-                    {{ table.name }}
-                  </h4>
-                  <p class="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
-                    ⭐ VIP Xizmat
-                  </p>
-                </div>
-              </div>
-
-              <!-- Bottom Content -->
-              <div class="mt-auto w-full pt-2 border-t border-amber-500/20">
-                <template v-if="table.status === 'FREE'">
-                  <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    <span>🟢 Xona tayyor</span>
-                    <span class="text-[10px] font-mono text-amber-500">👑 VIP Lounge</span>
-                  </div>
-                </template>
-
-                <template v-else>
-                  <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                      <span>⏱️ {{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
-                      <span v-if="tableCartCount(table) > 0" class="font-mono">
-                        🛒 {{ tableCartCount(table) }} taom
-                      </span>
-                    </div>
-
-                    <div v-if="tableSubtotal(table) > 0" class="text-xs font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 text-right">
-                      💰 {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
-                    </div>
-                  </div>
-                </template>
-              </div>
-
+                {{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}
+              </span>
             </div>
+
+            <!-- Table Number & Name -->
+            <div class="flex items-center space-x-3 my-2">
+              <div 
+                :class="[
+                  'w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black font-mono shadow-md shrink-0',
+                  table.status === 'OCCUPIED'
+                    ? 'bg-gradient-to-br from-rose-600 to-red-600 text-white shadow-rose-500/30'
+                    : 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white shadow-amber-500/30'
+                ]"
+              >
+                {{ table.number }}
+              </div>
+
+              <div>
+                <h4 class="font-black text-base text-slate-900 dark:text-white leading-tight">
+                  {{ table.name }}
+                </h4>
+                <p class="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                  ⭐ VIP Xizmat
+                </p>
+              </div>
+            </div>
+
+            <!-- Bottom Content -->
+            <div class="mt-auto w-full pt-2 border-t border-amber-500/20">
+              <template v-if="table.status === 'FREE'">
+                <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span>🟢 Xona tayyor</span>
+                  <span class="text-[10px] font-mono text-amber-500">👑 VIP Lounge</span>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                    <span>⏱️ {{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
+                    <span v-if="tableCartCount(table) > 0" class="font-mono">
+                      🛒 {{ tableCartCount(table) }} taom
+                    </span>
+                  </div>
+
+                  <div v-if="tableSubtotal(table) > 0" class="text-xs font-mono font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20 text-right">
+                    💰 {{ tableSubtotal(table).toLocaleString('uz-UZ') }} so'm
+                  </div>
+                </div>
+              </template>
+            </div>
+
           </button>
         </div>
       </div>
