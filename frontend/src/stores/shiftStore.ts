@@ -57,12 +57,16 @@ export const useShiftStore = defineStore('shift', () => {
       const res = await fetchWithTimeout(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
       if (res.ok) {
         const body = await res.json();
-        if (body.success && body.data.activeShift) {
+        if (body.success && body.data && body.data.activeShift) {
           currentShift.value = {
             ...body.data.activeShift,
             cashierName: authStore.user.fullName,
             expenses: currentShift.value?.expenses || []
           };
+          return;
+        } else {
+          currentShift.value = null;
+          localStorage.removeItem('doston_current_shift');
           return;
         }
       }
@@ -145,10 +149,12 @@ export const useShiftStore = defineStore('shift', () => {
       }, 8000);
       if (res.ok) {
         const body = await res.json();
-        if (body.success) {
-          shiftAudits.value.unshift(body.data.audit);
+        const audit = body.data?.audit || body.audit;
+        if (audit) {
+          shiftAudits.value.unshift(audit);
           currentShift.value = null;
-          return body.data.audit;
+          localStorage.removeItem('doston_current_shift');
+          return audit;
         }
       }
     } catch (e) {

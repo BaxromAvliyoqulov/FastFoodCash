@@ -216,13 +216,16 @@ ${notes ? `📝 <i>Izoh:</i> ${notes}` : ''}
     sendTelegramMessage(message);
 
     return res.json({
+      success: true,
       message: 'Smena ko\'r-usulda muvaffaqiyatli yopildi va audit qilindi',
-      audit: result.audit,
-      shift: result.shift
+      data: {
+        audit: result.audit,
+        shift: result.shift
+      }
     });
 
   } catch (error: any) {
     console.error('Close Shift Error:', error);
-    return res.status(500).json({ error: 'Smena yopishda xatolik yuz berdi' });
+    return res.status(500).json({ success: false, data: null, error: 'Smena yopishda xatolik yuz berdi' });
   }
 };
