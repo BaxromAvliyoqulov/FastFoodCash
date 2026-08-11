@@ -32,3 +32,9 @@
 
 ## 3. 🎯 AI Dev Team Protocol Reference
 Ushbu loyihada ish olib borishda global `nova-jarvis-core`, `ui-ux-logic-mind-stone`, `code-safety-and-network-rules`, `error-handling-standards`, `uzbekistan-business-context` va `ai-development-team-protocol` skillarining qoidalariga to'liq amal qilingan.
+
+---
+
+## 4. 🔀 Git Workflow & Auto Push Protocol
+- **Avtomatik Git Push Rejimi:** Ushbu loyihada har bir topshiriq va tuzatish muvaffaqiyatli bajarilib, build va testlar tasdiqlangach, alohida buyruq kutilmasdan avtomatik ravishda `git add`, `git commit` va `git push origin main` bajarilishi shart.
+
