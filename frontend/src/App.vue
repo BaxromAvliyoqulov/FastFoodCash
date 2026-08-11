@@ -2,13 +2,10 @@
 import { ref, onMounted } from 'vue';
 import Navbar from './components/Navbar.vue';
 import PosView from './views/PosView.vue';
-import MenuView from './views/MenuView.vue';
 import TablesView from './views/TablesView.vue';
-import DashboardView from './views/DashboardView.vue';
 import ShiftView from './views/ShiftView.vue';
-import RevisionView from './views/RevisionView.vue';
-import HistoryView from './views/HistoryView.vue';
 import LoginView from './views/LoginView.vue';
+import AdminLayout from './views/AdminLayout.vue';
 import ToastContainer from './components/ToastContainer.vue';
 import { useThemeStore } from './stores/themeStore';
 import { useAuthStore } from './stores/authStore';
@@ -33,7 +30,7 @@ function handleTabChange(tab: string) {
 
 function initData() {
   if (authStore.isAuthenticated) {
-    if (authStore.isCashier && ['menu', 'dashboard', 'revision'].includes(activeTab.value)) {
+    if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history', 'admin'].includes(activeTab.value)) {
       handleTabChange('pos');
     }
     posStore.fetchProducts();
@@ -66,12 +63,9 @@ onMounted(() => {
     <!-- Main Content Area (Fills remaining height) -->
     <main class="flex-1 min-h-0 overflow-hidden relative">
       <PosView v-if="activeTab === 'pos'" />
-      <MenuView v-else-if="activeTab === 'menu'" />
       <TablesView v-else-if="activeTab === 'tables'" />
-      <DashboardView v-else-if="activeTab === 'dashboard'" />
+      <AdminLayout v-else-if="activeTab === 'admin'" />
       <ShiftView v-else-if="activeTab === 'shift'" />
-      <HistoryView v-else-if="activeTab === 'history'" />
-      <RevisionView v-else-if="activeTab === 'revision'" />
     </main>
   </div>
 </template>

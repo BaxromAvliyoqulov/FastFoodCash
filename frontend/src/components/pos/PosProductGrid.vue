@@ -13,7 +13,7 @@ const posStore = usePosStore();
 function isWeightedProduct(prod: Product): boolean {
   if (prod.isWeighted || prod.unit === 'KG') return true;
   const name = prod.name.toLowerCase();
-  return name.includes('1 kg') || name.includes('1kg') || name.includes('(1 kg)') || name.includes('baliq');
+  return name.includes('kg') || name.includes('baliq');
 }
 </script>
 

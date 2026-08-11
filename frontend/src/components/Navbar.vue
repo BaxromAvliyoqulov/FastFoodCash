@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+
 import { useShiftStore } from '../stores/shiftStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useAuthStore } from '../stores/authStore';
@@ -7,16 +7,12 @@ import {
   Flame, 
   ShoppingCart, 
   Receipt, 
-  ClipboardCheck, 
   Clock,
   AlertTriangle,
   Sun,
   Moon,
-  BarChart3,
-  FolderKanban,
   LogOut,
   LayoutDashboard,
-  ChevronDown,
   Crown
 } from 'lucide-vue-next';
 
@@ -31,13 +27,6 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const shiftStore = useShiftStore();
 const themeStore = useThemeStore();
-
-const isAdminDropdownOpen = ref(false);
-
-function selectAdminTab(tab: string) {
-  isAdminDropdownOpen.value = false;
-  emit('change-tab', tab);
-}
 </script>
 
 <template>
@@ -61,7 +50,7 @@ function selectAdminTab(tab: string) {
       
       <!-- OPERATIONAL KASSA TABS -->
       <button 
-        @click="emit('change-tab', 'pos'); isAdminDropdownOpen = false"
+        @click="emit('change-tab', 'pos')"
         :class="[
           'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
           activeTab === 'pos' 
@@ -74,7 +63,7 @@ function selectAdminTab(tab: string) {
       </button>
 
       <button 
-        @click="emit('change-tab', 'tables'); isAdminDropdownOpen = false"
+        @click="emit('change-tab', 'tables')"
         :class="[
           'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
           activeTab === 'tables' 
@@ -89,7 +78,7 @@ function selectAdminTab(tab: string) {
       <!-- SMENA FOR CASHIER ONLY (IF NOT ADMIN) -->
       <button 
         v-if="!authStore.isAdmin"
-        @click="emit('change-tab', 'shift'); isAdminDropdownOpen = false"
+        @click="emit('change-tab', 'shift')"
         :class="[
           'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
           activeTab === 'shift' 
@@ -104,68 +93,20 @@ function selectAdminTab(tab: string) {
       <!-- DIVIDER FOR ADMIN SECTION -->
       <div v-if="authStore.isAdmin" class="h-5 w-px bg-slate-300 dark:bg-slate-800 mx-1 shrink-0"></div>
 
-      <!-- SINGLE ADMIN PANEL DROPDOWN MENU -->
-      <div v-if="authStore.isAdmin" class="relative">
-        <button 
-          @click="isAdminDropdownOpen = !isAdminDropdownOpen"
-          :class="[
-            'flex items-center space-x-2 px-4 py-2 rounded-xl font-black text-xs transition-all duration-200 shrink-0 cursor-pointer border',
-            ['dashboard', 'history', 'menu', 'revision', 'shift'].includes(activeTab)
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400/50 shadow-md shadow-amber-500/30 scale-[1.02]' 
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
-          ]"
-        >
-          <Crown class="w-4 h-4 text-amber-400" />
-          <span>👑 Admin Paneli</span>
-          <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isAdminDropdownOpen }" />
-        </button>
-
-        <!-- Dropdown Menu Items -->
-        <div 
-          v-if="isAdminDropdownOpen" 
-          class="absolute right-0 sm:left-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150"
-        >
-          <button 
-            @click="selectAdminTab('dashboard')"
-            :class="['w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-left', activeTab === 'dashboard' ? 'bg-amber-500 text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800']"
-          >
-            <BarChart3 class="w-4 h-4 text-amber-500" :class="{ 'text-white': activeTab === 'dashboard' }" />
-            <span>📊 Boshqaruv Dashbordi</span>
-          </button>
-
-          <button 
-            @click="selectAdminTab('history')"
-            :class="['w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-left', activeTab === 'history' ? 'bg-amber-500 text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800']"
-          >
-            <ClipboardCheck class="w-4 h-4 text-indigo-500" :class="{ 'text-white': activeTab === 'history' }" />
-            <span>📋 Savdo Tarixi (Full Audit)</span>
-          </button>
-
-          <button 
-            @click="selectAdminTab('menu')"
-            :class="['w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-left', activeTab === 'menu' ? 'bg-amber-500 text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800']"
-          >
-            <FolderKanban class="w-4 h-4 text-emerald-500" :class="{ 'text-white': activeTab === 'menu' }" />
-            <span>📁 Menyu & Kategoriyalar</span>
-          </button>
-
-          <button 
-            @click="selectAdminTab('revision')"
-            :class="['w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-left', activeTab === 'revision' ? 'bg-amber-500 text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800']"
-          >
-            <ClipboardCheck class="w-4 h-4 text-purple-500" :class="{ 'text-white': activeTab === 'revision' }" />
-            <span>📦 Ombor Qoldig'i</span>
-          </button>
-
-          <button 
-            @click="selectAdminTab('shift')"
-            :class="['w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-left', activeTab === 'shift' ? 'bg-amber-500 text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800']"
-          >
-            <Receipt class="w-4 h-4 text-rose-500" :class="{ 'text-white': activeTab === 'shift' }" />
-            <span>💵 Smena & Z-Report Audit</span>
-          </button>
-        </div>
-      </div>
+      <!-- ADMIN PANEL DIRECT LINK -->
+      <button 
+        v-if="authStore.isAdmin"
+        @click="emit('change-tab', 'admin')"
+        :class="[
+          'flex items-center space-x-2 px-4 py-2 rounded-xl font-black text-xs transition-all duration-200 shrink-0 cursor-pointer border',
+          activeTab === 'admin'
+            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400/50 shadow-md shadow-amber-500/30 scale-[1.02]' 
+            : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+        ]"
+      >
+        <Crown class="w-4 h-4" :class="activeTab === 'admin' ? 'text-amber-200' : 'text-amber-400'" />
+        <span>👑 Admin Paneli</span>
+      </button>
     </nav>
 
     <!-- Right Action Controls: Shift Status + Theme Switcher + Logout -->
@@ -173,7 +114,7 @@ function selectAdminTab(tab: string) {
       <!-- Shift Status Pill -->
       <button 
         v-if="shiftStore.currentShift" 
-        @click="emit('change-tab', 'shift'); isAdminDropdownOpen = false"
+        @click="emit('change-tab', 'shift')"
         class="flex items-center space-x-2.5 bg-slate-100 dark:bg-slate-950 px-3.5 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
         title="Smena ma'lumotlari"
       >
@@ -191,7 +132,7 @@ function selectAdminTab(tab: string) {
       
       <button 
         v-else 
-        @click="emit('change-tab', 'shift'); isAdminDropdownOpen = false"
+        @click="emit('change-tab', 'shift')"
         class="flex items-center space-x-1.5 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 px-3 py-2 rounded-2xl text-xs font-black cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm hover:bg-rose-500/20"
         title="Smenani ochish uchun bosing"
       >
