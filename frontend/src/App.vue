@@ -49,6 +49,13 @@ watch(() => authStore.isAuthenticated, (newVal) => {
 onMounted(() => {
   themeStore.applyTheme();
   initData();
+
+  window.addEventListener('change-tab-event', (e: Event) => {
+    const customEvent = e as CustomEvent;
+    if (customEvent.detail) {
+      handleTabChange(customEvent.detail);
+    }
+  });
 });
 </script>
 
