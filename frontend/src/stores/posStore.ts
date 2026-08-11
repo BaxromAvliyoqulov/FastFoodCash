@@ -392,9 +392,10 @@ export const usePosStore = defineStore('pos', () => {
       const body = await res.json();
       
       if (res.ok && body.success) {
+        const cartItemsCopy = [...cart.value];
         orderHistory.value.unshift(body.data.order);
         clearCart();
-        _deductIngredients(cart.value);
+        _deductIngredients(cartItemsCopy);
         return body.data.order;
       } else {
         alert(body.error || 'Buyurtma saqlashda xatolik');
@@ -430,8 +431,9 @@ export const usePosStore = defineStore('pos', () => {
       localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
       
       orderHistory.value.unshift(tempOrder as any);
-      _deductIngredients(cart.value);
+      const cartItemsCopy = [...cart.value];
       clearCart();
+      _deductIngredients(cartItemsCopy);
       
       toast.success('Internet yo\'q. Buyurtma oflayn saqlandi!', 3000);
       return tempOrder as any;

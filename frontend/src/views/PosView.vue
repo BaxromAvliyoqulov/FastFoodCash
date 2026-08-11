@@ -190,30 +190,35 @@ function saveTableOrder() {
 
 async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
   if (!shiftStore.currentShift || shiftStore.currentShift.status !== 'OPEN') {
-    shiftStore.openShift(100000);
+    await shiftStore.openShift(100000);
   }
   const shiftId = shiftStore.currentShift?.id || 'default-shift';
   const cashierName = shiftStore.currentShift?.cashierName || 'Kassir';
 
   let order: Order | null = null;
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-    order = await posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, cashierName, shiftId);
+    const tableId = posStore.activeTableId;
+    order = await posStore.submitTableOrder(tableId, paymentType, paidAmount, cashierName, shiftId);
+    posStore.clearTableCart(tableId);
+    posStore.clearActiveTable();
+    showTableProducts.value = false;
   } else {
     order = await posStore.submitOrder(paymentType, paidAmount, cashierName, shiftId);
+    posStore.clearCart();
   }
+
+  showPaymentModal.value = false;
+
   if (order) {
     const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
     lastCompletedOrder.value = order;
-    showPaymentModal.value = false;
     if (isKassaPrinterOn) {
       showReceiptModal.value = true;
     } else {
       toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli saqlandi!`);
     }
-    if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-      posStore.clearActiveTable();
-      showTableProducts.value = false;
-    }
+  } else {
+    toast.success('Buyurtma bajarildi!');
   }
 }
 </script>
