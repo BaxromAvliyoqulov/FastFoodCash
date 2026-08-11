@@ -373,6 +373,7 @@ export const usePosStore = defineStore('pos', () => {
         paymentType,
         items: cart.value.map(item => ({
           productId: item.product.id,
+          productName: item.product.name,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
@@ -531,6 +532,7 @@ export const usePosStore = defineStore('pos', () => {
         paymentType,
         items: table.cart.map(item => ({
           productId: item.product.id,
+          productName: item.product.name,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,

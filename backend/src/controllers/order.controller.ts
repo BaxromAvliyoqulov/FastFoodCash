@@ -34,13 +34,33 @@ export const createOrder = async (req: Request, res: Response) => {
     const productMap = new Map(products.map(p => [p.id, p]));
     let totalAmount = 0;
 
-    // Calculate total amount and verify items
+    // Calculate total amount and verify items (auto-upsert missing products)
     const orderItemsData: any[] = [];
     for (const item of items) {
-      const product = productMap.get(item.productId);
+      let product = productMap.get(item.productId);
       if (!product) {
-        return res.status(400).json({ success: false, data: null, error: `Mahsulot topilmadi: ${item.productId}` });
+        // Auto-create product in DB so orders never fail on missing IDs
+        product = await prisma.product.upsert({
+          where: { id: item.productId },
+          update: {
+            name: item.productName || item.name || item.productId,
+            price: item.unitPrice || 0
+          },
+          create: {
+            id: item.productId,
+            name: item.productName || item.name || item.productId,
+            price: item.unitPrice || 0,
+            categoryName: item.categoryName || 'General',
+          },
+          include: {
+            recipes: {
+              include: { ingredient: true }
+            }
+          }
+        });
+        productMap.set(product.id, product);
       }
+
       const unitPrice = item.unitPrice ?? product.price;
       const itemTotal = item.totalPrice ?? (unitPrice * item.quantity);
       totalAmount += itemTotal;
