@@ -116,7 +116,7 @@ function handleWasteSubmit() {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-65px)] overflow-y-auto bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 sm:p-8 space-y-6 sm:space-y-8 transition-colors duration-300">
+  <div class="h-full w-full overflow-y-auto bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4 sm:p-8 space-y-6 sm:space-y-8 transition-colors duration-300">
     
     <!-- Header Title & Action Buttons -->
     <div class="flex flex-wrap items-center justify-between gap-4">
