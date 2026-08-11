@@ -37,7 +37,7 @@ async function main() {
 
   const admin = await prisma.user.create({
     data: {
-      fullName: 'Baxrom Admin',
+      fullName: 'Admin',
       phone: '+998900000000',
       pinCode: '0000',
       role: 'ADMIN',

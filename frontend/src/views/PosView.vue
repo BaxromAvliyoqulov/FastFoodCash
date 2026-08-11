@@ -265,11 +265,11 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2.5">
               <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                <span class="text-white font-black text-sm">{{ (authStore.user?.role === 'ADMIN' ? 'A' : 'K') }}</span>
+                <span class="text-white font-black text-sm">{{ authStore.user?.role === 'ADMIN' ? 'A' : (authStore.user?.fullName ? authStore.user.fullName[0].toUpperCase() : 'K') }}</span>
               </div>
               <div>
                 <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : 'Kassir' }}</p>
-                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.role === 'ADMIN' ? 'Administrator' : authStore.user?.fullName }}</p>
+                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : (authStore.user?.fullName?.replace(/Baxrom\s*/gi, '').trim() || 'Kassir') }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -306,21 +306,21 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
       <!-- Empty cart -->
       <div v-else-if="activeCart.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
         <div class="relative mb-5">
-          <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700/50 flex items-center justify-center shadow-2xl">
-            <Utensils class="w-10 h-10 text-slate-400 dark:text-slate-600" />
+          <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/10 border border-amber-500/20 dark:border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/5">
+            <Utensils class="w-10 h-10 text-amber-500 dark:text-amber-400" />
           </div>
           <div class="absolute -top-2 -right-2 w-4 h-4 bg-amber-500/20 rounded-full animate-bounce"></div>
           <div class="absolute -bottom-1 -left-3 w-3 h-3 bg-orange-500/20 rounded-full animate-bounce" style="animation-delay:0.3s"></div>
         </div>
-        <p class="text-base font-black text-slate-500 dark:text-slate-400 mb-1.5">Savat bo'sh</p>
-        <p class="text-xs text-slate-500 dark:text-slate-600 leading-relaxed max-w-[180px]">
+        <p class="text-base font-black text-slate-700 dark:text-slate-200 mb-1.5">Savat bo'sh</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-[200px]">
           <template v-if="posStore.operationMode === 'ZAL'">Taomlarni qo'shing va oshxonaga yuboring</template>
           <template v-else>Chap tomondagi taomlarni bosib savatchaga qo'shing</template>
         </p>
         <div class="flex flex-wrap gap-1.5 justify-center mt-4">
-          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🍔 Burger</span>
-          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🥪 Lavash</span>
-          <span class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] text-slate-500">🍕 Pizza</span>
+          <span class="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 dark:border-amber-500/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-300">🍔 Burger</span>
+          <span class="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 dark:border-amber-500/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-300">🥪 Lavash</span>
+          <span class="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 dark:border-amber-500/30 rounded-xl text-[11px] font-bold text-amber-700 dark:text-amber-300">🍕 Pizza</span>
         </div>
       </div>
 
@@ -391,7 +391,7 @@ function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
           </div>
         </template>
         <template v-else>
-          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
+          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
             <CreditCard class="w-5 h-5" />
             <span v-if="activeCart.length > 0">To'lov — {{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
             <span v-else>Savat bo'sh</span>

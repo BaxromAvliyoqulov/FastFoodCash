@@ -180,7 +180,7 @@ const themeStore = useThemeStore();
           </div>
           <div class="text-slate-900 dark:text-white font-bold flex items-center gap-1 text-[11px] sm:text-xs">
             <User class="w-3 h-3 text-amber-500 dark:text-amber-400 shrink-0" />
-            <span>{{ shiftStore.currentShift.cashierName || authStore.user?.fullName }}</span>
+            <span>{{ (shiftStore.currentShift.cashierName || authStore.user?.fullName)?.replace(/Baxrom\s*/gi, '').trim() || 'Admin' }}</span>
           </div>
         </div>
       </button>
