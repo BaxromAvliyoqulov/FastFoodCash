@@ -4,7 +4,6 @@ import { useShiftStore } from '../stores/shiftStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useAuthStore } from '../stores/authStore';
 import { 
-  Flame, 
   ShoppingCart, 
   Receipt, 
   Clock,
@@ -33,8 +32,13 @@ const themeStore = useThemeStore();
   <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 shadow-sm dark:shadow-2xl transition-colors duration-300 relative z-30">
     <!-- Brand Logo & System Identity -->
     <div class="flex items-center space-x-3 shrink-0">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/25 shrink-0">
-        <Flame class="w-6 h-6 text-white" />
+      <div class="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-orange-500/25 shrink-0 flex items-center justify-center bg-slate-900/50">
+        <img 
+          src="/favicon.svg" 
+          alt="Doston Burger Logo" 
+          class="w-9 h-9 object-contain"
+          draggable="false"
+        />
       </div>
       <div>
         <h1 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-wide flex items-center gap-1.5 font-['Plus_Jakarta_Sans',sans-serif] leading-tight">

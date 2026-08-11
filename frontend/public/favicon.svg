@@ -1,40 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#f97316"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    <linearGradient id="dGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EA580C;stop-opacity:1" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#b45309" flood-opacity="0.4"/>
-    </filter>
   </defs>
-
   <!-- Background rounded square -->
-  <rect width="64" height="64" rx="14" fill="url(#bg)" filter="url(#shadow)"/>
-  <!-- Shine overlay -->
-  <rect width="64" height="32" rx="14" fill="url(#shine)"/>
-
+  <rect width="64" height="64" rx="14" ry="14" fill="url(#bgGrad)"/>
+  <!-- Letter D shape -->
+  <path d="M14 12 L14 52 L30 52 C44 52 52 44 52 32 C52 20 44 12 30 12 Z M22 20 L28 20 C38 20 44 25 44 32 C44 39 38 44 28 44 L22 44 Z" fill="url(#dGrad)"/>
   <!-- Burger bun top -->
-  <path d="M16 26 Q32 18 48 26" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-  <!-- Burger layers -->
-  <rect x="15" y="28" width="34" height="3.5" rx="1.75" fill="white" opacity="0.9"/>
-  <!-- Patty (orange/amber) -->
-  <rect x="15" y="33" width="34" height="4" rx="2" fill="#fef3c7" opacity="0.95"/>
-  <!-- Bottom bun -->
-  <path d="M15 39 Q32 46 49 39 L48 43 Q32 48 16 43 Z" fill="white" opacity="0.9"/>
-
-  <!-- Fork & spoon lines (right) — simplified as vertical dash -->
-  <rect x="47" y="16" width="2.5" height="12" rx="1.25" fill="white" opacity="0.7"/>
-  <rect x="51" y="16" width="2.5" height="12" rx="1.25" fill="white" opacity="0.7"/>
-
-  <!-- Kassa (cash register) indicator — receipt curl bottom-left -->
-  <path d="M14 47 L14 54 L19 54" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/>
-  <path d="M22 51 L28 51 M22 54 L25 54" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
-
-  <!-- "D" letter bottom right (Doston brend) -->
-  <text x="34" y="57" font-family="Arial Black, sans-serif" font-size="13" font-weight="900" fill="white" opacity="0.85">D</text>
+  <ellipse cx="36" cy="27" rx="9" ry="5" fill="#D97706"/>
+  <!-- Sesame seeds -->
+  <ellipse cx="33" cy="25" rx="1" ry="0.7" fill="#FEF3C7" transform="rotate(-20 33 25)"/>
+  <ellipse cx="37" cy="24" rx="1" ry="0.7" fill="#FEF3C7" transform="rotate(10 37 24)"/>
+  <ellipse cx="40" cy="26" rx="1" ry="0.7" fill="#FEF3C7" transform="rotate(-10 40 26)"/>
+  <!-- Lettuce -->
+  <path d="M27 31 Q32 29 37 31 Q41 29.5 44 31" stroke="#16A34A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Tomato -->
+  <rect x="28" y="31.5" width="15" height="2" rx="1" fill="#EF4444"/>
+  <!-- Cheese -->
+  <rect x="27" y="33" width="16" height="1.5" rx="0.5" fill="#FCD34D"/>
+  <!-- Patty -->
+  <rect x="28" y="34.5" width="15" height="3" rx="1.5" fill="#7C2D12"/>
+  <!-- Bun bottom -->
+  <ellipse cx="36" cy="38.5" rx="9" ry="3.5" fill="#D97706"/>
 </svg>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/authStore';
-import { LogIn, Lock } from 'lucide-vue-next';
+import { Lock } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 
@@ -39,8 +39,13 @@ const handleLogin = async () => {
       
       <!-- Brand & Logo -->
       <div class="flex flex-col items-center mb-8">
-        <div class="w-16 h-16 bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 mb-4">
-          <LogIn class="w-8 h-8 text-white" />
+        <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/30 mb-4 flex items-center justify-center bg-slate-900">
+          <img 
+            src="/favicon.svg" 
+            alt="Doston Burger Logo" 
+            class="w-18 h-18 object-contain"
+            draggable="false"
+          />
         </div>
         <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-wide flex items-center gap-1.5 font-['Plus_Jakarta_Sans',sans-serif]">
           DOSTON <span class="text-amber-500">BURGER</span>
