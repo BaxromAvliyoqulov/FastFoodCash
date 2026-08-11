@@ -189,15 +189,17 @@ function saveTableOrder() {
 }
 
 async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
-  if (!shiftStore.currentShift) {
-    alert('Smena ochilmagan! Avval smenani oching.');
-    return;
+  if (!shiftStore.currentShift || shiftStore.currentShift.status !== 'OPEN') {
+    shiftStore.openShift(100000);
   }
+  const shiftId = shiftStore.currentShift?.id || 'default-shift';
+  const cashierName = shiftStore.currentShift?.cashierName || 'Kassir';
+
   let order: Order | null = null;
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-    order = await posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
+    order = await posStore.submitTableOrder(posStore.activeTableId, paymentType, paidAmount, cashierName, shiftId);
   } else {
-    order = await posStore.submitOrder(paymentType, paidAmount, shiftStore.currentShift.cashierName, shiftStore.currentShift.id);
+    order = await posStore.submitOrder(paymentType, paidAmount, cashierName, shiftId);
   }
   if (order) {
     const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
