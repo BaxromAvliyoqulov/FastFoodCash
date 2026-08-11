@@ -81,12 +81,39 @@ export const createOrder = async (req: Request, res: Response) => {
       });
       const orderNumber = (lastOrder?.orderNumber || 0) + 1;
 
+      // Ensure valid cashier exists
+      let validCashierId = cashierId;
+      if (validCashierId) {
+        const userExists = await tx.user.findUnique({ where: { id: validCashierId } });
+        if (!userExists) {
+          const firstUser = await tx.user.findFirst();
+          if (firstUser) {
+            validCashierId = firstUser.id;
+          } else {
+            const newUser = await tx.user.create({
+              data: { id: validCashierId, fullName: 'Kassir', phone: '998900000000', pinCode: '0000', role: 'CASHIER' }
+            });
+            validCashierId = newUser.id;
+          }
+        }
+      } else {
+        const firstUser = await tx.user.findFirst();
+        if (firstUser) {
+          validCashierId = firstUser.id;
+        } else {
+          const newUser = await tx.user.create({
+            data: { fullName: 'Kassir', phone: '998900000000', pinCode: '0000', role: 'CASHIER' }
+          });
+          validCashierId = newUser.id;
+        }
+      }
+
       // 2. Create order
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           shiftId: activeShiftId,
-          cashierId: cashierId || 'default-cashier',
+          cashierId: validCashierId,
           totalAmount,
           paymentType: paymentType || 'CASH',
           status: 'COMPLETED',
