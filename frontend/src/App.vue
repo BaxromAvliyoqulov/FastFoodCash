@@ -24,7 +24,7 @@ const posStore = usePosStore();
 const shiftStore = useShiftStore();
 
 function handleTabChange(tab: string) {
-  if (authStore.isCashier && ['menu', 'dashboard', 'revision'].includes(tab)) {
+  if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history'].includes(tab)) {
     tab = 'pos';
   }
   activeTab.value = tab;

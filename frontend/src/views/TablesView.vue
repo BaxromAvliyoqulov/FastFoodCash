@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useAuthStore } from '../stores/authStore';
 import { 
   Plus, Save, X, Edit2, Trash2, 
   ToggleLeft, ToggleRight, LayoutDashboard
@@ -8,6 +9,7 @@ import {
 import { Table } from '../types/pos';
 
 const posStore = usePosStore();
+const authStore = useAuthStore();
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -18,8 +20,7 @@ const currentTableId = ref<string | null>(null);
 
 const form = ref({
   name: '',
-  number: 1,
-  isActive: true
+  number: 1
 });
 
 onMounted(() => {
@@ -27,16 +28,16 @@ onMounted(() => {
 });
 
 function openAddModal() {
-  form.value = { name: `Stol ${posStore.tables.length + 1}`, number: posStore.tables.length + 1, isActive: true };
   isEditing.value = false;
   currentTableId.value = null;
+  form.value = { name: `Stol - ${posStore.tables.length + 1}`, number: posStore.tables.length + 1 };
   showModal.value = true;
 }
 
 function openEditModal(table: Table) {
-  form.value = { name: table.name, number: table.number, isActive: table.isActive };
   isEditing.value = true;
   currentTableId.value = table.id;
+  form.value = { name: table.name, number: table.number };
   showModal.value = true;
 }
 
@@ -44,29 +45,28 @@ function closeModal() {
   showModal.value = false;
 }
 
-async function saveTable() {
-  if (!form.value.name || !form.value.number) return;
+async function handleSaveTable() {
+  if (!form.value.name.trim()) return;
   isLoading.value = true;
-  
+
   try {
-    const method = isEditing.value ? 'PUT' : 'POST';
-    const url = isEditing.value ? `${API_URL}/tables/${currentTableId.value}` : `${API_URL}/tables`;
-    
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value)
-    });
-    
-    const body = await res.json();
-    if (!res.ok || !body.success) {
-      throw new Error(body.error || 'Xatolik yuz berdi');
+    if (isEditing.value && currentTableId.value) {
+      await fetch(`${API_URL}/tables/${currentTableId.value}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form.value)
+      });
+    } else {
+      await fetch(`${API_URL}/tables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form.value)
+      });
     }
-    
     await posStore.loadTables();
     closeModal();
-  } catch (error: any) {
-    alert(error.message);
+  } catch (error) {
+    console.error('Save table error:', error);
   } finally {
     isLoading.value = false;
   }
@@ -81,17 +81,19 @@ async function toggleActive(table: Table) {
     });
     await posStore.loadTables();
   } catch (error) {
-    console.error(error);
+    console.error('Toggle table active error:', error);
   }
 }
 
-async function deleteTable(id: string) {
-  if (!confirm('Haqiqatan ham bu stolni o\'chirasizmi? Barcha ma\'lumotlar o\'chib ketadi!')) return;
+async function deleteTable(tableId: string) {
+  if (!confirm("Stolni o'chirishga ishonchingiz komilmi?")) return;
   try {
-    await fetch(`${API_URL}/tables/${id}`, { method: 'DELETE' });
+    await fetch(`${API_URL}/tables/${tableId}`, {
+      method: 'DELETE'
+    });
     await posStore.loadTables();
   } catch (error) {
-    console.error(error);
+    console.error('Delete table error:', error);
   }
 }
 </script>
@@ -110,7 +112,7 @@ async function deleteTable(id: string) {
         </div>
       </div>
 
-      <button @click="openAddModal" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">
+      <button v-if="authStore.isAdmin" @click="openAddModal" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:scale-105 active:scale-95 transition-all">
         <Plus class="w-5 h-5" />
         Yangi Stol Qo'shish
       </button>
@@ -129,7 +131,7 @@ async function deleteTable(id: string) {
         
         <h3 class="font-bold text-slate-900 dark:text-white text-center">{{ table.name }}</h3>
         
-        <div class="mt-4 flex items-center gap-2 w-full">
+        <div v-if="authStore.isAdmin" class="mt-4 flex items-center gap-2 w-full">
           <button @click="openEditModal(table)" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center">
             <Edit2 class="w-3.5 h-3.5 mr-1" /> Tahrir
           </button>
@@ -172,7 +174,7 @@ async function deleteTable(id: string) {
         
         <div class="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex gap-3">
           <button @click="closeModal" class="flex-1 px-4 py-3 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors">Bekor qilish</button>
-          <button @click="saveTable" :disabled="isLoading" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25">
+          <button @click="handleSaveTable" :disabled="isLoading" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25">
             <Save class="w-4 h-4" /> {{ isLoading ? 'Saqlanmoqda...' : 'Saqlash' }}
           </button>
         </div>
