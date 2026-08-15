@@ -1,113 +1,104 @@
-# FastFoodCash 🍔🍟
+# 🍔 FastFoodCash — Fast Food & Restoran POS Tizimi (KASSA)
 
-FastFoodCash is a modern, high-performance Point of Sale (POS) system built for fast food restaurants. It features a complete offline-first capability, real-time sync, ingredient-level inventory management, and an integrated Telegram Bot for instant reporting.
+[![Vue.js](https://img.shields.io/badge/Vue.js-v3.4-brightgreen)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-v5.3-blue)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-v5.1-purple)](https://vitejs.dev/)
+[![Express.js](https://img.shields.io/badge/Express-v4.18-lightgrey)](https://expressjs.com/)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-v5.10-indigo)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blueviolet)](https://www.postgresql.org/)
+[![PWA Ready](https://img.shields.io/badge/PWA-Offline--First-orange)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 
-## 🌟 Key Features
-- **Offline-First (PWA):** Cashiers can take orders even when the internet goes down. Data syncs automatically when the connection is restored.
-- **Micro-Components UI:** Extremely fast Vue 3 interface designed for touch screens and high-speed cashier interactions.
-- **Inventory & Recipes:** Track raw ingredients (grams, pieces) and deduct them automatically based on the recipe of the sold product.
-- **Shift Management:** Cashier shifts, blind closing, cash declaration, and discrepancy tracking (Shortage/Surplus).
-- **Telegram Integration:** Daily reports and real-time alerts sent directly to management via Telegram.
+> **FastFoodCash (KASSA)** — Fast-food, kafe hamda restoranlar uchun maxsus qurilgan ultra-tezkor, PWA Offline-First rejimida ishlovchi, resepturalar bo'yicha ombor nazorati va Telegram Bot hisobotlariga ega zamonaviy POS kassa tizimi.
 
 ---
 
-## 🛠️ Technology Stack
-- **Frontend:** Vue 3 (Composition API), Vite, TypeScript, Pinia (State), TailwindCSS, Vitest.
+## 🌟 Asosiy Imkoniyatlar (Key Features)
+
+- **⚡ Offline-First (PWA Architecture):** Internet uzilib qolsa ham kassa to'xtamaydi. Buyurtmalar mahalliy xotirada saqlanadi va internet tiklangach avtomatik sinxronlanadi.
+- **📱 Touch-Screen Tayyor Vue 3 UI:** Sensorli ekranlar hamda kassa planshetlari uchun moslashtirilgan ultra-tezkor interfeys.
+- **🧪 Reseptura va Xom-Ashyo Ombori:** Mahsulot tarkibidagi xom-ashyo (gramm, dona, ml) savdo qilganda avtomatik ombordan chegiriladi.
+- **🔒 Smena va Kassa Audit:** Kassir smenalari, berkitilgan smena yopilishi (Blind Closing), naqd pul deklaratsiyasi hamda kassa kamchiliklari (Shortage/Surplus) auditingi.
+- **📲 Telegram Bot Notification Engine:** Kunlik Z-hisobotlar va favqulodda kassa xabarnomalari menejmentning Telegram botiga avtomatik yuboriladi.
+
+---
+
+## 🛠️ Texnologik Stek (Tech Stack)
+
+- **Frontend:** Vue 3 (Composition API), Vite, TypeScript, Pinia (State Management), TailwindCSS, Vitest.
 - **Backend:** Node.js, Express, TypeScript, Prisma ORM, Jest.
 - **Database:** PostgreSQL (Production) / SQLite (Development).
 - **CI/CD:** GitHub Actions.
 
 ---
 
-## 🚀 Getting Started (Onboarding)
+## 🚀 Mahalliy Atrof-muhitda Ishga Tushirish (Setup Guide)
 
-### 1. Prerequisites
-- Node.js (v20 or higher)
-- npm (v10 or higher)
-- PostgreSQL (Optional, defaults to SQLite for quick setup)
-
-### 2. Clone and Install
+### 1. Repository'ni Clone Qilish:
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/FastFoodCash.git
+git clone https://github.com/BaxromAvliyoqulov/FastFoodCash.git
 cd FastFoodCash
+```
 
-# Install Backend Dependencies
+### 2. Backend Qismini Sozlash:
+```bash
 cd backend
-npm install
-
-# Install Frontend Dependencies
-cd ../frontend
 npm install
 ```
 
-### 3. Environment Variables
-In the `backend` folder, create a `.env` file:
+`backend/.env` faylini yaratib, quyidagi o'zgaruvchilarni kiriting:
 ```env
-# backend/.env
 PORT=4000
-DATABASE_URL="file:./dev.db" # Or your PostgreSQL URL
+DATABASE_URL="file:./dev.db" # yoki PostgreSQL URL
 TELEGRAM_BOT_TOKEN="your_bot_token_here"
 TELEGRAM_CHAT_ID="your_chat_id"
 ```
 
-In the `frontend` folder, create a `.env` file:
-```env
-# frontend/.env
-VITE_API_URL=http://localhost:4000/api/v1
-```
-
-### 4. Database Setup (Prisma)
+Baza sxemasini generatsiya qilish:
 ```bash
-cd backend
 npm run prisma:generate
 npm run prisma:push
 ```
 
-### 5. Running the Application
-Open two terminal windows:
-
-**Terminal 1 (Backend):**
+Backend serverni ishga tushirish:
 ```bash
-cd backend
 npm run dev
-# Server will run on http://localhost:4000
+# Server http://localhost:4000 manzilida ishlaydi
 ```
 
-**Terminal 2 (Frontend):**
+### 3. Frontend Qismini Sozlash:
+Yangi terminal oynasida:
 ```bash
 cd frontend
+npm install
 npm run dev
-# App will run on http://localhost:3000
+# Ilova http://localhost:3000 manzilida ochiladi
 ```
 
 ---
 
-## 📚 Documentation & Architecture
-- **API Documentation (Swagger):** Once the backend is running, visit [http://localhost:4000/api-docs](http://localhost:4000/api-docs) to view and test all API endpoints interactively.
-- **Database Schema (ERD):** See `docs/architecture/ERD.md` for a visual representation of all tables and relationships.
-- **AI Audit Reports:** See `docs/audits/` for deep technical audits and recommendations.
+## 📚 Hujjatlar va Arxitektura (Documentation)
 
-## ✅ Testing
-Both frontend and backend are covered by automated tests.
+- **API Documentation (Swagger):** Backend ishga tushgach, [http://localhost:4000/api-docs](http://localhost:4000/api-docs) manzilida Swagger interaktiv hujjatini ko'rishingiz mumkin.
+- **Database Schema (ERD):** Ma'lumotlar bazasi jadvallari va aloqalari uchun `docs/architecture/ERD.md` faylini ko'ring.
 
-**Run Backend Tests (Jest):**
+---
+
+## 🧪 Avtomatik Testlarni Ishga Tushirish
+
+**Backend Testlar (Jest):**
 ```bash
 cd backend
 npm run test
 ```
 
-**Run Frontend Tests (Vitest):**
+**Frontend Testlar (Vitest):**
 ```bash
 cd frontend
 npm run test
 ```
 
-## 🤝 Contributing
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
-2. Commit your changes following conventional commits
-3. Push to the branch (`git push origin feature/amazing-feature`)
-4. Open a Pull Request. CI/CD will automatically run tests and type checking.
-
 ---
-**Maintained by BaxromAvliyoqulov / FastFoodCash**
+
+## 📜 Litsenziya va Mualliflik
+
+© 2026 **FastFoodCash (KASSA) Platform**. Baxrom Avliyoqulov tomonidan ishlab chiqilgan. Barcha huquqlar himoyalangan.

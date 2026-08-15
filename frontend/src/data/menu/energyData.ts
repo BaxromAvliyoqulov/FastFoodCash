@@ -2,10 +2,46 @@ import type { Product } from '../../types/pos';
 
 export const energyProducts: Product[] = [
   {
-    id: 'prod-enrg-moxito',
+    id: 'prod-mox-ocean',
     categoryId: 'cat-energy',
     categoryName: 'Energetik & Moxito',
-    name: 'Moxito',
+    name: 'Okean Moxito',
+    price: 20000,
+    imageUrl: '/images/food/moxito.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-mox-strawberry',
+    categoryId: 'cat-energy',
+    categoryName: 'Energetik & Moxito',
+    name: 'Qulupnayli Moxito',
+    price: 20000,
+    imageUrl: '/images/food/moxito.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-mox-orange',
+    categoryId: 'cat-energy',
+    categoryName: 'Energetik & Moxito',
+    name: 'Apelsinli Moxito',
+    price: 20000,
+    imageUrl: '/images/food/moxito.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-mox-classic',
+    categoryId: 'cat-energy',
+    categoryName: 'Energetik & Moxito',
+    name: 'Klassik Laym Moxito',
+    price: 20000,
+    imageUrl: '/images/food/moxito.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-mox-raspberry',
+    categoryId: 'cat-energy',
+    categoryName: 'Energetik & Moxito',
+    name: 'Malinali Moxito',
     price: 20000,
     imageUrl: '/images/food/moxito.jpg',
     recipe: []
