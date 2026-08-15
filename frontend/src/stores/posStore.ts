@@ -191,8 +191,40 @@ export const usePosStore = defineStore('pos', () => {
       const res = await fetchWithTimeout(`${API_URL}/orders`);
       if (res.ok) {
         const body = await res.json();
-        if (body.success) {
-          orderHistory.value = body.data;
+        if (body.success && body.data) {
+          // Backend returns { items: [...], meta: {...} } — array ni to'g'ri olish kerak
+          const rawOrders = Array.isArray(body.data) ? body.data : (Array.isArray(body.data.items) ? body.data.items : []);
+          
+          // Har bir buyurtmani null-safe qilish (backend dan kelgan data to'liq bo'lmasligi mumkin)
+          orderHistory.value = rawOrders.map((o: any) => ({
+            id: o.id || 'unknown-' + Date.now(),
+            orderNumber: o.orderNumber || 0,
+            shiftId: o.shiftId || '',
+            cashierName: o.cashierName || o.cashier?.fullName || 'Kassir',
+            orderType: o.orderType || 'DINE_IN',
+            items: Array.isArray(o.items) ? o.items.map((item: any) => ({
+              id: item.id || 'item-' + Math.random().toString(36).substr(2, 6),
+              product: {
+                id: item.product?.id || item.productId || '',
+                name: item.product?.name || item.productName || 'Nomsiz',
+                price: item.product?.price || item.unitPrice || 0,
+                categoryId: item.product?.categoryId || '',
+                categoryName: item.product?.categoryName || '',
+                imageUrl: item.product?.imageUrl || '',
+                recipe: item.product?.recipe || []
+              },
+              quantity: item.quantity || 1,
+              selectedModifiers: item.selectedModifiers || [],
+              unitPrice: item.unitPrice || item.product?.price || 0,
+              totalPrice: item.totalPrice || 0
+            })) : [],
+            totalAmount: o.totalAmount || 0,
+            paymentType: o.paymentType || 'CASH',
+            paidAmount: o.paidAmount ?? o.totalAmount ?? 0,
+            changeAmount: o.changeAmount ?? 0,
+            status: o.status || 'COMPLETED',
+            createdAt: o.createdAt || new Date().toISOString()
+          }));
         }
       }
     } catch (e) {

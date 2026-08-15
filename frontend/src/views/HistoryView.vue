@@ -33,23 +33,27 @@ const selectedCashierFilter = ref<string>('ALL');
 
 // ─── Kassalar ro'yxati (orderHistory dan dinamik) ────────────────────────────
 const cashierList = computed(() => {
-  const names = new Set(posStore.orderHistory.map(o => o.cashierName).filter(Boolean));
+  if (!Array.isArray(posStore.orderHistory)) return [];
+  const names = new Set(posStore.orderHistory.map(o => o?.cashierName).filter(Boolean));
   return Array.from(names);
 });
 
 // ─── Kassalar kesimida hisobot ────────────────────────────────────────────────
 const cashierStats = computed(() => {
-  const all = posStore.orderHistory;
+  const all = Array.isArray(posStore.orderHistory) ? posStore.orderHistory : [];
   return cashierList.value.map(name => {
-    const orders = all.filter(o => o.cashierName === name);
-    const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
-    const cashRevenue = orders.filter(o => o.paymentType === 'CASH').reduce((s, o) => s + o.totalAmount, 0);
-    const cardRevenue = orders.filter(o => o.paymentType === 'CARD').reduce((s, o) => s + o.totalAmount, 0);
-    const qrRevenue = orders.filter(o => o.paymentType === 'CLICK_PAYME').reduce((s, o) => s + o.totalAmount, 0);
+    const orders = all.filter(o => o?.cashierName === name);
+    const totalRevenue = orders.reduce((s, o) => s + (o?.totalAmount || 0), 0);
+    const cashRevenue = orders.filter(o => o?.paymentType === 'CASH').reduce((s, o) => s + (o?.totalAmount || 0), 0);
+    const cardRevenue = orders.filter(o => o?.paymentType === 'CARD').reduce((s, o) => s + (o?.totalAmount || 0), 0);
+    const qrRevenue = orders.filter(o => o?.paymentType === 'CLICK_PAYME').reduce((s, o) => s + (o?.totalAmount || 0), 0);
     const avgTicket = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
     const topProduct = (() => {
       const freq: Record<string, number> = {};
-      orders.forEach(o => o.items?.forEach(i => { freq[i.product.name] = (freq[i.product.name] || 0) + i.quantity; }));
+      orders.forEach(o => o?.items?.forEach(i => { 
+        const pName = i?.product?.name;
+        if (pName) freq[pName] = (freq[pName] || 0) + (i.quantity || 0); 
+      }));
       const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
       return top ? top[0] : '—';
     })();
@@ -67,25 +71,32 @@ const orderForPrint = ref<Order | null>(null);
 const isReceiptModalOpen = ref(false);
 
 const filteredOrders = computed(() => {
-  let result = posStore.orderHistory;
+  if (!Array.isArray(posStore.orderHistory)) return [];
+  let result = posStore.orderHistory.filter(o => o && o.id);
   
   // Date filtering
   const now = new Date();
   const todayStr = now.toDateString();
   
   if (selectedDateFilter.value === 'TODAY') {
-    result = result.filter(o => new Date(o.createdAt).toDateString() === todayStr);
+    result = result.filter(o => {
+      try { return new Date(o.createdAt).toDateString() === todayStr; } catch { return false; }
+    });
   } else if (selectedDateFilter.value === 'YESTERDAY') {
     const yest = new Date();
     yest.setDate(now.getDate() - 1);
     const yestStr = yest.toDateString();
-    result = result.filter(o => new Date(o.createdAt).toDateString() === yestStr);
+    result = result.filter(o => {
+      try { return new Date(o.createdAt).toDateString() === yestStr; } catch { return false; }
+    });
   } else if (selectedDateFilter.value === 'MONTH') {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     result = result.filter(o => {
-      const d = new Date(o.createdAt);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      try {
+        const d = new Date(o.createdAt);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      } catch { return false; }
     });
   }
 
@@ -103,9 +114,9 @@ const filteredOrders = computed(() => {
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(o => 
-      o.id.toLowerCase().includes(q) || 
-      o.orderNumber.toString().includes(q) ||
-      o.cashierName.toLowerCase().includes(q)
+      (o.id || '').toLowerCase().includes(q) || 
+      (o.orderNumber || 0).toString().includes(q) ||
+      (o.cashierName || '').toLowerCase().includes(q)
     );
   }
   

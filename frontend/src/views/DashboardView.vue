@@ -51,36 +51,46 @@ const weekStart = todayStart - 6 * 86400000;
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
 const filteredHistory = computed(() => {
+  if (!Array.isArray(posStore.orderHistory)) return [];
   return posStore.orderHistory.filter(o => {
-    const d = new Date(o.createdAt).getTime();
-    switch (selectedPeriod.value) {
-      case 'today': return d >= todayStart;
-      case 'yesterday': return d >= yesterdayStart && d < todayStart;
-      case 'week': return d >= weekStart;
-      case 'month': return d >= monthStart;
-      default: return true;
-    }
+    if (!o || !o.createdAt) return false;
+    try {
+      const d = new Date(o.createdAt).getTime();
+      if (Number.isNaN(d)) return false;
+      switch (selectedPeriod.value) {
+        case 'today': return d >= todayStart;
+        case 'yesterday': return d >= yesterdayStart && d < todayStart;
+        case 'week': return d >= weekStart;
+        case 'month': return d >= monthStart;
+        default: return true;
+      }
+    } catch { return false; }
   });
 });
 
 const previousHistory = computed(() => {
+  if (!Array.isArray(posStore.orderHistory)) return [];
   return posStore.orderHistory.filter(o => {
-    const d = new Date(o.createdAt).getTime();
-    switch (selectedPeriod.value) {
-      case 'today': return d >= yesterdayStart && d < todayStart;
-      case 'yesterday': return d >= yesterdayStart - 86400000 && d < yesterdayStart;
-      case 'week': return d >= weekStart - 7 * 86400000 && d < weekStart;
-      case 'month': 
-        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
-        return d >= prevMonthStart && d < monthStart;
-      default: return false;
-    }
+    if (!o || !o.createdAt) return false;
+    try {
+      const d = new Date(o.createdAt).getTime();
+      if (Number.isNaN(d)) return false;
+      switch (selectedPeriod.value) {
+        case 'today': return d >= yesterdayStart && d < todayStart;
+        case 'yesterday': return d >= yesterdayStart - 86400000 && d < yesterdayStart;
+        case 'week': return d >= weekStart - 7 * 86400000 && d < weekStart;
+        case 'month': 
+          const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+          return d >= prevMonthStart && d < monthStart;
+        default: return false;
+      }
+    } catch { return false; }
   });
 });
 
 const totalRevenue = computed(() => {
   if (dashboardStats.value.totalRevenue > 0 && selectedPeriod.value === 'today') return dashboardStats.value.totalRevenue;
-  return filteredHistory.value.reduce((sum, o) => sum + o.totalAmount, 0);
+  return filteredHistory.value.reduce((sum, o) => sum + (o?.totalAmount || 0), 0);
 });
 
 const totalOrdersCount = computed(() => {
@@ -125,19 +135,24 @@ const comparisonData = computed(() => {
 const categorySalesDistribution = computed(() => {
   const map: Record<string, { name: string; total: number; count: number }> = {};
   
-  posStore.products.forEach(p => {
-    if (!map[p.categoryName]) {
-      map[p.categoryName] = { name: p.categoryName, total: 0, count: 0 };
-    }
-  });
+  if (Array.isArray(posStore.products)) {
+    posStore.products.forEach(p => {
+      if (p?.categoryName && !map[p.categoryName]) {
+        map[p.categoryName] = { name: p.categoryName, total: 0, count: 0 };
+      }
+    });
+  }
 
   filteredHistory.value.forEach((order: Order) => {
+    if (!order?.items) return;
     order.items.forEach((item: CartItem) => {
-      if (map[item.product.categoryName]) {
-        map[item.product.categoryName].total += item.totalPrice;
-        map[item.product.categoryName].count += item.quantity;
+      const catName = item?.product?.categoryName;
+      if (!catName) return;
+      if (map[catName]) {
+        map[catName].total += item.totalPrice || 0;
+        map[catName].count += item.quantity || 0;
       } else {
-        map[item.product.categoryName] = { name: item.product.categoryName, total: item.totalPrice, count: item.quantity };
+        map[catName] = { name: catName, total: item.totalPrice || 0, count: item.quantity || 0 };
       }
     });
   });
@@ -151,10 +166,11 @@ const paymentBreakdown = computed(() => {
   let cash = 0, card = 0, clickPayme = 0, delivery = 0;
   
   filteredHistory.value.forEach((o: Order) => {
-    if (o.paymentType === 'CASH') cash += o.totalAmount;
-    else if (o.paymentType === 'CARD') card += o.totalAmount;
-    else if (o.paymentType === 'CLICK_PAYME') clickPayme += o.totalAmount;
-    else if (o.paymentType === 'DELIVERY_PARTNER') delivery += o.totalAmount;
+    const amount = o?.totalAmount || 0;
+    if (o?.paymentType === 'CASH') cash += amount;
+    else if (o?.paymentType === 'CARD') card += amount;
+    else if (o?.paymentType === 'CLICK_PAYME') clickPayme += amount;
+    else if (o?.paymentType === 'DELIVERY_PARTNER') delivery += amount;
   });
 
   const total = (cash + card + clickPayme + delivery) || 1;
@@ -219,19 +235,22 @@ const topBestsellers = computed(() => {
   const map: Record<string, { name: string; category: string; price: number; soldCount: number; totalRevenue: number; imageUrl: string }> = {};
   
   filteredHistory.value.forEach((order: Order) => {
+    if (!order?.items) return;
     order.items.forEach((item: CartItem) => {
-      if (!map[item.product.id]) {
-        map[item.product.id] = {
-          name: item.product.name,
-          category: item.product.categoryName,
-          price: item.product.price,
+      const productId = item?.product?.id;
+      if (!productId) return;
+      if (!map[productId]) {
+        map[productId] = {
+          name: item.product.name || 'Nomsiz',
+          category: item.product.categoryName || '',
+          price: item.product.price || 0,
           soldCount: 0,
           totalRevenue: 0,
           imageUrl: item.product.imageUrl || ''
         };
       }
-      map[item.product.id].soldCount += item.quantity;
-      map[item.product.id].totalRevenue += item.totalPrice;
+      map[productId].soldCount += item.quantity || 0;
+      map[productId].totalRevenue += item.totalPrice || 0;
     });
   });
 

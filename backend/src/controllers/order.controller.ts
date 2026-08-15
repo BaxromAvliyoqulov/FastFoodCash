@@ -336,7 +336,9 @@ export const getOrders = async (req: Request, res: Response) => {
                 select: {
                   id: true,
                   name: true,
-                  price: true
+                  price: true,
+                  categoryName: true,
+                  imageUrl: true
                 }
               }
             }
@@ -350,16 +352,18 @@ export const getOrders = async (req: Request, res: Response) => {
     const formattedOrders = orders.map(o => ({
       id: o.id,
       orderNumber: o.orderNumber,
-      cashierName: o.cashier.fullName,
+      cashierName: o.cashier?.fullName || 'Kassir',
       totalAmount: o.totalAmount,
       paymentType: o.paymentType,
       status: o.status,
       createdAt: o.createdAt,
       items: o.items.map(i => ({
         product: {
-          id: i.product.id,
-          name: i.product.name,
-          price: i.product.price
+          id: i.product?.id || '',
+          name: i.product?.name || 'Nomsiz',
+          price: i.product?.price || 0,
+          categoryName: (i.product as any)?.categoryName || '',
+          imageUrl: (i.product as any)?.imageUrl || ''
         },
         quantity: i.quantity,
         unitPrice: i.unitPrice,
