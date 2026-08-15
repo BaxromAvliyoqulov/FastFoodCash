@@ -9,7 +9,7 @@ const props = defineProps<{
 const iconSizeClass = computed(() => {
   if (props.size === 'sm') return 'w-4 h-4';
   if (props.size === 'lg') return 'w-7 h-7';
-  if (props.size === 'xl') return 'w-9 h-9';
+  if (props.size === 'xl') return 'w-10 h-10';
   return 'w-5 h-5';
 });
 
@@ -17,268 +17,293 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
 </script>
 
 <template>
-  <span class="inline-flex items-center justify-center shrink-0 select-none">
+  <span class="inline-flex items-center justify-center shrink-0 select-none drop-shadow-sm">
     
-    <!-- 1. 🌯 LAVASH SVG (Crispy Rolled Wrap with Fresh Fillings) -->
-    <svg v-if="safeCatId.includes('lavash')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 1. 🌯 PREMIUM 3D LAVASH (Tandir Gril Lavash with Fresh Fillings) -->
+    <svg v-if="safeCatId.includes('lavash')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="lavashGrad" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#FDE68A" />
-          <stop offset="0.5" stop-color="#F59E0B" />
+        <linearGradient id="pLavashBody" x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FEF08A" />
+          <stop offset="0.3" stop-color="#FDE047" />
+          <stop offset="0.7" stop-color="#F59E0B" />
           <stop offset="1" stop-color="#D97706" />
         </linearGradient>
-        <linearGradient id="lavashFilling" x1="12" y1="6" x2="24" y2="18" gradientUnits="userSpaceOnUse">
+        <linearGradient id="pLavashCore" x1="16" y1="8" x2="32" y2="24" gradientUnits="userSpaceOnUse">
           <stop stop-color="#EF4444" />
-          <stop offset="0.6" stop-color="#78350F" />
+          <stop offset="0.5" stop-color="#78350F" />
           <stop offset="1" stop-color="#10B981" />
         </linearGradient>
+        <radialGradient id="pLavashShadow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#000" stop-opacity="0.35" />
+          <stop offset="100%" stop-color="#000" stop-opacity="0" />
+        </radialGradient>
       </defs>
-      <!-- Wrap Body -->
-      <path d="M8 12C8 7.58172 11.5817 4 16 4H20C24.4183 4 28 7.58172 28 12V24C28 28.4183 24.4183 32 20 32H16C11.5817 32 8 28.4183 8 24V12Z" fill="url(#lavashGrad)" />
-      <!-- Grill Marks -->
-      <path d="M11 15L25 10M11 21L25 16M11 27L25 22" stroke="#B45309" stroke-width="1.8" stroke-linecap="round" opacity="0.65" />
-      <!-- Open Top / Fresh Meat & Greens Peeking -->
-      <ellipse cx="18" cy="9" rx="7" ry="3.5" fill="url(#lavashFilling)" />
-      <circle cx="15.5" cy="8.5" r="1.5" fill="#10B981" />
-      <circle cx="19.5" cy="8" r="1.5" fill="#FEF08A" />
-      <circle cx="17.5" cy="10" r="1.2" fill="#DC2626" />
-      <!-- Outer Fold Detail -->
-      <path d="M8 18C12 21 24 21 28 18" stroke="#FDE68A" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="44" rx="14" ry="3" fill="url(#pLavashShadow)" />
+      <!-- Wrap Roll Body -->
+      <path d="M12 16C12 10.4772 16.4772 6 22 6H26C31.5228 6 36 10.4772 36 16V34C36 39.5228 31.5228 44 26 44H22C16.4772 44 12 39.5228 12 34V16Z" fill="url(#pLavashBody)" />
+      <!-- Charcoal Grill Stripes -->
+      <path d="M15 20L33 13M14 28L34 21M15 36L33 29" stroke="#92400E" stroke-width="2.2" stroke-linecap="round" opacity="0.6" />
+      <!-- Top Filling Cross-Section -->
+      <ellipse cx="24" cy="12" rx="9.5" ry="5" fill="url(#pLavashCore)" />
+      <!-- Tender Beef Chunks & Veggies -->
+      <circle cx="21" cy="11.5" r="2.2" fill="#881337" />
+      <circle cx="27" cy="11" r="2" fill="#15803D" />
+      <circle cx="23.5" cy="13.5" r="1.8" fill="#DC2626" />
+      <circle cx="25.5" cy="10" r="1.5" fill="#FEF9C3" />
+      <!-- Specular Gloss Sheen -->
+      <path d="M14 18C15 22 15 30 14 36" stroke="#FEF9C3" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+      <!-- Outer Tortilla Fold Lip -->
+      <path d="M12 24C17 28 31 28 36 24" stroke="#FEF08A" stroke-width="2" stroke-linecap="round" />
     </svg>
 
-    <!-- 2. 🍔 BURGER SVG (3D Layered Gourmet Cheeseburger) -->
-    <svg v-else-if="safeCatId.includes('burger')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 2. 🍔 PREMIUM 3D GOURMET BURGER (Layered Brioche Cheeseburger) -->
+    <svg v-else-if="safeCatId.includes('burger')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="bunTop" x1="4" y1="4" x2="32" y2="16" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#FBBF24" />
-          <stop offset="0.6" stop-color="#F59E0B" />
-          <stop offset="1" stop-color="#D97706" />
+        <linearGradient id="pBunTop" x1="6" y1="4" x2="42" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FDE047" />
+          <stop offset="0.4" stop-color="#F59E0B" />
+          <stop offset="1" stop-color="#B45309" />
         </linearGradient>
-        <linearGradient id="pattyGrad" x1="4" y1="22" x2="32" y2="27" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#854D0E" />
-          <stop offset="1" stop-color="#451A03" />
+        <linearGradient id="pPatty" x1="6" y1="28" x2="42" y2="35" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#78350F" />
+          <stop offset="0.5" stop-color="#451A03" />
+          <stop offset="1" stop-color="#291104" />
         </linearGradient>
       </defs>
-      <!-- Top Bun -->
-      <path d="M5 15C5 8.92487 9.92487 4 16 4H20C26.0751 4 31 8.92487 31 15V16H5V15Z" fill="url(#bunTop)" />
-      <!-- Sesame Seeds -->
-      <ellipse cx="11" cy="9" rx="1.2" ry="0.8" fill="#FFFBEB" transform="rotate(-15 11 9)" />
-      <ellipse cx="18" cy="7" rx="1.2" ry="0.8" fill="#FFFBEB" />
-      <ellipse cx="25" cy="9.5" rx="1.2" ry="0.8" fill="#FFFBEB" transform="rotate(20 25 9.5)" />
-      <ellipse cx="15" cy="12" rx="1.2" ry="0.8" fill="#FFFBEB" transform="rotate(10 15 12)" />
-      <ellipse cx="22" cy="12.5" rx="1.2" ry="0.8" fill="#FFFBEB" transform="rotate(-10 22 12.5)" />
-      <!-- Fresh Curly Lettuce -->
-      <path d="M4 17.5C5.5 16 7 16 8.5 17.5C10 19 11.5 19 13 17.5C14.5 16 16 16 17.5 17.5C19 19 20.5 19 22 17.5C23.5 16 25 16 26.5 17.5C28 19 29.5 19 31 17.5" stroke="#10B981" stroke-width="2.8" stroke-linecap="round" />
-      <!-- Melted Cheddar Drop -->
-      <path d="M5 19.5H31L28 23H22L20 24.5L18 23H11L9 24.5L7 23H5V19.5Z" fill="#FACC15" />
-      <!-- Thick Grilled Beef Patty -->
-      <rect x="4" y="22" width="28" height="5" rx="2.5" fill="url(#pattyGrad)" />
-      <!-- Bottom Toasted Bun -->
-      <path d="M6 28.5H30C30 30.7091 28.2091 32.5 26 32.5H10C7.79086 32.5 6 30.7091 6 28.5Z" fill="#D97706" />
-      <line x1="6" y1="28.5" x2="30" y2="28.5" stroke="#FDE68A" stroke-width="1" />
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="44" rx="16" ry="3" fill="#000" opacity="0.25" />
+      <!-- Golden Brioche Top Bun -->
+      <path d="M7 19C7 11.268 13.268 5 21 5H27C34.732 5 41 11.268 41 19V20H7V19Z" fill="url(#pBunTop)" />
+      <!-- Bun Gloss Highlight -->
+      <path d="M12 12C15 8.5 22 7 28 7" stroke="#FEF9C3" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+      <!-- Sesame Seeds with 3D Depth -->
+      <ellipse cx="15" cy="12" rx="1.5" ry="0.9" fill="#FFFBEB" transform="rotate(-15 15 12)" />
+      <ellipse cx="24" cy="9" rx="1.5" ry="0.9" fill="#FFFBEB" />
+      <ellipse cx="33" cy="13" rx="1.5" ry="0.9" fill="#FFFBEB" transform="rotate(20 33 13)" />
+      <ellipse cx="20" cy="16" rx="1.5" ry="0.9" fill="#FFFBEB" transform="rotate(10 20 16)" />
+      <ellipse cx="29" cy="16.5" rx="1.5" ry="0.9" fill="#FFFBEB" transform="rotate(-10 29 16.5)" />
+      <!-- Wavy Crispy Emerald Lettuce -->
+      <path d="M5 22C7 20 9 20 11 22C13 24 15 24 17 22C19 20 21 20 23 22C25 24 27 24 29 22C31 20 33 20 35 22C37 24 39 24 41 22C43 20 44 21 44 22" stroke="#10B981" stroke-width="3.6" stroke-linecap="round" />
+      <!-- Tomato Slices -->
+      <rect x="8" y="24" width="14" height="3" rx="1.5" fill="#EF4444" />
+      <rect x="26" y="24" width="14" height="3" rx="1.5" fill="#DC2626" />
+      <!-- Melted Cheddar Drip Corners -->
+      <path d="M6 25H42L38 30H30L27 32.5L24 30H15L12 32.5L9 30H6V25Z" fill="#FACC15" />
+      <!-- Juicy Charbroiled Patty -->
+      <rect x="5" y="29" width="38" height="6.5" rx="3.25" fill="url(#pPatty)" />
+      <!-- Bottom Bun -->
+      <path d="M8 37.5H40C40 40.5376 37.5376 43 34.5 43H13.5C10.4624 43 8 40.5376 8 37.5Z" fill="#D97706" />
+      <line x1="8" y1="37.5" x2="40" y2="37.5" stroke="#FDE68A" stroke-width="1.2" />
     </svg>
 
-    <!-- 3. 🌭 HOT DOG SVG (Brioche Roll & Flame Sausage) -->
-    <svg v-else-if="safeCatId.includes('hotdog')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 3. 🌭 PREMIUM 3D HOT DOG (Brioche Roll & Grilled Sausage) -->
+    <svg v-else-if="safeCatId.includes('hotdog')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="sausageGrad" x1="8" y1="8" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+        <linearGradient id="pSausage" x1="10" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
           <stop stop-color="#F87171" />
-          <stop offset="0.5" stop-color="#DC2626" />
-          <stop offset="1" stop-color="#991B1B" />
+          <stop offset="0.4" stop-color="#DC2626" />
+          <stop offset="1" stop-color="#881337" />
         </linearGradient>
       </defs>
-      <!-- Bun Back -->
-      <rect x="6" y="14" width="24" height="12" rx="6" transform="rotate(-30 6 14)" fill="#D97706" opacity="0.9" />
-      <!-- Grilled Red Sausage -->
-      <rect x="4" y="16" width="30" height="9" rx="4.5" transform="rotate(-30 4 16)" fill="url(#sausageGrad)" />
-      <!-- Sausage Highlights -->
-      <path d="M7 26L28 14" stroke="#FECACA" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
-      <!-- Bun Front -->
-      <path d="M12 28C15 31 22 28 26 21L29 16C31 12 28 9 24 11L14 17C10 19 9 25 12 28Z" fill="#F59E0B" />
-      <!-- Mustard Wave Zig-Zag -->
-      <path d="M11 24C13 21 16 23 18 20C20 17 23 19 25 16" stroke="#FACC15" stroke-width="2.2" stroke-linecap="round" />
+      <!-- Bun Rear -->
+      <rect x="8" y="18" width="32" height="16" rx="8" transform="rotate(-30 8 18)" fill="#B45309" opacity="0.9" />
+      <!-- Smoked Sausage Body -->
+      <rect x="5" y="21" width="40" height="12" rx="6" transform="rotate(-30 5 21)" fill="url(#pSausage)" />
+      <!-- Sausage Grill Marks & Glint -->
+      <path d="M10 34L38 18" stroke="#FECACA" stroke-width="1.5" stroke-linecap="round" opacity="0.65" />
+      <line x1="17" y1="30" x2="19" y2="25" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
+      <line x1="24" y1="26" x2="26" y2="21" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
+      <line x1="31" y1="22" x2="33" y2="17" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
+      <!-- Bun Front Wrap -->
+      <path d="M15 37C19 41 28 37 34 28L38 21C41 16 37 12 32 15L18 23C13 26 11 34 15 37Z" fill="#F59E0B" />
+      <!-- Mustard Stream Wave -->
+      <path d="M14 32C17 28 21 31 24 27C27 23 31 26 34 22" stroke="#FACC15" stroke-width="3" stroke-linecap="round" />
     </svg>
 
-    <!-- 4. 🍟 QOVURILGANLAR & SNEKLAR SVG (Golden Crispy Fries) -->
-    <svg v-else-if="safeCatId.includes('fried')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
-      <!-- Crispy Fries -->
-      <rect x="9" y="5" width="3.5" height="18" rx="1.75" fill="#FDE047" />
-      <rect x="14" y="3" width="3.5" height="20" rx="1.75" fill="#FACC15" />
-      <rect x="19" y="2" width="3.5" height="21" rx="1.75" fill="#F59E0B" />
-      <rect x="24" y="6" width="3.5" height="17" rx="1.75" fill="#FACC15" />
-      <rect x="11" y="7" width="3" height="15" rx="1.5" transform="rotate(-8 11 7)" fill="#FEF08A" />
-      <rect x="22" y="8" width="3" height="15" rx="1.5" transform="rotate(10 22 8)" fill="#F59E0B" />
-      <!-- Red Box Container -->
-      <path d="M6 16L8.5 32H27.5L30 16C26 18.5 22 19 18 19C14 19 10 18.5 6 16Z" fill="#DC2626" />
-      <!-- Golden Crest Arc -->
-      <circle cx="18" cy="25" r="4" fill="#FACC15" />
-      <path d="M15.5 27L18 22L20.5 27" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-
-    <!-- 5. 🍕 PIZZA SVG (Italian Supreme Pizza Slice) -->
-    <svg v-else-if="safeCatId.includes('pizza')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 4. 🍟 PREMIUM 3D FRENCH FRIES (Golden Sticks in Crimson Box) -->
+    <svg v-else-if="safeCatId.includes('fried')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="cheeseGrad" x1="18" y1="7" x2="18" y2="30" gradientUnits="userSpaceOnUse">
+        <linearGradient id="pFry" x1="12" y1="4" x2="36" y2="28" gradientUnits="userSpaceOnUse">
           <stop stop-color="#FEF08A" />
           <stop offset="0.6" stop-color="#FACC15" />
+          <stop offset="1" stop-color="#D97706" />
+        </linearGradient>
+      </defs>
+      <!-- Golden Potato Fries -->
+      <rect x="11" y="7" width="4.5" height="23" rx="2.25" transform="rotate(-6 11 7)" fill="url(#pFry)" />
+      <rect x="18" y="4" width="4.5" height="26" rx="2.25" fill="#FEF08A" />
+      <rect x="25" y="3" width="4.5" height="27" rx="2.25" fill="url(#pFry)" />
+      <rect x="32" y="8" width="4.5" height="22" rx="2.25" transform="rotate(8 32 8)" fill="url(#pFry)" />
+      <rect x="14" y="10" width="4" height="20" rx="2" transform="rotate(-12 14 10)" fill="#F59E0B" />
+      <rect x="29" y="10" width="4" height="20" rx="2" transform="rotate(12 29 10)" fill="#FDE047" />
+      <!-- Red Box Container -->
+      <path d="M8 20L11 42H37L40 20C35 23.5 30 24 24 24C18 24 13 23.5 8 20Z" fill="#DC2626" />
+      <!-- Box Highlight & Gold Star Medal -->
+      <path d="M12 40L9.5 22" stroke="#EF4444" stroke-width="1.8" stroke-linecap="round" />
+      <circle cx="24" cy="33" r="5.5" fill="#FACC15" />
+      <path d="M21 35.5L24 29L27 35.5" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+
+    <!-- 5. 🍕 PREMIUM 3D PIZZA SLICE (Supreme Pepperoni Mozzarella) -->
+    <svg v-else-if="safeCatId.includes('pizza')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <defs>
+        <linearGradient id="pPizzaCheese" x1="24" y1="8" x2="24" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FEF9C3" />
+          <stop offset="0.5" stop-color="#FACC15" />
           <stop offset="1" stop-color="#F59E0B" />
         </linearGradient>
       </defs>
-      <!-- Golden Crust -->
-      <path d="M18 4L31 28C31 28 25 32 18 32C11 32 5 28 5 28L18 4Z" fill="#D97706" />
-      <!-- Melty Cheese -->
-      <path d="M18 7L29 27C29 27 24 30 18 30C12 30 7 27 7 27L18 7Z" fill="url(#cheeseGrad)" />
-      <!-- Crust Rim Highlight -->
-      <path d="M6 28C10 31 26 31 30 28" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" />
-      <!-- Pepperoni Discs -->
-      <circle cx="18" cy="15" r="3" fill="#DC2626" />
-      <circle cx="17.5" cy="14.5" r="1.2" fill="#F87171" opacity="0.6" />
-      <circle cx="13" cy="22" r="2.6" fill="#DC2626" />
-      <circle cx="22.5" cy="23" r="2.8" fill="#DC2626" />
-      <!-- Basil Greens & Mushrooms -->
-      <ellipse cx="14" cy="15" rx="1.5" ry="2.2" transform="rotate(-30 14 15)" fill="#10B981" />
-      <ellipse cx="22" cy="16" rx="1.5" ry="2.2" transform="rotate(30 22 16)" fill="#10B981" />
-      <circle cx="18" cy="26" r="1.5" fill="#78350F" />
+      <!-- Thick Crust -->
+      <path d="M24 5L41 37C41 37 33 42 24 42C15 42 7 37 7 37L24 5Z" fill="#B45309" />
+      <!-- Molten Cheese Surface -->
+      <path d="M24 9L38.5 35.5C38.5 35.5 32 39.5 24 39.5C16 39.5 9.5 35.5 9.5 35.5L24 9Z" fill="url(#pPizzaCheese)" />
+      <!-- Baked Crust Rim Texture -->
+      <path d="M8 37C14 41 34 41 40 37" stroke="#78350F" stroke-width="3" stroke-linecap="round" />
+      <!-- Savory Pepperoni Disks -->
+      <circle cx="24" cy="19" r="4" fill="#DC2626" />
+      <circle cx="23.5" cy="18.5" r="1.5" fill="#FCA5A5" opacity="0.6" />
+      <circle cx="17.5" cy="28" r="3.5" fill="#DC2626" />
+      <circle cx="30" cy="29.5" r="3.8" fill="#DC2626" />
+      <!-- Fresh Basil & Mushroom -->
+      <ellipse cx="18" cy="19" rx="2" ry="3" transform="rotate(-30 18 19)" fill="#15803D" />
+      <ellipse cx="29" cy="20.5" rx="2" ry="3" transform="rotate(35 29 20.5)" fill="#15803D" />
+      <circle cx="24" cy="34" r="2" fill="#78350F" />
     </svg>
 
-    <!-- 6. 🥗 SALATLAR SVG (Fresh Garden Bowl with Veggies) -->
-    <svg v-else-if="safeCatId.includes('salad')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
-      <!-- Fresh Greens Bouquet -->
-      <circle cx="11" cy="14" r="6" fill="#10B981" />
-      <circle cx="18" cy="11" r="7" fill="#059669" />
-      <circle cx="25" cy="14" r="6" fill="#34D399" />
-      <!-- Cherry Tomatoes & Cucumber -->
-      <circle cx="14" cy="13" r="2.5" fill="#EF4444" />
-      <circle cx="13.5" cy="12.5" r="0.8" fill="#FCA5A5" />
-      <circle cx="21" cy="12" r="2.2" fill="#F59E0B" />
-      <circle cx="24" cy="16" r="2.5" fill="#EF4444" />
-      <ellipse cx="18" cy="15" rx="2" ry="1.5" fill="#84CC16" />
-      <!-- Ceramic Bowl -->
-      <path d="M4 17C4 17 5 31 18 31C31 31 32 17 32 17H4Z" fill="#3B82F6" />
-      <path d="M4 17C4 17 10 19 18 19C26 19 32 17 32 17" stroke="#60A5FA" stroke-width="1.8" />
+    <!-- 6. 🥗 PREMIUM 3D SALATLAR (Garden Fresh Avocado Bowl) -->
+    <svg v-else-if="safeCatId.includes('salad')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <!-- Fresh Lettuce Bouquet -->
+      <circle cx="15" cy="18" r="8" fill="#10B981" />
+      <circle cx="24" cy="14" r="9.5" fill="#059669" />
+      <circle cx="33" cy="18" r="8" fill="#34D399" />
+      <!-- Cherry Tomatoes & Cucumber Slices -->
+      <circle cx="18.5" cy="17" r="3.5" fill="#EF4444" />
+      <circle cx="17.8" cy="16.2" r="1.2" fill="#FECACA" />
+      <circle cx="28" cy="16" r="3" fill="#F59E0B" />
+      <circle cx="32" cy="21" r="3.2" fill="#DC2626" />
+      <ellipse cx="24" cy="20" rx="3" ry="2" fill="#84CC16" />
+      <!-- Ceramic Sky Bowl with Depth -->
+      <path d="M5 22C5 22 6.5 41 24 41C41.5 41 43 22 43 22H5Z" fill="#2563EB" />
+      <path d="M5 22C5 22 13 25 24 25C35 25 43 22 43 22" stroke="#60A5FA" stroke-width="2.5" />
     </svg>
 
-    <!-- 7. 🍰 SHIRINLIKLAR / TORTLAR SVG (Strawberry Layer Cake) -->
-    <svg v-else-if="safeCatId.includes('dessert')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
-      <!-- Sponge Cake Layer 1 -->
-      <path d="M5 21H31V29C31 30.6569 29.6569 32 28 32H8C6.34315 32 5 30.6569 5 29V21Z" fill="#F472B6" />
-      <!-- Cream Filling Line -->
-      <rect x="5" y="24" width="26" height="2" fill="#FFF1F2" />
-      <!-- Chocolate Glaze -->
-      <rect x="5" y="27" width="26" height="1.5" fill="#78350F" opacity="0.6" />
-      <!-- Fluffy Cream Wave Layer -->
-      <path d="M5 21C7 19.5 9 19.5 11 21C13 22.5 15 22.5 17 21C19 19.5 21 19.5 23 21C25 22.5 27 22.5 29 21C30 20.2 31 20.5 31 21V16H5V21Z" fill="#FFF1F2" />
-      <!-- Top Strawberry -->
-      <path d="M18 13C14 13 13 8 18 6C23 8 22 13 18 13Z" fill="#DC2626" />
-      <circle cx="17" cy="9" r="0.6" fill="#FDE047" />
-      <circle cx="19" cy="9" r="0.6" fill="#FDE047" />
-      <circle cx="18" cy="11" r="0.6" fill="#FDE047" />
-      <!-- Mint Leaf -->
-      <path d="M18 6C17 4 19 2 21 3C22 5 20 6 18 6Z" fill="#10B981" />
+    <!-- 7. 🍰 PREMIUM 3D SHIRINLIKLAR / TORT (Velvet Strawberry Cream Cake) -->
+    <svg v-else-if="safeCatId.includes('dessert')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <!-- Sponge Layer 1 -->
+      <path d="M7 28H41V39C41 41.2091 39.2091 43 37 43H11C8.79086 43 7 41.2091 7 39V28Z" fill="#F472B6" />
+      <!-- Cream Filling Strips -->
+      <rect x="7" y="32" width="34" height="3" fill="#FFF1F2" />
+      <rect x="7" y="36" width="34" height="2" fill="#831843" opacity="0.4" />
+      <!-- White Whipped Vanilla Cream Wave -->
+      <path d="M7 28C9.5 25.5 12.5 25.5 15 28C17.5 30.5 20.5 30.5 23 28C25.5 25.5 28.5 25.5 31 28C33.5 30.5 36.5 30.5 39 28C40.5 27 41 27.5 41 28V21H7V28Z" fill="#FFF1F2" />
+      <!-- Ripe Glazed Strawberry Top -->
+      <path d="M24 17C18.5 17 17 10.5 24 7.5C31 10.5 29.5 17 24 17Z" fill="#DC2626" />
+      <circle cx="22.5" cy="12" r="0.8" fill="#FEF08A" />
+      <circle cx="25.5" cy="12" r="0.8" fill="#FEF08A" />
+      <circle cx="24" cy="14.5" r="0.8" fill="#FEF08A" />
+      <path d="M24 7.5C22.5 5 25 2.5 28 3.5C29 6 26.5 7.5 24 7.5Z" fill="#15803D" />
     </svg>
 
-    <!-- 8. ☕ COFFEE MENU SVG (Hot Steaming Espresso Cup) -->
-    <svg v-else-if="safeCatId.includes('coffee')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
-      <!-- Saucer Base -->
-      <ellipse cx="17" cy="30" rx="14" ry="2.5" fill="#94A3B8" />
-      <ellipse cx="17" cy="30" rx="10" ry="1.5" fill="#CBD5E1" />
-      <!-- Coffee Mug Body -->
-      <path d="M6 13C6 13 7 28 17 28C27 28 28 13 28 13H6Z" fill="#78350F" />
-      <!-- Golden Crema Surface -->
-      <ellipse cx="17" cy="13" rx="11" ry="3.5" fill="#D97706" />
-      <ellipse cx="17" cy="13" rx="8" ry="2.2" fill="#92400E" />
-      <ellipse cx="15.5" cy="12.5" rx="3" ry="1" fill="#FDE68A" opacity="0.6" />
+    <!-- 8. ☕ PREMIUM 3D COFFEE MENU (Crema Espresso & Steam Waves) -->
+    <svg v-else-if="safeCatId.includes('coffee')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <!-- Saucer Plate -->
+      <ellipse cx="23" cy="40" rx="19" ry="3.5" fill="#94A3B8" />
+      <ellipse cx="23" cy="40" rx="14" ry="2" fill="#E2E8F0" />
+      <!-- Ceramic Coffee Mug -->
+      <path d="M8 17C8 17 9.5 37 23 37C36.5 37 38 17 38 17H8Z" fill="#78350F" />
+      <!-- Velvety Crema Surface -->
+      <ellipse cx="23" cy="17" rx="15" ry="5" fill="#D97706" />
+      <ellipse cx="23" cy="17" rx="11" ry="3" fill="#B45309" />
+      <ellipse cx="21" cy="16" rx="4" ry="1.5" fill="#FDE68A" opacity="0.7" />
       <!-- Cup Handle -->
-      <path d="M26 15H29C31.2091 15 33 16.7909 33 19V20C33 22.2091 31.2091 24 29 24H25" stroke="#78350F" stroke-width="2.5" stroke-linecap="round" />
-      <!-- Steam Wisps -->
-      <path d="M11 9C11 7 13 6 13 4" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" opacity="0.85" />
-      <path d="M17 8C17 6 19 5 19 3" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
-      <path d="M23 9C23 7 25 6 25 4" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" opacity="0.85" />
+      <path d="M35 20H40C42.7614 20 45 22.2386 45 25V27C45 29.7614 42.7614 32 40 32H34" stroke="#78350F" stroke-width="3.5" stroke-linecap="round" />
+      <!-- Aromatic Rising Steam -->
+      <path d="M15 11C15 8.5 17.5 7 17.5 4.5" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" opacity="0.9" />
+      <path d="M23 10C23 7.5 25.5 6 25.5 3.5" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" />
+      <path d="M31 11C31 8.5 33.5 7 33.5 4.5" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" opacity="0.9" />
     </svg>
 
-    <!-- 9. 🥤 SALQIN ICHIMLIKLAR SVG (Ice Cold Drink with Straw) -->
-    <svg v-else-if="safeCatId.includes('drink')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 9. 🥤 PREMIUM 3D SALQIN ICHIMLIKLAR (Icy Refreshing Cola Drink) -->
+    <svg v-else-if="safeCatId.includes('drink')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="drinkGlass" x1="6" y1="10" x2="30" y2="32" gradientUnits="userSpaceOnUse">
+        <linearGradient id="pDrinkGlass" x1="8" y1="12" x2="40" y2="44" gradientUnits="userSpaceOnUse">
           <stop stop-color="#06B6D4" />
-          <stop offset="1" stop-color="#3B82F6" />
+          <stop offset="1" stop-color="#2563EB" />
         </linearGradient>
       </defs>
-      <!-- Straw -->
-      <path d="M22 3L16 16V30" stroke="#EF4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M22 3L20 7" stroke="#FEE2E2" stroke-width="1" />
-      <!-- Glass Cup -->
-      <path d="M7 10L10 30C10 31.6569 11.3431 33 13 33H23C24.6569 33 26 31.6569 26 30L29 10H7Z" fill="url(#drinkGlass)" opacity="0.9" />
-      <!-- Liquid Level -->
-      <path d="M8.5 15L10.5 29.5C10.5 30.5 11.5 31.5 12.5 31.5H23.5C24.5 31.5 25.5 30.5 25.5 29.5L27.5 15H8.5Z" fill="#1E293B" opacity="0.6" />
-      <!-- Ice Cubes -->
-      <rect x="12" y="17" width="5" height="5" rx="1.5" fill="#E0F2FE" opacity="0.9" />
-      <rect x="18" y="20" width="5.5" height="5.5" rx="1.5" fill="#E0F2FE" opacity="0.8" />
-      <circle cx="14" cy="27" r="1.2" fill="#BAE6FD" />
-      <circle cx="21" cy="28" r="1" fill="#BAE6FD" />
-      <!-- Glass Rim -->
-      <ellipse cx="18" cy="10" rx="11" ry="2" fill="#E0F2FE" opacity="0.7" />
+      <!-- Candy Stripe Straw -->
+      <path d="M30 4L22 20V40" stroke="#EF4444" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M30 4L27 10" stroke="#FFF" stroke-width="1.5" stroke-linecap="round" />
+      <!-- Cold Glass Cup -->
+      <path d="M9 13L13 40C13 42.2091 14.7909 44 17 44H31C33.2091 44 35 42.2091 35 40L39 13H9Z" fill="url(#pDrinkGlass)" opacity="0.85" />
+      <!-- Dark Cola Fluid -->
+      <path d="M11 20L13.8 39.5C13.8 40.5 14.8 41.5 16 41.5H32C33.2 41.5 34.2 40.5 34.2 39.5L37 20H11Z" fill="#1E293B" opacity="0.65" />
+      <!-- Floating Crystal Ice Cubes -->
+      <rect x="16" y="23" width="7" height="7" rx="2" fill="#E0F2FE" opacity="0.9" />
+      <rect x="25" y="27" width="7" height="7" rx="2" fill="#E0F2FE" opacity="0.85" />
+      <!-- Frosted Rim -->
+      <ellipse cx="24" cy="13" rx="15" ry="3" fill="#BAE6FD" opacity="0.8" />
     </svg>
 
-    <!-- 10. ⚡ ENERGETIK & MOXITO SVG (Neon Thunder Spark) -->
-    <svg v-else-if="safeCatId.includes('energy')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 10. ⚡ PREMIUM 3D ENERGETIK & MOXITO (Neon Spark Energy Can) -->
+    <svg v-else-if="safeCatId.includes('energy')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="energyCan" x1="8" y1="4" x2="28" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#6366F1" />
-          <stop offset="0.6" stop-color="#4F46E5" />
+        <linearGradient id="pEnergyCan" x1="10" y1="5" x2="38" y2="43" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#818CF8" />
+          <stop offset="0.5" stop-color="#4F46E5" />
           <stop offset="1" stop-color="#312E81" />
         </linearGradient>
       </defs>
-      <!-- Can Body -->
-      <rect x="9" y="5" width="18" height="26" rx="5" fill="url(#energyCan)" />
-      <!-- Can Top Rim -->
-      <rect x="11" y="3.5" width="14" height="3" rx="1.5" fill="#CBD5E1" />
-      <!-- Electric Yellow Lightning Bolt -->
-      <path d="M19 7L11 18H18L16 29L25 17H18L19 7Z" fill="#FACC15" />
-      <!-- Energy Glow Aura -->
-      <path d="M19 7L11 18H18L16 29L25 17H18L19 7Z" stroke="#FEF08A" stroke-width="1.2" opacity="0.8" />
-      <!-- Lime Slice for Mojito -->
-      <circle cx="24" cy="26" r="3.5" fill="#84CC16" />
-      <circle cx="24" cy="26" r="2.2" fill="#BEF264" />
+      <!-- Metallic Can Body -->
+      <rect x="12" y="7" width="24" height="35" rx="7" fill="url(#pEnergyCan)" />
+      <!-- Top Metallic Lip -->
+      <rect x="15" y="4.5" width="18" height="4" rx="2" fill="#E2E8F0" />
+      <!-- High Voltage Lightning Bolt -->
+      <path d="M26 9L15 24H24L21 39L33 23H24L26 9Z" fill="#FACC15" />
+      <path d="M26 9L15 24H24L21 39L33 23H24L26 9Z" stroke="#FEF08A" stroke-width="1.8" />
+      <!-- Fresh Mojito Lime -->
+      <circle cx="32" cy="35" r="5" fill="#84CC16" />
+      <circle cx="32" cy="35" r="3.2" fill="#BEF264" />
     </svg>
 
-    <!-- 11. 🧃 SOKLAR / SHARBATLAR SVG (Fresh Fruit Juice Box) -->
-    <svg v-else-if="safeCatId.includes('juice')" :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 11. 🧃 PREMIUM 3D SOKLAR / SHARBATLAR (Juice Box Tetrapack) -->
+    <svg v-else-if="safeCatId.includes('juice')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="juiceGrad" x1="8" y1="6" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#F97316" />
-          <stop offset="0.7" stop-color="#EA580C" />
-          <stop offset="1" stop-color="#C2410C" />
+        <linearGradient id="pJuiceBox" x1="10" y1="8" x2="38" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FB923C" />
+          <stop offset="0.6" stop-color="#EA580C" />
+          <stop offset="1" stop-color="#9A3412" />
         </linearGradient>
       </defs>
-      <!-- Juice Box Tetrapack -->
-      <rect x="9" y="8" width="18" height="23" rx="3.5" fill="url(#juiceGrad)" />
-      <path d="M9 11L18 7L27 11V8L18 4L9 8V11Z" fill="#FED7AA" />
-      <!-- Orange Fruit Graphic -->
-      <circle cx="18" cy="20" r="5" fill="#FEF08A" />
-      <circle cx="18" cy="20" r="3.8" fill="#F97316" />
-      <path d="M18 16V24M14 20H22M15 17L21 23M15 23L21 17" stroke="#FEF08A" stroke-width="0.9" />
-      <!-- Drinking Straw -->
-      <path d="M22 2L20 9" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" />
+      <!-- Juice Box Body -->
+      <rect x="11" y="11" width="26" height="32" rx="4.5" fill="url(#pJuiceBox)" />
+      <path d="M11 15L24 10L37 15V11L24 6L11 11V15Z" fill="#FED7AA" />
+      <!-- Juicy Orange Fruit Graphic -->
+      <circle cx="24" cy="27" r="7" fill="#FEF08A" />
+      <circle cx="24" cy="27" r="5.2" fill="#F97316" />
+      <path d="M24 22V32M19 27H29M20 23L28 31M20 31L28 23" stroke="#FEF08A" stroke-width="1.2" />
+      <!-- Flexi Straw -->
+      <path d="M30 3L27 12" stroke="#F1F5F9" stroke-width="2.8" stroke-linecap="round" />
     </svg>
 
-    <!-- 12. 👑 DEFAULT / BARCHA TAOMLAR SVG (Royal Golden Fast-Food Crown & Plate) -->
-    <svg v-else :class="iconSizeClass" viewBox="0 0 36 36" fill="none">
+    <!-- 12. 👑 PREMIUM 3D ROYAL CHEF / BARCHA TAOMLAR -->
+    <svg v-else :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="plateGrad" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#FBBF24" />
-          <stop offset="0.6" stop-color="#F59E0B" />
-          <stop offset="1" stop-color="#D97706" />
+        <linearGradient id="pPlate" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FDE047" />
+          <stop offset="0.5" stop-color="#F59E0B" />
+          <stop offset="1" stop-color="#B45309" />
         </linearGradient>
       </defs>
-      <!-- Gold Plate Base -->
-      <circle cx="18" cy="18" r="14" fill="url(#plateGrad)" />
-      <circle cx="18" cy="18" r="10.5" fill="#FFFBEB" />
+      <!-- Royal Gold Plate Base -->
+      <circle cx="24" cy="24" r="19" fill="url(#pPlate)" />
+      <circle cx="24" cy="24" r="14.5" fill="#FFFBEB" />
       <!-- Chef Toque Hat -->
-      <path d="M12 18C10.5 18 9.5 16 10.5 14C10 11.5 12 9 14.5 9.5C16 7.5 20 7.5 21.5 9.5C24 9 26 11.5 25.5 14C26.5 16 25.5 18 24 18H12Z" fill="#F59E0B" />
-      <rect x="12" y="18" width="12" height="3" rx="1.5" fill="#D97706" />
-      <!-- Star Sparkle -->
-      <path d="M18 13L19 15L21 16L19 17L18 19L17 17L15 16L17 15L18 13Z" fill="#FFFBEB" />
+      <path d="M16 25C14 25 12.5 22 14 19C13 16 16 12.5 19.5 13C21.5 10 26.5 10 28.5 13C32 12.5 35 16 34 19C35.5 22 34 25 32 25H16Z" fill="#F59E0B" />
+      <rect x="16" y="25" width="16" height="4" rx="2" fill="#D97706" />
+      <!-- Royal Diamond Sparkles -->
+      <path d="M24 18L25.5 21L28.5 22.5L25.5 24L24 27L22.5 24L19.5 22.5L22.5 21L24 18Z" fill="#FFFBEB" />
     </svg>
 
   </span>
