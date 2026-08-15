@@ -7,7 +7,7 @@ import { getActiveShift, openShift, closeShiftBlind } from './controllers/shift.
 import { getIngredients, quickRevision, getAuditLogs } from './controllers/audit.controller';
 import { getAllTables, createTable, updateTable, deleteTable } from './controllers/table.controller';
 import { getDashboardStats } from './controllers/stats.controller';
-import { getSystemHealth, exportDatabaseBackup } from './controllers/system.controller';
+import { getSystemHealth, exportDatabaseBackup, clearSalesHistory } from './controllers/system.controller';
 import { processTelegramCommand } from './utils/telegramBot';
 import { setupSwagger } from './swagger';
 
@@ -77,8 +77,9 @@ app.post('/api/v1/shifts/close-blind', validate(closeShiftSchema), closeShiftBli
 // Ingredients & Audit
 app.get('/api/v1/ingredients', getIngredients);
 
-// Dashboard Stats
+// Dashboard Stats & System Clear
 app.get('/api/v1/stats/dashboard', getDashboardStats);
+app.post('/api/v1/system/clear-sales', clearSalesHistory);
 
 app.post('/api/v1/audit/quick-revision', quickRevision);
 app.get('/api/v1/audit/logs', getAuditLogs);

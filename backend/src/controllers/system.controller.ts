@@ -68,3 +68,22 @@ export const exportDatabaseBackup = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, error: 'Database backup eksport qilishda xatolik' });
   }
 };
+
+export const clearSalesHistory = async (req: Request, res: Response) => {
+  try {
+    // Delete only fake/test sales, orders, shifts and audits - preserving products, ingredients, recipes, tables, categories & users!
+    await prisma.orderItem.deleteMany();
+    await prisma.order.deleteMany();
+    await prisma.shiftCashAudit.deleteMany();
+    await prisma.shift.deleteMany();
+    await prisma.expense.deleteMany();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Barcha test/fake savdolar va smenalar tarixi muvaffaqiyatli tozalandi. Tovar, retsept va stollar saqlab qolindi.'
+    });
+  } catch (error: any) {
+    console.error('Clear Sales Error:', error);
+    return res.status(500).json({ success: false, error: 'Savdolar tarixini tozalashda xatolik yuz berdi' });
+  }
+};

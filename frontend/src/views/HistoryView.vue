@@ -188,6 +188,14 @@ async function cancelOrder(order: Order) {
     toast.error('Tarmoq xatosi');
   }
 }
+
+async function handleClearSalesHistory() {
+  if (!confirm("Diqqat! Barcha test/fake savdolar, cheklar va smenalar tarixi 0 ga tushiriladi.\n\nTaomlar, narxlar, retseptlar va stollarga TEGILMAYDI.\n\nDavom ettirilsinmi?")) {
+    return;
+  }
+  await posStore.clearAllSalesHistory();
+  toast.success("Barcha test savdolar tarixi tozalandi! Kassa yangi mijozga 100% tayyor.");
+}
 </script>
 
 <template>
@@ -198,6 +206,18 @@ async function cancelOrder(order: Order) {
       <div>
         <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Savdo Tarixi & Cheklar Audit (History)</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400">Barcha yopilgan cheklar, ularning detallari va qayta chop etish</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button 
+          v-if="posStore.orderHistory.length > 0"
+          @click="handleClearSalesHistory"
+          class="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95"
+          title="Mijozga topshirishdan oldin barcha test savdolarni tozalash (Tovar va retseptlarga tegilmaydi)"
+        >
+          <Trash2 class="w-4 h-4" />
+          <span>Test savdolarni tozalash</span>
+        </button>
       </div>
     </div>
 

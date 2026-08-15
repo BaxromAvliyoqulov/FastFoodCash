@@ -200,6 +200,35 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  // Mijozga topshirish oldidan barcha test/fake savdolarni tozalash (Tovar va retseptlarga tegilmaydi)
+  async function clearAllSalesHistory() {
+    orderHistory.value = [];
+    activeOrderNumber.value = 101;
+    cart.value = [];
+    
+    // Barcha stollarni bo'shatish
+    tables.value.forEach(t => {
+      t.status = 'FREE';
+      t.cart = [];
+      t.openedAt = null;
+      t.orderNumber = undefined;
+      t.totalPaid = 0;
+      t.waiterNote = '';
+    });
+    localStorage.removeItem('doston_pos_active_table');
+    localStorage.removeItem('doston_current_shift');
+    localStorage.removeItem('doston_shift_audits');
+
+    try {
+      await fetchWithTimeout(`${API_URL}/system/clear-sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.warn('Backend clear-sales sync warning:', e);
+    }
+  }
+
   // ─── Operation Mode: ZAL | SABOY ─────────────────────────────────────────────
   const operationMode = ref<OperationMode>(
     (localStorage.getItem('doston_pos_mode') as OperationMode) || 'ZAL'
@@ -824,9 +853,10 @@ export const usePosStore = defineStore('pos', () => {
     setActiveTable,
     clearActiveTable,
 
-    // Order History
+    // Order History & Clean Reset
     orderHistory,
     activeOrderNumber,
+    clearAllSalesHistory,
 
     // SABOY methods
     addToCart,
