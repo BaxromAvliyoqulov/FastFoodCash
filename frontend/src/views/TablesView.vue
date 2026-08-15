@@ -143,16 +143,26 @@ async function toggleActive(table: Table) {
   }
 }
 
-async function deleteTable(tableId: string) {
-  if (!confirm("Stolni o'chirishga ishonchingiz komilmi?")) return;
+const tableToDelete = ref<Table | null>(null);
+
+function requestDeleteTable(table: Table) {
+  tableToDelete.value = table;
+}
+
+async function confirmDeleteTable() {
+  if (!tableToDelete.value) return;
+  const table = tableToDelete.value;
   try {
-    await fetch(`${API_URL}/tables/${tableId}`, {
+    await fetch(`${API_URL}/tables/${table.id}`, {
       method: 'DELETE'
     });
-    toast.success("Stol o'chirildi!");
+    toast.success(`${table.name || table.number + '-Stol'} muvaffaqiyatli o'chirildi!`);
     await posStore.loadTables();
   } catch (error) {
     console.error('Delete table error:', error);
+    toast.error("Stolni o'chirishda xatolik yuz berdi");
+  } finally {
+    tableToDelete.value = null;
   }
 }
 
@@ -402,7 +412,7 @@ function handleSelectTableForOrder(table: Table) {
             </button>
             
             <button 
-              @click.stop="deleteTable(table.id)" 
+              @click.stop="requestDeleteTable(table)" 
               class="p-2 text-rose-500 bg-rose-50 dark:bg-rose-500/10 rounded-xl hover:bg-rose-500 hover:text-white transition cursor-pointer border border-rose-500/20 shadow-sm"
               title="O'chirish"
             >
@@ -422,10 +432,10 @@ function handleSelectTableForOrder(table: Table) {
               <span>{{ getTableState(table) === 'OCCUPIED' ? 'Zakazni Ochish' : 'Zakaz Boshlash' }}</span>
             </button>
           </template>
+
         </div>
 
       </div>
-
     </div>
 
     <!-- ── EDIT / ADD TABLE MODAL ── -->
@@ -477,6 +487,43 @@ function handleSelectTableForOrder(table: Table) {
 
       </div>
     </div>
+
+    <!-- ── DELETE CONFIRMATION MODAL ── -->
+    <Teleport to="body">
+      <div 
+        v-if="tableToDelete" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      >
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+          <div class="flex items-center space-x-3 text-rose-500">
+            <div class="w-11 h-11 rounded-2xl bg-rose-500/15 flex items-center justify-center shrink-0">
+              <Trash2 class="w-5 h-5 text-rose-500" />
+            </div>
+            <div>
+              <h3 class="font-black text-base text-slate-900 dark:text-white">Stolni o'chirish</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Haqiqatan ham bu stolni o'chirmoqchimisiz?</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <strong>{{ tableToDelete.name || tableToDelete.number + '-Stol' }}</strong> butunlay o'chiriladi.
+          </p>
+          <div class="flex items-center justify-end space-x-2 pt-2">
+            <button 
+              @click="tableToDelete = null"
+              class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              Bekor qilish
+            </button>
+            <button 
+              @click="confirmDeleteTable"
+              class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition"
+            >
+              Ha, o'chirish
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
   </div>
 </template>

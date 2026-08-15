@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { PaymentType } from '../types/pos';
+import { useToastStore } from '../stores/toastStore';
 import { X, Banknote, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   (e: 'success', paymentType: PaymentType, paidAmount: number): void;
 }>();
 
+const toast = useToastStore();
 const selectedPaymentType = ref<PaymentType>('CASH');
 const paidAmountInput = ref<number>(props.totalAmount);
 
@@ -44,7 +46,7 @@ function selectExactAmount(amount: number) {
 
 function handleComplete() {
   if (selectedPaymentType.value === 'CASH' && (paidAmountInput.value || 0) < props.totalAmount) {
-    alert('Kiritilgan naqd pul jami summadan kam bo\'lishi mumkin emas!');
+    toast.error('Kiritilgan naqd pul jami summadan kam bo\'lishi mumkin emas!');
     return;
   }
   emit('success', selectedPaymentType.value, paidAmountInput.value || props.totalAmount);

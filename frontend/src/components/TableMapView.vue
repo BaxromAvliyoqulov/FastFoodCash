@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useToastStore } from '../stores/toastStore';
 import type { Table } from '../types/pos';
 import { 
   Clock, X, Crown, Armchair, CheckCircle2, Layers,
-  Activity, Utensils
+  Activity, Utensils, AlertTriangle
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
+const toast = useToastStore();
 
 const emit = defineEmits<{
   (e: 'table-selected', tableId: string): void;
@@ -16,6 +18,9 @@ const emit = defineEmits<{
 // Active Filter: Zone & Status
 const activeTab = ref<'ALL' | 'ZAL' | 'ROOMS'>('ALL');
 const statusFilter = ref<'ALL' | 'FREE' | 'OCCUPIED'>('ALL');
+
+// Table confirmation modal state
+const closingTable = ref<Table | null>(null);
 
 // ─── Real-time timer ──────────────────────────────────────────────────────────
 const now = ref(Date.now());
@@ -99,17 +104,22 @@ function handleCloseTable(tableId: string, event: Event) {
   event.stopPropagation();
   const table = posStore.tables.find(t => t.id === tableId);
   if (!table) return;
-  const confirm = window.confirm(
-    `${table.name || table.number + '-Stol'}ni yopmoqchimisiz?\n` +
-    `Sessiyada to'langan: ${table.totalPaid.toLocaleString('uz-UZ')} so'm\n` +
-    `Stol bo'sh holatga qaytadi.`
-  );
-  if (confirm) {
-    posStore.closeTable(tableId);
-    if (posStore.activeTableId === tableId) {
-      posStore.clearActiveTable();
-    }
+  closingTable.value = table;
+}
+
+function confirmCloseTable() {
+  if (!closingTable.value) return;
+  const table = closingTable.value;
+  posStore.closeTable(table.id);
+  if (posStore.activeTableId === table.id) {
+    posStore.clearActiveTable();
   }
+  toast.success(`${table.name || table.number + '-Stol'} muvaffaqiyatli yopildi va bo'shatildi!`);
+  closingTable.value = null;
+}
+
+function cancelCloseTable() {
+  closingTable.value = null;
 }
 </script>
 
@@ -440,6 +450,68 @@ function handleCloseTable(tableId: string, event: Event) {
         <span class="text-rose-500 font-bold">✕</span> — Stolni yopish
       </p>
     </div>
+
+    <!-- ── 4. CUSTOM STOLNI YOPISH CONFIRMATION MODAL ── -->
+    <Teleport to="body">
+      <div 
+        v-if="closingTable"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm transition-all duration-300"
+      >
+        <div 
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200"
+          @click.stop
+        >
+          <div class="flex items-center space-x-3 text-amber-500">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center shrink-0">
+              <AlertTriangle class="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <h3 class="font-black text-lg text-slate-900 dark:text-white">
+                {{ closingTable.name || closingTable.number + '-Stol' }}ni yopish
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Stolni bo'shatish va sessiyani yakunlash
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 space-y-2 text-sm">
+            <div class="flex justify-between text-slate-600 dark:text-slate-300">
+              <span>Sessiyada to'langan:</span>
+              <span class="font-black font-mono text-emerald-600 dark:text-emerald-400">
+                {{ (closingTable.totalPaid || 0).toLocaleString('uz-UZ') }} so'm
+              </span>
+            </div>
+            <div class="flex justify-between text-slate-600 dark:text-slate-300">
+              <span>Buyurtma taomlar soni:</span>
+              <span class="font-bold font-mono text-slate-900 dark:text-white">
+                {{ tableCartCount(closingTable) }} ta
+              </span>
+            </div>
+            <p class="text-xs text-rose-500 dark:text-rose-400 font-medium pt-1 border-t border-slate-200 dark:border-slate-700">
+              ⚠️ Stol yopilgach, u bo'sh (FREE) holatga o'tadi va yangi mehmonlar uchun tayyor bo'ladi.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              @click="cancelCloseTable"
+              class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="button"
+              @click="confirmCloseTable"
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-red-700 transition-all text-sm flex items-center space-x-2"
+            >
+              <span>Ha, stolni yopish</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useToastStore } from '../stores/toastStore';
 import type { Product, Category } from '../types/pos';
 import CategoryIcon from '../components/CategoryIcon.vue';
 import { 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
+const toast = useToastStore();
 
 // Category Badge Color Mapping
 function getCategoryGradient(catId: string) {
@@ -130,7 +132,7 @@ function openEditProductModal(product: Product) {
 
 function handleSaveProduct() {
   if (!activeProductForm.value.name?.trim()) {
-    alert('Iltimos taom nomini kiriting!');
+    toast.error('Iltimos, taom nomini kiriting!');
     return;
   }
   
@@ -140,6 +142,7 @@ function handleSaveProduct() {
   }
 
   posStore.saveProduct(activeProductForm.value);
+  toast.success('Taom ma\'lumotlari muvaffaqiyatli saqlandi!');
   showProductModal.value = false;
 }
 </script>

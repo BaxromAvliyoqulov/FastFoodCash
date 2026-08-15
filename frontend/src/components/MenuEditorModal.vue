@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { usePosStore } from '../stores/posStore';
+import { useToastStore } from '../stores/toastStore';
 import type { Product } from '../types/pos';
 import { X, Plus, Trash2, Edit3, Layers } from 'lucide-vue-next';
 
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const posStore = usePosStore();
+const toast = useToastStore();
 const activeEditProduct = ref<Partial<Product> | null>(null);
 
 function startNewProduct() {
@@ -33,10 +35,11 @@ function startEditProduct(product: Product) {
 
 function saveActiveProduct() {
   if (!activeEditProduct.value || !activeEditProduct.value.name) {
-    alert('Iltimos taom nomini kiriting!');
+    toast.error('Iltimos, taom nomini kiriting!');
     return;
   }
   posStore.saveProduct(activeEditProduct.value);
+  toast.success('Taom muvaffaqiyatli saqlandi!');
   activeEditProduct.value = null;
 }
 </script>
