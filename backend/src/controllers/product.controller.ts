@@ -49,13 +49,21 @@ export const updateProduct = async (req: Request, res: Response) => {
     // Convert isStopList to isAvailable (they are opposites)
     const availability = isStopList !== undefined ? !isStopList : (isAvailable ?? true);
 
-    const updated = await prisma.product.update({
+    const updated = await prisma.product.upsert({
       where: { id },
-      data: {
+      update: {
         name,
         categoryName,
-        price: price ? Number(price) : undefined,
+        price: price !== undefined ? Number(price) : undefined,
         imageUrl,
+        isAvailable: availability
+      },
+      create: {
+        id,
+        name: name || id,
+        categoryName: categoryName || 'Yangi',
+        price: price !== undefined ? Number(price) : 0,
+        imageUrl: imageUrl || '',
         isAvailable: availability
       },
       include: { recipes: { include: { ingredient: true } } }
@@ -63,7 +71,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     return res.json({ success: true, data: updated, message: "Taom tahrirlandi" });
   } catch (error: any) {
     console.error('Update Product Error:', error);
-    return res.status(500).json({ success: false, data: null, error: 'Taom tahrirlashda xatolik' });
+    return res.status(500).json({ success: false, data: null, error: 'Taom tahrirlashda xatolik: ' + error.message });
   }
 };
 

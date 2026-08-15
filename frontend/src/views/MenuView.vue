@@ -64,8 +64,9 @@ const searchQuery = ref<string>('');
 const categorySearchQuery = ref<string>('');
 
 // Executive Overview Statistics
-const totalCategoriesCount = computed(() => posStore.categories.length);
-const activeCategoriesCount = computed(() => posStore.categories.filter(c => !c.isHidden).length);
+const activeCategories = computed(() => posStore.categories.filter(c => c.id !== 'cat-all' && c.name !== 'Barcha Taomlar'));
+const totalCategoriesCount = computed(() => activeCategories.value.length);
+const activeCategoriesCount = computed(() => activeCategories.value.filter(c => !c.isHidden).length);
 
 const totalProductsCount = computed(() => posStore.products.length);
 const activeProductsCount = computed(() => posStore.products.filter(p => !p.isStopList).length);
@@ -73,9 +74,10 @@ const stopListProductsCount = computed(() => posStore.products.filter(p => p.isS
 
 // Filtered Categories
 const filteredCategoriesList = computed(() => {
-  if (!categorySearchQuery.value.trim()) return posStore.categories;
+  const cats = activeCategories.value;
+  if (!categorySearchQuery.value.trim()) return cats;
   const q = categorySearchQuery.value.toLowerCase().trim();
-  return posStore.categories.filter(c => c.name.toLowerCase().includes(q));
+  return cats.filter(c => c.name.toLowerCase().includes(q));
 });
 
 // Filtered Products
@@ -84,7 +86,7 @@ const filteredProductList = computed(() => {
     let matchesCat = true;
     if (selectedCategoryFilter.value !== 'ALL') {
       const cat = posStore.categories.find(c => c.id === selectedCategoryFilter.value);
-      matchesCat = cat ? p.categoryName === cat.name : false;
+      matchesCat = cat ? (p.categoryName === cat.name || p.categoryId === cat.id) : false;
     }
     const matchesSearch = !searchQuery.value || p.name.toLowerCase().includes(searchQuery.value.toLowerCase());
     return matchesCat && matchesSearch;
@@ -326,7 +328,7 @@ function handleSaveProduct() {
                 class="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
               >
                 <option value="ALL">Barcha Kategoriyalar ({{ posStore.products.length }})</option>
-                <option v-for="cat in posStore.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                <option v-for="cat in activeCategories" :key="cat.id" :value="cat.id">{{ cat.name }} ({{ posStore.products.filter(p => p.categoryName === cat.name || p.categoryId === cat.id).length }})</option>
               </select>
             </div>
 

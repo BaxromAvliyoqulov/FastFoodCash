@@ -106,12 +106,12 @@ const themeStore = useThemeStore();
         @click="emit('change-tab', 'admin')"
         :class="[
           'flex items-center space-x-2 px-4 py-2 rounded-xl font-black text-xs transition-all duration-200 shrink-0 cursor-pointer border',
-          activeTab === 'admin'
+          (activeTab === 'admin' || ['dashboard', 'history', 'menu', 'revision', 'printer'].includes(activeTab))
             ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400/50 shadow-md shadow-amber-500/30 scale-[1.02]' 
             : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
         ]"
       >
-        <Crown class="w-4 h-4" :class="activeTab === 'admin' ? 'text-amber-200' : 'text-amber-400'" />
+        <Crown class="w-4 h-4" :class="(activeTab === 'admin' || ['dashboard', 'history', 'menu', 'revision', 'printer'].includes(activeTab)) ? 'text-amber-200' : 'text-amber-400'" />
         <span>👑 Admin Paneli</span>
       </button>
     </nav>

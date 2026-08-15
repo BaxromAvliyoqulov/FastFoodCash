@@ -96,14 +96,15 @@ export const usePosStore = defineStore('pos', () => {
   const storedCategories = localStorage.getItem('doston_pos_categories');
   let parsedCategories: Category[] = storedCategories ? JSON.parse(storedCategories) : initialCategories;
   
+  // Filter out any obsolete 'cat-all' entry from local storage
+  parsedCategories = parsedCategories.filter(c => c.id !== 'cat-all' && c.name !== 'Barcha Taomlar');
+
   // Merge missing initial categories (e.g. if new categories like Drinks were added to codebase)
-  if (storedCategories) {
-    initialCategories.forEach(initialCat => {
-      if (!parsedCategories.find(c => c.id === initialCat.id)) {
-        parsedCategories.push(initialCat);
-      }
-    });
-  }
+  initialCategories.forEach(initialCat => {
+    if (!parsedCategories.find(c => c.id === initialCat.id || c.name.toLowerCase() === initialCat.name.toLowerCase())) {
+      parsedCategories.push(initialCat);
+    }
+  });
 
   const categories = ref<Category[]>(parsedCategories);
   watch(categories, (newVal) => localStorage.setItem('doston_pos_categories', JSON.stringify(newVal)), { deep: true });
@@ -112,10 +113,36 @@ export const usePosStore = defineStore('pos', () => {
   const searchQuery = ref('');
 
   // ─── Products ────────────────────────────────────────────────────────────────
-  // initialProducts (frontend data files) — ASOSIY MANBA (Source of Truth)
-  // Backend faqat isStopList holatini sinxronlash uchun ishlatiladi.
-  // Backend seed ma'lumotlari hech qachon frontend menyu ma'lumotlarini ustidan yozmaydi.
-  const products = ref<Product[]>(initialProducts);
+  // Auto-clean any corrupted localStorage products (e.g. prod-lav-1 or General)
+  const storedProducts = localStorage.getItem('doston_pos_products');
+  let loadedProducts: Product[] = initialProducts;
+  if (storedProducts) {
+    try {
+      const parsed = JSON.parse(storedProducts);
+      if (Array.isArray(parsed)) {
+        loadedProducts = initialProducts.map(ip => {
+          const found = parsed.find((p: any) => p.id === ip.id);
+          if (found) {
+            const hasValidName = found.name && !found.name.startsWith('prod-');
+            const hasValidCategory = found.categoryName && found.categoryName !== 'General';
+            return {
+              ...ip,
+              name: hasValidName ? found.name : ip.name,
+              categoryName: hasValidCategory ? found.categoryName : ip.categoryName,
+              price: found.price || ip.price,
+              isStopList: found.isStopList ?? ip.isStopList
+            };
+          }
+          return ip;
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to parse local stored products:', e);
+    }
+  }
+
+  const products = ref<Product[]>(loadedProducts);
+  watch(products, (newVal) => localStorage.setItem('doston_pos_products', JSON.stringify(newVal)), { deep: true });
 
   async function fetchProducts() {
     try {
@@ -124,8 +151,6 @@ export const usePosStore = defineStore('pos', () => {
         const body = await res.json();
         const backendProducts = body.success ? body.data : [];
         
-        // Asosiy ma'lumotlarni (nom, narx, isStopList) backenddan olamiz.
-        // Murakkab modifier va retsentlarni frontend dan saqlab qolamiz.
         products.value = initialProducts.map(localProd => {
           const backendMatch = backendProducts.find((bp: any) =>
             bp.id === localProd.id || 
@@ -133,14 +158,16 @@ export const usePosStore = defineStore('pos', () => {
           );
           
           if (backendMatch) {
+            const hasValidName = backendMatch.name && !backendMatch.name.startsWith('prod-');
+            const hasValidCategory = backendMatch.categoryName && backendMatch.categoryName !== 'General';
             return {
               ...localProd,
-              id: backendMatch.id, // Ensure we use backend ID
-              name: backendMatch.name,
-              price: backendMatch.price,
-              categoryName: backendMatch.categoryName || localProd.categoryName,
-              imageUrl: backendMatch.imageUrl || localProd.imageUrl,
-              isStopList: backendMatch.isStopList
+              id: backendMatch.id || localProd.id,
+              name: hasValidName ? backendMatch.name : localProd.name,
+              price: backendMatch.price || localProd.price,
+              categoryName: hasValidCategory ? backendMatch.categoryName : localProd.categoryName,
+              imageUrl: (backendMatch.imageUrl && !backendMatch.imageUrl.includes('placeholder')) ? backendMatch.imageUrl : localProd.imageUrl,
+              isStopList: backendMatch.isStopList ?? localProd.isStopList
             };
           }
           return localProd;
@@ -271,9 +298,22 @@ export const usePosStore = defineStore('pos', () => {
     return result;
   });
 
-  const visibleCategories = computed(() =>
-    categories.value.filter(c => !c.isHidden)
-  );
+  const visibleCategories = computed(() => {
+    const totalCount = products.value.filter(p => !p.isStopList).length;
+    const allTab: Category = {
+      id: 'cat-all',
+      name: 'Barcha Taomlar',
+      count: totalCount,
+      isHidden: false
+    };
+    const regularCats = categories.value
+      .filter(c => c.id !== 'cat-all' && !c.isHidden)
+      .map(c => ({
+        ...c,
+        count: products.value.filter(p => (p.categoryName === c.name || p.categoryId === c.id) && !p.isStopList).length
+      }));
+    return [allTab, ...regularCats];
+  });
 
   const cartSubtotal = computed(() =>
     cart.value.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -640,72 +680,76 @@ export const usePosStore = defineStore('pos', () => {
   async function toggleStopList(productId: string) {
     const prod = products.value.find(p => p.id === productId);
     if (!prod) return;
+    prod.isStopList = !prod.isStopList;
+    toast.info(prod.isStopList ? `"${prod.name}" Stop-listga olindi ⛔` : `"${prod.name}" sotuvga chiqarildi ✅`, 2500);
+
     try {
-      const res = await fetchWithTimeout(`${API_URL}/products/${productId}`, {
+      await fetchWithTimeout(`${API_URL}/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isStopList: !prod.isStopList })
+        body: JSON.stringify({ isStopList: prod.isStopList })
       });
-      if (res.ok) {
-        prod.isStopList = !prod.isStopList;
-      }
     } catch (e) {
-      console.error(e);
+      console.warn('Backend stoplist sync deferred (offline):', e);
     }
   }
 
   async function saveProduct(productData: Partial<Product> & { id?: string }) {
+    // 1. Optimistic immediate local update (0ms delay)
+    if (productData.id) {
+      const index = products.value.findIndex(p => p.id === productData.id);
+      if (index > -1) {
+        products.value[index] = { ...products.value[index], ...productData } as Product;
+      }
+    } else {
+      const newId = 'prod-custom-' + Date.now();
+      const newProd: Product = {
+        id: newId,
+        name: productData.name || 'Yangi Taom',
+        price: Number(productData.price) || 0,
+        categoryId: productData.categoryId || 'cat-lavash',
+        categoryName: productData.categoryName || 'Lavash',
+        imageUrl: productData.imageUrl || '/images/food/lavash_obichniy.jpg',
+        isStopList: productData.isStopList || false,
+        recipe: productData.recipe || []
+      };
+      products.value.unshift(newProd);
+      productData.id = newId;
+    }
+    toast.success('Taom muvaffaqiyatli saqlandi! ✨', 3000);
+
+    // 2. Background sync to backend
     try {
-      let res;
       if (productData.id) {
-        res = await fetchWithTimeout(`${API_URL}/products/${productData.id}`, {
+        await fetchWithTimeout(`${API_URL}/products/${productData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
         });
-        const body = await res.json();
-        if (res.ok && body.success) {
-          const updated = body.data;
-          const index = products.value.findIndex(p => p.id === productData.id);
-          if (index > -1) {
-            products.value[index] = { ...products.value[index], ...updated } as Product;
-          }
-          toast.success('Taom saqlandi!', 3000);
-        } else {
-          toast.error(`Xatolik: ${body.error || res.statusText || 'Noma\'lum xato'}`, 5000);
-        }
       } else {
-        res = await fetchWithTimeout(`${API_URL}/products`, {
+        await fetchWithTimeout(`${API_URL}/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
         });
-        const body = await res.json();
-        if (res.ok && body.success) {
-          const newProd = body.data;
-          products.value.unshift(newProd as Product);
-          toast.success('Yangi taom qo\'shildi!', 3000);
-        } else {
-          toast.error(`Xatolik: ${body.error || res.statusText || 'Noma\'lum xato'}`, 5000);
-        }
       }
     } catch (e: any) {
-      console.error(e);
-      toast.error(`Tarmoq xatosi (Internet yoki server o'chiq): ${e.message}`, 5000);
+      console.warn('Backendga sinxronlash keyinroq amalga oshiriladi (Lokal xotirada saqlandi):', e);
     }
   }
 
   async function deleteProduct(productId: string) {
+    const index = products.value.findIndex(p => p.id === productId);
+    if (index > -1) {
+      products.value.splice(index, 1);
+      toast.success('Taom o\'chirildi! 🗑️', 3000);
+    }
     try {
-      const res = await fetchWithTimeout(`${API_URL}/products/${productId}`, {
+      await fetchWithTimeout(`${API_URL}/products/${productId}`, {
         method: 'DELETE'
       });
-      if (res.ok) {
-        const index = products.value.findIndex(p => p.id === productId);
-        if (index > -1) products.value.splice(index, 1);
-      }
     } catch (e) {
-      console.error(e);
+      console.warn('Backend delete sync deferred (offline):', e);
     }
   }
 
@@ -718,21 +762,30 @@ export const usePosStore = defineStore('pos', () => {
       isHidden: false
     };
     categories.value.push(newCat);
+    toast.success(`"${name.trim()}" bo'limi qo'shildi! 📁`, 3000);
   }
 
   function updateCategory(id: string, name: string) {
     const cat = categories.value.find(c => c.id === id);
     if (cat && name.trim()) {
+      const oldName = cat.name;
       cat.name = name.trim();
+      // Also update products with the old category name
       products.value.forEach(p => {
-        if (p.categoryId === id) p.categoryName = name.trim();
+        if (p.categoryId === id || p.categoryName === oldName) {
+          p.categoryName = cat.name;
+        }
       });
+      toast.success('Kategoriya nomi yangilandi!', 3000);
     }
   }
 
   function deleteCategory(id: string) {
     const index = categories.value.findIndex(c => c.id === id);
-    if (index > -1) categories.value.splice(index, 1);
+    if (index > -1) {
+      categories.value.splice(index, 1);
+      toast.success('Kategoriya o\'chirildi!', 3000);
+    }
   }
 
   function toggleCategoryStatus(id: string) {

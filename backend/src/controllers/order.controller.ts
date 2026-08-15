@@ -80,18 +80,20 @@ export const createOrder = async (req: Request, res: Response) => {
     for (const item of items) {
       let product = productMap.get(item.productId);
       if (!product) {
-        // Auto-create product in DB so orders never fail on missing IDs
+        const resolvedName = item.productName || item.name || item.product?.name || item.productId;
+        const resolvedCategory = item.categoryName || item.product?.categoryName || (item.productId?.startsWith('prod-lav') ? 'Lavash' : 'Taomlar');
         product = await prisma.product.upsert({
           where: { id: item.productId },
           update: {
-            name: item.productName || item.name || item.productId,
-            price: item.unitPrice || 0
+            name: resolvedName.startsWith('prod-') ? undefined : resolvedName,
+            price: item.unitPrice || undefined,
+            categoryName: resolvedCategory !== 'General' ? resolvedCategory : undefined
           },
           create: {
             id: item.productId,
-            name: item.productName || item.name || item.productId,
+            name: resolvedName,
             price: item.unitPrice || 0,
-            categoryName: item.categoryName || 'General',
+            categoryName: resolvedCategory,
           },
           include: {
             recipes: {

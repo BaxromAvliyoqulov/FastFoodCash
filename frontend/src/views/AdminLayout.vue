@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import DashboardView from './DashboardView.vue';
 import HistoryView from './HistoryView.vue';
 import MenuView from './MenuView.vue';
@@ -18,15 +18,31 @@ import {
   Crown
 } from 'lucide-vue-next';
 
+const props = defineProps<{
+  initialSubTab?: string;
+}>();
+
 const posStore = usePosStore();
 const shiftStore = useShiftStore();
 
 // Retrieve last admin tab or default to dashboard
-const adminActiveTab = ref(localStorage.getItem('doston_pos_admin_tab') || 'dashboard');
+const validAdminTabs = ['dashboard', 'history', 'menu', 'revision', 'shift', 'printer'];
+const getValidTab = (val: string | null | undefined) => {
+  return val && validAdminTabs.includes(val) ? val : 'dashboard';
+};
+
+const adminActiveTab = ref(getValidTab(props.initialSubTab || localStorage.getItem('doston_pos_admin_tab')));
+
+watch(() => props.initialSubTab, (newTab) => {
+  if (newTab && validAdminTabs.includes(newTab)) {
+    adminActiveTab.value = newTab;
+    localStorage.setItem('doston_pos_admin_tab', newTab);
+  }
+});
 
 function changeAdminTab(tab: string) {
-  adminActiveTab.value = tab;
-  localStorage.setItem('doston_pos_admin_tab', tab);
+  adminActiveTab.value = getValidTab(tab);
+  localStorage.setItem('doston_pos_admin_tab', adminActiveTab.value);
 }
 
 const tabs = [
@@ -78,7 +94,7 @@ onMounted(() => {
       </div>
     </nav>
 
-    <!-- ── Admin Content Area (Non-blocking 0ms render) ────── -->
+    <!-- ── Admin Content Area (Always rendered, never blank) ────── -->
     <main class="flex-1 min-h-0 overflow-y-auto relative p-0">
       <DashboardView       v-if="adminActiveTab === 'dashboard'" />
       <HistoryView         v-else-if="adminActiveTab === 'history'" />
@@ -86,6 +102,7 @@ onMounted(() => {
       <RevisionView        v-else-if="adminActiveTab === 'revision'" />
       <ShiftView           v-else-if="adminActiveTab === 'shift'" />
       <PrinterSettingsView v-else-if="adminActiveTab === 'printer'" />
+      <DashboardView       v-else />
     </main>
 
   </div>

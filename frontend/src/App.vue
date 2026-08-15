@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import Navbar from './components/Navbar.vue';
 import PosView from './views/PosView.vue';
 import TablesView from './views/TablesView.vue';
@@ -11,18 +11,30 @@ import { useThemeStore } from './stores/themeStore';
 import { useAuthStore } from './stores/authStore';
 import { usePosStore } from './stores/posStore';
 import { useShiftStore } from './stores/shiftStore';
-import { watch } from 'vue';
+
+const adminSubTabs = ['dashboard', 'history', 'menu', 'revision', 'shift', 'printer'];
 
 // Persist active tab in localStorage so F5 refresh stays on current page!
-const activeTab = ref(localStorage.getItem('doston_pos_active_tab') || 'pos');
+const storedTab = localStorage.getItem('doston_pos_active_tab') || 'pos';
+const activeTab = ref(storedTab);
+const currentAdminSubTab = ref(localStorage.getItem('doston_pos_admin_tab') || 'dashboard');
+
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const posStore = usePosStore();
 const shiftStore = useShiftStore();
 
+const isAdminSection = computed(() => {
+  return activeTab.value === 'admin' || adminSubTabs.includes(activeTab.value);
+});
+
 function handleTabChange(tab: string) {
-  if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history'].includes(tab)) {
+  if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history', 'printer', 'admin'].includes(tab)) {
     tab = 'pos';
+  } else if (adminSubTabs.includes(tab)) {
+    currentAdminSubTab.value = tab;
+    localStorage.setItem('doston_pos_admin_tab', tab);
+    tab = 'admin';
   }
   activeTab.value = tab;
   localStorage.setItem('doston_pos_active_tab', tab);
@@ -30,8 +42,10 @@ function handleTabChange(tab: string) {
 
 function initData() {
   if (authStore.isAuthenticated) {
-    if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history', 'admin'].includes(activeTab.value)) {
+    if (authStore.isCashier && ['menu', 'dashboard', 'revision', 'history', 'admin', 'printer'].includes(activeTab.value)) {
       handleTabChange('pos');
+    } else if (adminSubTabs.includes(activeTab.value)) {
+      handleTabChange(activeTab.value);
     }
     posStore.fetchProducts();
     posStore.loadTables();
@@ -67,12 +81,13 @@ onMounted(() => {
     <!-- Navbar (Fixed Header Height) -->
     <Navbar class="shrink-0" :activeTab="activeTab" @changeTab="handleTabChange" />
 
-    <!-- Main Content Area (Fills remaining height) -->
+    <!-- Main Content Area (Always rendered, never blank) -->
     <main class="flex-1 min-h-0 overflow-y-auto relative">
-      <PosView v-if="activeTab === 'pos'" />
-      <TablesView v-else-if="activeTab === 'tables'" />
-      <AdminLayout v-else-if="activeTab === 'admin'" />
+      <PosView v-if="activeTab === 'pos'" @changeTab="handleTabChange" />
+      <TablesView v-else-if="activeTab === 'tables'" @changeTab="handleTabChange" />
+      <AdminLayout v-else-if="isAdminSection" :initialSubTab="currentAdminSubTab" />
       <ShiftView v-else-if="activeTab === 'shift'" />
+      <PosView v-else @changeTab="handleTabChange" />
     </main>
   </div>
 </template>

@@ -1,7 +1,6 @@
 import type { Category } from '../../types/pos';
 
 export const initialCategories: Category[] = [
-  { id: 'cat-all', name: 'Barcha Taomlar', count: 68, isHidden: false },
   { id: 'cat-lavash', name: 'Lavash', count: 6, isHidden: false },
   { id: 'cat-burger', name: 'Burger', count: 7, isHidden: false },
   { id: 'cat-hotdog', name: 'Hot Dog', count: 5, isHidden: false },
