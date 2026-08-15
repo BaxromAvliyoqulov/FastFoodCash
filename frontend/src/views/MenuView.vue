@@ -193,88 +193,123 @@ function handleSaveProduct() {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
       
       <!-- LEFT COLUMN: Categories Management (1 Column) -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
-        
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute -left-10 -top-10 w-40 h-40 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
         <div>
           <!-- Category Card Header -->
           <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
             <div>
-              <h3 class="font-black text-base text-slate-900 dark:text-white flex items-center gap-2">
-                <Layers class="w-5 h-5 text-amber-500" />
-                <span>Kategoriyalar ({{ posStore.categories.length }})</span>
-              </h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Yangi bo'lim ochish yoki vaqtincha yopish</p>
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers class="w-5 h-5 text-amber-500" />
+                  <span>Kategoriyalar</span>
+                </h3>
+                <span class="text-[11px] font-mono font-black bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  {{ totalCategoriesCount }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tanlang, tahrirlang yoki 1-klikda filtrlang</p>
             </div>
 
             <button 
               @click="showAddCategoryModal = true"
-              class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 shadow-md active:scale-95 transition-all"
+              class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black px-4 py-2.5 rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
             >
               <Plus class="w-4 h-4" />
               <span>Qo'shish</span>
             </button>
           </div>
 
-          <!-- Category Search Input -->
-          <div class="relative mb-3">
-            <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              v-model="categorySearchQuery"
-              type="text" 
-              placeholder="Bo'lim izlash..."
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
-            />
+          <!-- Category Search & "Barchasi" Reset Pill -->
+          <div class="flex items-center gap-2 mb-3">
+            <div class="relative flex-1">
+              <Search class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                v-model="categorySearchQuery"
+                type="text" 
+                placeholder="Bo'lim izlash..."
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs font-semibold text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+            </div>
+            <button
+              @click="selectedCategoryFilter = 'ALL'"
+              :class="[
+                'px-3 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer border',
+                selectedCategoryFilter === 'ALL'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-transparent shadow-sm'
+                  : 'bg-slate-50 dark:bg-slate-950 text-slate-500 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
+              ]"
+              title="Barcha taomlarni ko'rsatish"
+            >
+              Hammasi
+            </button>
           </div>
 
-          <!-- Categories List -->
+          <!-- Categories List (Ultra-Modern Interactive Cards) -->
           <div class="space-y-2.5 overflow-y-auto pr-1 flex-1 max-h-[580px] no-scrollbar">
             <div 
               v-for="cat in filteredCategoriesList" 
               :key="cat.id"
+              @click="selectedCategoryFilter = cat.id"
               :class="[
-                'p-3 rounded-2xl border transition-all flex items-center justify-between group',
-                cat.isHidden 
-                  ? 'bg-rose-500/5 border-rose-500/30 text-rose-500 opacity-80' 
-                  : 'bg-slate-50 dark:bg-slate-950/60 border-slate-200/80 dark:border-slate-800/80 hover:border-amber-500/40'
+                'p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between group cursor-pointer relative overflow-hidden',
+                selectedCategoryFilter === cat.id
+                  ? 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/60 ring-1 ring-amber-500/30 shadow-sm'
+                  : cat.isHidden 
+                    ? 'bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/25 opacity-75' 
+                    : 'bg-slate-50/80 dark:bg-slate-950/60 border-slate-200/80 dark:border-slate-800/80 hover:border-amber-500/40 hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm'
               ]"
             >
-              <div class="flex items-center space-x-3 min-w-0 pr-2">
-                <!-- Dynamic Colorful Fast Food Category Vector SVG Badge -->
-                <div :class="['w-9 h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 bg-gradient-to-br', getCategoryGradient(cat.id)]">
-                  <CategoryIcon :cat-id="cat.id" size="md" />
+              <!-- Left Active Accent Bar -->
+              <div 
+                v-if="selectedCategoryFilter === cat.id" 
+                class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 to-orange-500 rounded-r-full"
+              ></div>
+
+              <div class="flex items-center space-x-3.5 min-w-0 pr-2">
+                <!-- 3D Glossy Vector SVG Icon Badge -->
+                <div :class="['w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-gradient-to-br transition-transform duration-200 group-hover:scale-105', getCategoryGradient(cat.id)]">
+                  <CategoryIcon :cat-id="cat.id" size="lg" />
                 </div>
 
-                <!-- Edit inline mode vs Normal View -->
+                <!-- Category Name & Live Item Count -->
                 <div class="min-w-0">
-                  <div v-if="editingCategory?.id === cat.id" class="flex items-center space-x-1">
-                    <input v-model="editCategoryName" type="text" class="bg-white dark:bg-slate-900 border border-amber-500 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none" />
-                    <button @click="handleUpdateCategory" class="p-1 bg-emerald-500 text-white rounded-lg"><Check class="w-3.5 h-3.5" /></button>
-                    <button @click="editingCategory = null" class="p-1 bg-slate-300 dark:bg-slate-700 rounded-lg"><X class="w-3.5 h-3.5" /></button>
+                  <div v-if="editingCategory?.id === cat.id" @click.stop class="flex items-center space-x-1.5">
+                    <input 
+                      v-model="editCategoryName" 
+                      type="text" 
+                      class="bg-white dark:bg-slate-900 border border-amber-500 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none" 
+                    />
+                    <button @click="handleUpdateCategory" class="p-1.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition"><Check class="w-3.5 h-3.5" /></button>
+                    <button @click="editingCategory = null" class="p-1.5 bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-400 transition"><X class="w-3.5 h-3.5" /></button>
                   </div>
 
                   <div v-else>
-                    <div class="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                    <div class="font-black text-xs sm:text-[13px] text-slate-900 dark:text-white truncate flex items-center gap-1.5">
                       <span>{{ cat.name }}</span>
-                      <span v-if="cat.isHidden" class="text-[9px] bg-rose-500 text-white px-1.5 py-0.2 rounded font-mono font-bold">YOPIQ</span>
+                      <span v-if="cat.isHidden" class="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-md font-mono font-bold uppercase">Yopiq</span>
                     </div>
-                    <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                      {{ posStore.products.filter(p => p.categoryName === cat.name).length }} ta taom
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <strong class="font-mono text-amber-600 dark:text-amber-400 font-black">{{ posStore.products.filter(p => p.categoryName === cat.name || p.categoryId === cat.id).length }}</strong> ta taom
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Action Buttons for Category -->
-              <div class="flex items-center space-x-1 shrink-0">
+              <div class="flex items-center space-x-1 shrink-0" @click.stop>
                 <!-- Toggle Category Visibility (Hide/Show in POS) -->
                 <button 
                   @click="posStore.toggleCategoryStatus(cat.id)"
                   :title="cat.isHidden ? 'Kassada ko\'rsatish' : 'Kassada yopib qo\'yish'"
                   :class="[
-                    'p-1.5 rounded-xl border transition-all', 
+                    'w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer active:scale-90', 
                     cat.isHidden 
-                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500/30' 
-                      : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-500 border-transparent'
+                      ? 'bg-rose-500/15 text-rose-500 border-rose-500/30 hover:bg-emerald-500 hover:text-white hover:border-emerald-500' 
+                      : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:border-rose-500/30 border-slate-200 dark:border-slate-800'
                   ]"
                 >
                   <Eye v-if="!cat.isHidden" class="w-3.5 h-3.5" />
@@ -283,7 +318,7 @@ function handleSaveProduct() {
 
                 <button 
                   @click="startEditCategory(cat)"
-                  class="p-1.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-600 dark:text-slate-400 transition-colors"
+                  class="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 hover:bg-amber-500 hover:text-white text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 transition-all flex items-center justify-center cursor-pointer active:scale-90"
                   title="Nomini tahrirlash"
                 >
                   <Edit3 class="w-3.5 h-3.5" />
@@ -291,7 +326,7 @@ function handleSaveProduct() {
 
                 <button 
                   @click="posStore.deleteCategory(cat.id)"
-                  class="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-colors"
+                  class="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 hover:bg-rose-500 hover:text-white text-rose-500 border border-slate-200 dark:border-slate-800 hover:border-rose-500/30 transition-all flex items-center justify-center cursor-pointer active:scale-90"
                   title="Kategoriyani o'chirish"
                 >
                   <Trash2 class="w-3.5 h-3.5" />
