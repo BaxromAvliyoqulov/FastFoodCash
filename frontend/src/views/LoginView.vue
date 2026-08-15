@@ -70,12 +70,6 @@ function handleClear() {
   errorMsg.value = '';
 }
 
-function quickFillPin(code: string) {
-  pin.value = code;
-  errorMsg.value = '';
-  setTimeout(() => handleLogin(), 100);
-}
-
 // Global Keyboard Listener (Numpad & Physical Keyboard Support)
 function handleGlobalKeyDown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement && e.target !== pinInputRef.value) {
@@ -257,41 +251,8 @@ onUnmounted(() => {
         </span>
       </button>
 
-      <!-- ── Quick Role Pills (Demo Helpers) ── -->
-      <div class="mt-4 pt-3 border-t border-white/5 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
-        <button 
-          @click="quickFillPin('1111')" 
-          type="button" 
-          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
-          title="Kassa 1 PIN: 1111"
-        >
-          <span>Kassa 1:</span>
-          <strong class="font-mono text-white">1111</strong>
-        </button>
-
-        <button 
-          @click="quickFillPin('2222')" 
-          type="button" 
-          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
-          title="Kassa 2 PIN: 2222"
-        >
-          <span>Kassa 2:</span>
-          <strong class="font-mono text-white">2222</strong>
-        </button>
-
-        <button 
-          @click="quickFillPin('7777')" 
-          type="button" 
-          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
-          title="Admin PIN: 7777"
-        >
-          <span>👑 Admin:</span>
-          <strong class="font-mono text-white">7777</strong>
-        </button>
-      </div>
-
       <!-- ── Footer Security Badge ── -->
-      <div class="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-medium">
+      <div class="mt-5 flex items-center justify-center gap-1.5 text-[10px] text-slate-500 font-medium border-t border-white/5 pt-4">
         <Lock class="w-3 h-3 text-emerald-500" />
         <span>256-bit Shifrlangan POS Xavfsizlik Tizimi</span>
       </div>
