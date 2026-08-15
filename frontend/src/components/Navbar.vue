@@ -132,7 +132,7 @@ const themeStore = useThemeStore();
             <span>Smena ochiq</span>
           </div>
           <div class="text-slate-900 dark:text-white font-black text-[11px]">
-            {{ (shiftStore.currentShift.cashierName || authStore.user?.fullName)?.replace(/Baxrom\s*/gi, '').trim() || 'Admin' }}
+            {{ shiftStore.currentShift.cashierName || authStore.user?.fullName || 'Admin' }}
           </div>
         </div>
       </button>

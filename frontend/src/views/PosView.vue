@@ -306,7 +306,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
               </div>
               <div>
                 <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : 'Kassir' }}</p>
-                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : (authStore.user?.fullName?.replace(/Baxrom\s*/gi, '').trim() || 'Kassir') }}</p>
+                <p class="text-xs font-black text-slate-900 dark:text-white leading-tight mt-0.5">{{ authStore.user?.role === 'ADMIN' ? 'Admin' : (authStore.user?.fullName || 'Kassir') }}</p>
               </div>
             </div>
             <div class="flex items-center gap-2">

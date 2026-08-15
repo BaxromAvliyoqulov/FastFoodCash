@@ -4,14 +4,14 @@ import crypto from 'crypto';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 B2B SaaS Enterprise Mastery: Seeding "Aha! Moment" Dummy Data...');
+  console.log('🌱 Seeding initial users and sample data...');
 
   // 1. Create Default Admin & Cashiers
   const admin = await prisma.user.upsert({
     where: { phone: '998901234567' },
-    update: { pinCode: '7777', role: 'ADMIN' },
+    update: { pinCode: '7777', role: 'ADMIN', fullName: 'Admin' },
     create: {
-      fullName: 'Super Admin',
+      fullName: 'Admin',
       phone: '998901234567',
       pinCode: '7777',
       role: 'ADMIN',
@@ -20,9 +20,9 @@ async function main() {
 
   const kassa1 = await prisma.user.upsert({
     where: { phone: '998901111111' },
-    update: { pinCode: '1111', role: 'CASHIER' },
+    update: { pinCode: '1111', role: 'CASHIER', fullName: 'Kassir 1' },
     create: {
-      fullName: 'Kassa 1 (Ahmad)',
+      fullName: 'Kassir 1',
       phone: '998901111111',
       pinCode: '1111',
       role: 'CASHIER',
@@ -31,9 +31,9 @@ async function main() {
 
   const kassa2 = await prisma.user.upsert({
     where: { phone: '998909876543' },
-    update: { pinCode: '2222', role: 'CASHIER' },
+    update: { pinCode: '2222', role: 'CASHIER', fullName: 'Kassir 2' },
     create: {
-      fullName: 'Kassa 2 (Sardor)',
+      fullName: 'Kassir 2',
       phone: '998909876543',
       pinCode: '2222',
       role: 'CASHIER',
@@ -57,7 +57,7 @@ async function main() {
   const cheeseburger = await prisma.product.create({
     data: {
       categoryName: 'Burger',
-      name: 'Mazza Cheeseburger',
+      name: 'Classic Cheeseburger',
       price: 25000,
       imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500',
       recipes: {
@@ -86,11 +86,11 @@ async function main() {
     }
   });
 
-  // 4. Create Dummy Sales (Aha! Moment for Dashboard)
+  // 4. Create Demo Shift for Kassir 1
   const shift = await prisma.shift.create({
     data: {
-      cashierId: cashier.id,
-      openedAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
+      cashierId: kassa1.id,
+      openedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
       initialCash: 100000,
     }
   });
@@ -99,7 +99,7 @@ async function main() {
     data: {
       orderNumber: 101,
       shiftId: shift.id,
-      cashierId: cashier.id,
+      cashierId: kassa1.id,
       totalAmount: 60000,
       paymentType: 'CASH',
       status: 'COMPLETED',

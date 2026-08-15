@@ -218,6 +218,8 @@ export const usePosStore = defineStore('pos', () => {
     localStorage.removeItem('doston_pos_active_table');
     localStorage.removeItem('doston_current_shift');
     localStorage.removeItem('doston_shift_audits');
+    localStorage.removeItem('doston_offline_orders');
+    localStorage.removeItem('doston_pos_history');
 
     try {
       await fetchWithTimeout(`${API_URL}/system/clear-sales`, {
