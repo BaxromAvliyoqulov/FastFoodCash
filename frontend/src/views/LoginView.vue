@@ -258,23 +258,35 @@ onUnmounted(() => {
       </button>
 
       <!-- ── Quick Role Pills (Demo Helpers) ── -->
-      <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+      <div class="mt-4 pt-3 border-t border-white/5 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
+        <button 
+          @click="quickFillPin('1111')" 
+          type="button" 
+          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
+          title="Kassa 1 PIN: 1111"
+        >
+          <span>Kassa 1:</span>
+          <strong class="font-mono text-white">1111</strong>
+        </button>
+
         <button 
           @click="quickFillPin('2222')" 
           type="button" 
-          class="hover:text-amber-400 transition cursor-pointer flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 hover:border-amber-500/30"
+          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
+          title="Kassa 2 PIN: 2222"
         >
-          <span>👤 Kassir:</span>
+          <span>Kassa 2:</span>
           <strong class="font-mono text-white">2222</strong>
         </button>
 
         <button 
-          @click="quickFillPin('1111')" 
+          @click="quickFillPin('7777')" 
           type="button" 
-          class="hover:text-amber-400 transition cursor-pointer flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 hover:border-amber-500/30"
+          class="hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 bg-white/5 py-1.5 px-2 rounded-xl border border-white/5 hover:border-amber-500/30"
+          title="Admin PIN: 7777"
         >
           <span>👑 Admin:</span>
-          <strong class="font-mono text-white">1111</strong>
+          <strong class="font-mono text-white">7777</strong>
         </button>
       </div>
 

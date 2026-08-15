@@ -6,23 +6,34 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 B2B SaaS Enterprise Mastery: Seeding "Aha! Moment" Dummy Data...');
 
-  // 1. Create Default Admin & Cashier
+  // 1. Create Default Admin & Cashiers
   const admin = await prisma.user.upsert({
     where: { phone: '998901234567' },
-    update: {},
+    update: { pinCode: '7777', role: 'ADMIN' },
     create: {
       fullName: 'Super Admin',
       phone: '998901234567',
-      pinCode: '1111',
+      pinCode: '7777',
       role: 'ADMIN',
     },
   });
 
-  const cashier = await prisma.user.upsert({
-    where: { phone: '998909876543' },
-    update: {},
+  const kassa1 = await prisma.user.upsert({
+    where: { phone: '998901111111' },
+    update: { pinCode: '1111', role: 'CASHIER' },
     create: {
-      fullName: 'Ahmad Kassir',
+      fullName: 'Kassa 1 (Ahmad)',
+      phone: '998901111111',
+      pinCode: '1111',
+      role: 'CASHIER',
+    },
+  });
+
+  const kassa2 = await prisma.user.upsert({
+    where: { phone: '998909876543' },
+    update: { pinCode: '2222', role: 'CASHIER' },
+    create: {
+      fullName: 'Kassa 2 (Sardor)',
       phone: '998909876543',
       pinCode: '2222',
       role: 'CASHIER',
