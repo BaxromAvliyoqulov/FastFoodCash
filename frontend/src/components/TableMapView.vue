@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/authStore';
 import type { Table } from '../types/pos';
 import { 
   Clock, X, Crown, Armchair, CheckCircle2,
-  Activity, AlertTriangle
+  Activity, AlertTriangle, ArrowRightLeft
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
@@ -45,6 +45,35 @@ const statusFilter = ref<'ALL' | 'FREE' | 'OCCUPIED'>('ALL');
 
 // Table confirmation modal state
 const closingTable = ref<Table | null>(null);
+
+// Table Transfer & Merge state
+const transferModalOpen = ref(false);
+const sourceTable = ref<Table | null>(null);
+const targetTableId = ref<string>('');
+const isMergeMode = ref(false);
+
+function openTransferModal(table: Table, event: Event) {
+  event.stopPropagation();
+  sourceTable.value = table;
+  targetTableId.value = '';
+  isMergeMode.value = false;
+  transferModalOpen.value = true;
+}
+
+function handleExecuteTransfer() {
+  if (!sourceTable.value || !targetTableId.value) {
+    toast.warning('Iltimos, ko\'chiriladigan manzil stolni tanlang!');
+    return;
+  }
+  if (isMergeMode.value) {
+    posStore.mergeTables(sourceTable.value.id, targetTableId.value);
+  } else {
+    posStore.transferTable(sourceTable.value.id, targetTableId.value);
+  }
+  transferModalOpen.value = false;
+  sourceTable.value = null;
+  targetTableId.value = '';
+}
 
 // ─── Real-time timer ──────────────────────────────────────────────────────────
 const now = ref(Date.now());
@@ -270,15 +299,23 @@ function cancelCloseTable() {
                 : 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 hover:border-rose-600 hover:shadow-md'
             ]"
           >
-            <!-- Close button for occupied tables -->
-            <button
-              v-if="table.status === 'OCCUPIED'"
-              @click="handleCloseTable(table.id, $event)"
-              class="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-all z-10 shadow-md"
-              title="Stolni yopish"
-            >
-              <X class="w-4 h-4" />
-            </button>
+            <!-- Action buttons for occupied tables -->
+            <div v-if="table.status === 'OCCUPIED'" class="absolute top-2.5 right-2.5 flex items-center gap-1 z-10">
+              <button
+                @click="openTransferModal(table, $event)"
+                class="w-7 h-7 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-all shadow-md cursor-pointer active:scale-90"
+                title="Stolni ko'chirish yoki birlashtirish"
+              >
+                <ArrowRightLeft class="w-3.5 h-3.5" />
+              </button>
+              <button
+                @click="handleCloseTable(table.id, $event)"
+                class="w-7 h-7 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-all shadow-md cursor-pointer active:scale-90"
+                title="Stolni yopish"
+              >
+                <X class="w-4 h-4" />
+              </button>
+            </div>
 
             <!-- Table Number & Status Pill -->
             <div class="flex items-center gap-3 w-full mb-2">
@@ -363,15 +400,23 @@ function cancelCloseTable() {
                 : 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/40 hover:border-rose-600 hover:shadow-lg'
             ]"
           >
-            <!-- Close button for occupied VIP rooms -->
-            <button
-              v-if="table.status === 'OCCUPIED'"
-              @click="handleCloseTable(table.id, $event)"
-              class="absolute top-3 right-3 w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-all z-10 shadow-md"
-              title="Xonani yopish"
-            >
-              <X class="w-4 h-4" />
-            </button>
+            <!-- Action buttons for occupied VIP rooms -->
+            <div v-if="table.status === 'OCCUPIED'" class="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+              <button
+                @click="openTransferModal(table, $event)"
+                class="w-8 h-8 rounded-xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center transition-all shadow-md cursor-pointer active:scale-90"
+                title="Xonani ko'chirish yoki birlashtirish"
+              >
+                <ArrowRightLeft class="w-4 h-4" />
+              </button>
+              <button
+                @click="handleCloseTable(table.id, $event)"
+                class="w-8 h-8 rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center transition-all shadow-md cursor-pointer active:scale-90"
+                title="Xonani yopish"
+              >
+                <X class="w-4 h-4" />
+              </button>
+            </div>
 
             <!-- VIP Badge Header Tag -->
             <div class="flex items-center justify-between mb-2">
@@ -489,18 +534,129 @@ function cancelCloseTable() {
             <button
               type="button"
               @click="cancelCloseTable"
-              class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
+              class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm cursor-pointer"
             >
               Bekor qilish
             </button>
             <button
               type="button"
               @click="confirmCloseTable"
-              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-red-700 transition-all text-sm flex items-center space-x-2"
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-red-700 transition-all text-sm flex items-center space-x-2 cursor-pointer"
             >
               <span>Ha, stolni yopish</span>
             </button>
           </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ── 4. TABLE TRANSFER & MERGE MODAL ── -->
+    <Teleport to="body">
+      <div 
+        v-if="transferModalOpen && sourceTable"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+      >
+        <div 
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5"
+          @click.stop
+        >
+          <!-- Header -->
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center space-x-3 text-amber-500">
+              <div class="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                <ArrowRightLeft class="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <h3 class="font-black text-lg text-slate-900 dark:text-white">
+                  {{ sourceTable.name || sourceTable.number + '-Stol' }}ni Ko'chirish
+                </h3>
+                <p class="text-xs text-slate-500">
+                  Buyurtmani boshqa stolga o'tkazish yoki birlashtirish
+                </p>
+              </div>
+            </div>
+            <button 
+              @click="transferModalOpen = false" 
+              class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            >
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Current Order Summary -->
+          <div class="bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl flex items-center justify-between text-xs">
+            <div>
+              <span class="text-slate-500 block font-bold">Ko'chirilayotgan stol:</span>
+              <span class="font-black text-slate-900 dark:text-white text-sm">{{ sourceTable.name }}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-500 block font-bold">{{ tableCartCount(sourceTable) }} ta taom:</span>
+              <span class="font-black text-amber-600 dark:text-amber-400 font-mono text-sm">{{ tableSubtotal(sourceTable).toLocaleString('uz-UZ') }} so'm</span>
+            </div>
+          </div>
+
+          <!-- Destination Table Selector -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Qaysi stolga ko'chirilsin?
+            </label>
+            
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1">
+              <button
+                v-for="t in posStore.tables.filter(x => x.id !== sourceTable?.id)"
+                :key="t.id"
+                type="button"
+                @click="targetTableId = t.id"
+                :class="[
+                  'p-3 rounded-2xl border text-center transition cursor-pointer font-bold text-xs flex flex-col items-center justify-center gap-1',
+                  targetTableId === t.id
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20'
+                    : t.status === 'FREE'
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700/50 hover:border-amber-400'
+                    : 'bg-rose-50/50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700/50 hover:border-amber-400'
+                ]"
+              >
+                <span class="text-base font-black">{{ t.number >= 16 ? (t.number - 15) : t.number }}</span>
+                <span class="text-[10px] truncate max-w-full">{{ t.name }}</span>
+                <span :class="['text-[8px] font-black px-1 rounded uppercase', t.status === 'FREE' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-700 dark:text-rose-300']">
+                  {{ t.status === 'FREE' ? 'Bo\'sh' : 'Band' }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Merge mode toggle if destination is occupied -->
+          <div v-if="posStore.tables.find(t => t.id === targetTableId)?.status === 'OCCUPIED'" class="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Tanlangan stol band. Hisoblarni birlashtirish:
+            </span>
+            <input 
+              type="checkbox" 
+              v-model="isMergeMode"
+              class="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+            />
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center space-x-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              @click="transferModalOpen = false"
+              class="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs cursor-pointer"
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="button"
+              :disabled="!targetTableId"
+              @click="handleExecuteTransfer"
+              class="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-600 transition text-xs disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <ArrowRightLeft class="w-4 h-4" />
+              <span>{{ isMergeMode ? 'Hisoblarni Birlashtirish' : 'Stolni Ko\'chirish' }}</span>
+            </button>
+          </div>
+
         </div>
       </div>
     </Teleport>

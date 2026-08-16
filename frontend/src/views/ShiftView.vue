@@ -1,9 +1,8 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
 import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
 import { formatMoney } from '../utils/formatters';
+import { exportToExcel } from '../utils/excelExport';
 import type { ShiftCashAudit } from '../types/pos';
 import { 
   Receipt, 
@@ -177,6 +176,36 @@ async function handleClearSalesHistory() {
   toast.success("Barcha test savdolar va smenalar tarixi tozalandi!");
 }
 
+function handleExportAuditsExcel() {
+  const rows = (shiftStore.shiftAudits || []).map(a => [
+    `#${a.id}`,
+    a.createdAt,
+    a.cashierName || 'Admin',
+    a.initialCash || 0,
+    a.totalCashSales || a.declaredCash || 0,
+    a.totalCardSales || a.declaredCard || 0,
+    a.totalExpenses || 0,
+    (a.totalCashSales || 0) + (a.totalCardSales || a.declaredCard || 0),
+    a.expectedCash || 0,
+    a.declaredCash || 0,
+    a.difference || 0,
+    a.status === 'SHORTAGE' ? 'KAMOMAD' : a.status === 'SURPLUS' ? 'ORTIQCHA' : 'TO\'G\'RI',
+    a.cashier1Stats?.total || 0,
+    a.cashier2Stats?.total || 0
+  ]);
+  exportToExcel(
+    'Doston_Smena_ZReport_Auditi',
+    [
+      'Audit ID', 'Smena Vaqti', 'Mas\'ul Kassir', 'Boshlang\'ich Kassa (so\'m)', 
+      'Naqd Tushum (so\'m)', 'Karta Tushum (so\'m)', 'Xarajatlar (so\'m)', 'Jami Tushum (so\'m)', 
+      'Kutilgan Naqd (so\'m)', 'Sanalgan Naqd (so\'m)', 'Kassa Farqi (so\'m)', 'Holat',
+      '1-Qavat Tushumi (so\'m)', '2-Qavat Tushumi (so\'m)'
+    ],
+    rows
+  );
+  toast.success('Z-Reportlar tarixi Excel (.csv) formatida yuklab olindi! 📊');
+}
+
 function printAuditReceipt(audit: ShiftCashAudit) {
   selectedAuditForModal.value = audit;
   setTimeout(() => {
@@ -218,6 +247,16 @@ function printAuditReceipt(audit: ShiftCashAudit) {
 
       <!-- Action Buttons -->
       <div class="relative z-10 flex flex-wrap gap-2.5 items-center">
+        <button 
+          v-if="shiftStore.shiftAudits && shiftStore.shiftAudits.length > 0"
+          @click="handleExportAuditsExcel"
+          class="bg-emerald-500/10 hover:bg-emerald-600 text-emerald-600 hover:text-white dark:text-emerald-400 dark:hover:text-white border border-emerald-500/20 font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+          title="Barcha Z-Report va smenalar auditini Excel formatida yuklab olish"
+        >
+          <FileSpreadsheet class="w-4 h-4" />
+          <span>Excelga Yuklash (.xlsx)</span>
+        </button>
+
         <button 
           v-if="shiftStore.shiftAudits.length > 0 || (posStore.orderHistory && posStore.orderHistory.length > 0)"
           @click="handleClearSalesHistory"

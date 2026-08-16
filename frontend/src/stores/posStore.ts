@@ -355,12 +355,16 @@ export const usePosStore = defineStore('pos', () => {
     toast.success(`Xizmat haqi sozlamalari saqlandi: ${enabled ? percent + '%' : 'O\'chirilgan'}! ✨`);
   }
 
-  // Faol buyurtma uchun xizmat haqi summasi
+  // Faol buyurtma uchun xizmat haqi summasi (Faqat ZALda va faqat isTakeaway bo'lmagan taomlarga)
   const activeServiceFeeAmount = computed(() => {
     if (!serviceFeeEnabled.value || serviceFeePercent.value <= 0) return 0;
     if (serviceFeeOnlyZal.value && operationMode.value !== 'ZAL') return 0;
-    const subtotal = operationMode.value === 'ZAL' ? activeTableSubtotal.value : cartSubtotal.value;
-    return Math.round((subtotal * serviceFeePercent.value) / 100);
+    const items = operationMode.value === 'ZAL' ? (activeTable.value?.cart ?? []) : cart.value;
+    // Faqat Zalda yeyiladigan taomlarga hisoblanadi, Saboy (olib ketish) belgilanganlarga 0% (Halol hisob)
+    const eligibleSubtotal = items
+      .filter(i => !i.isTakeaway)
+      .reduce((sum, item) => sum + item.totalPrice, 0);
+    return Math.round((eligibleSubtotal * serviceFeePercent.value) / 100);
   });
 
   // Xizmat haqi qo'shilgan jami summa
@@ -799,6 +803,121 @@ export const usePosStore = defineStore('pos', () => {
     table.totalPaid = 0;
   }
 
+  // ─── Aralash Saboy: Toggle Takeaway on Cart Item ──────────────────────────────
+  function toggleCartItemTakeaway(cartItemId: string, tableId?: string) {
+    if (tableId || operationMode.value === 'ZAL') {
+      const targetTable = tableId ? tables.value.find(t => t.id === tableId) : activeTable.value;
+      if (targetTable) {
+        const item = targetTable.cart.find(i => i.id === cartItemId);
+        if (item) {
+          item.isTakeaway = !item.isTakeaway;
+        }
+      }
+    } else {
+      const item = cart.value.find(i => i.id === cartItemId);
+      if (item) {
+        item.isTakeaway = !item.isTakeaway;
+      }
+    }
+  }
+
+  function setCartItemNote(cartItemId: string, note: string, tableId?: string) {
+    const list = (tableId || operationMode.value === 'ZAL')
+      ? (tableId ? tables.value.find(t => t.id === tableId)?.cart : activeTable.value?.cart)
+      : cart.value;
+    if (list) {
+      const item = list.find(i => i.id === cartItemId);
+      if (item) item.customNote = note;
+    }
+  }
+
+  // ─── Maxsus Taom / Erkin Narx (Custom On-The-Fly Item) ────────────────────────
+  function addCustomProduct(name: string, price: number, note?: string) {
+    const customProd: Product = {
+      id: 'custom-' + Date.now(),
+      name: name.trim() || 'Maxsus Taom',
+      price: Number(price) || 0,
+      categoryId: 'cat-custom',
+      categoryName: 'Maxsus',
+      imageUrl: '/images/food/lavash_obichniy.jpg',
+      recipe: []
+    };
+    if (operationMode.value === 'ZAL' && activeTableId.value) {
+      addToTableCart(activeTableId.value, customProd, [], 1);
+      if (note) {
+        const targetTable = tables.value.find(t => t.id === activeTableId.value);
+        if (targetTable && targetTable.cart.length > 0) {
+          targetTable.cart[targetTable.cart.length - 1].customNote = note;
+        }
+      }
+    } else {
+      addToCart(customProd, [], 1);
+      if (note && cart.value.length > 0) {
+        cart.value[cart.value.length - 1].customNote = note;
+      }
+    }
+    toast.success(`"${name}" savatchaga qo'shildi! 🍔`);
+  }
+
+  // ─── Stolni Ko'chirish (Transfer) va Birlashtirish (Merge) ────────────────────
+  function transferTable(fromTableId: string, toTableId: string) {
+    const fromTable = tables.value.find(t => t.id === fromTableId);
+    const toTable = tables.value.find(t => t.id === toTableId);
+    if (!fromTable || !toTable) return;
+    if (fromTable.cart.length === 0) {
+      toast.warning('Ko\'chirish uchun stolda buyurtma yo\'q!');
+      return;
+    }
+    if (toTable.status === 'OCCUPIED' && toTable.cart.length > 0) {
+      toast.warning(`${toTable.name} band! Iltimos, bo'sh stolni tanlang yoki birlashtirishdan foydalaning.`);
+      return;
+    }
+
+    toTable.cart = [...fromTable.cart];
+    toTable.status = 'OCCUPIED';
+    toTable.openedAt = fromTable.openedAt || Date.now();
+    toTable.orderNumber = fromTable.orderNumber;
+    toTable.waiterNote = fromTable.waiterNote;
+    toTable.totalPaid = fromTable.totalPaid;
+
+    fromTable.cart = [];
+    fromTable.status = 'FREE';
+    fromTable.openedAt = null;
+    fromTable.orderNumber = undefined;
+    fromTable.waiterNote = '';
+    fromTable.totalPaid = 0;
+
+    if (activeTableId.value === fromTableId) {
+      activeTableId.value = toTableId;
+      localStorage.setItem('doston_pos_active_table', toTableId);
+    }
+    toast.success(`Buyurtma ${fromTable.name}dan ${toTable.name}ga ko'chirildi! 🔀`);
+  }
+
+  function mergeTables(fromTableId: string, toTableId: string) {
+    const fromTable = tables.value.find(t => t.id === fromTableId);
+    const toTable = tables.value.find(t => t.id === toTableId);
+    if (!fromTable || !toTable) return;
+
+    toTable.cart.push(...fromTable.cart);
+    toTable.status = 'OCCUPIED';
+    if (!toTable.openedAt) toTable.openedAt = fromTable.openedAt || Date.now();
+    toTable.waiterNote = (toTable.waiterNote + ' ' + fromTable.waiterNote).trim();
+
+    fromTable.cart = [];
+    fromTable.status = 'FREE';
+    fromTable.openedAt = null;
+    fromTable.orderNumber = undefined;
+    fromTable.waiterNote = '';
+    fromTable.totalPaid = 0;
+
+    if (activeTableId.value === fromTableId) {
+      activeTableId.value = toTableId;
+      localStorage.setItem('doston_pos_active_table', toTableId);
+    }
+    toast.success(`${fromTable.name} hisobi ${toTable.name}ga birlashtirildi! 🔗`);
+  }
+
   // ─── Menu CRUD ────────────────────────────────────────────────────────────────
   async function toggleStopList(productId: string) {
     const prod = products.value.find(p => p.id === productId);
@@ -968,6 +1087,13 @@ export const usePosStore = defineStore('pos', () => {
     closeTable,
     setWaiterNote,
     submitTableOrder,
+
+    // Aralash Saboy, Erkin Taom va Stol Ko'chirish
+    toggleCartItemTakeaway,
+    setCartItemNote,
+    addCustomProduct,
+    transferTable,
+    mergeTables,
 
     // 7% Xizmat haqi (Service Fee)
     serviceFeeEnabled,

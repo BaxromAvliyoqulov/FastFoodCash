@@ -68,6 +68,8 @@ export interface CartItem {
   selectedModifiers: SelectedModifier[];
   unitPrice: number;
   totalPrice: number;
+  isTakeaway?: boolean; // Zalda o'tirib buyurtma qilganda Saboy (0% xizmat haqi) belgisi
+  customNote?: string;  // Maxsus istak / o'lcham (masalan: "50 sm", "Piyozsiz")
 }
 
 export interface Order {

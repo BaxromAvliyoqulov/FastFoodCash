@@ -1,0 +1,14 @@
+{
+  "name": "fastfood-telegram-bot",
+  "version": "1.0.0",
+  "description": "Doston Fast Food POS Telegram Z-Report & Live Revenue Notification Bot",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}

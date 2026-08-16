@@ -6,6 +6,7 @@ import { useToastStore } from '../stores/toastStore';
 import ReceiptModal from '../components/ReceiptModal.vue';
 import type { Order } from '../types/pos';
 import { formatMoney, formatTime, formatDateTime } from '../utils/formatters';
+import { exportToExcel } from '../utils/excelExport';
 import { 
   ClipboardList, 
   Search,
@@ -249,6 +250,25 @@ async function handleClearSalesHistory() {
   await posStore.clearAllSalesHistory();
   toast.success("Barcha test savdolar tarixi tozalandi! Kassa yangi mijozga 100% tayyor.");
 }
+
+function handleExportSalesExcel() {
+  const rows = filteredOrders.value.map(o => [
+    `#${o.orderNumber}`,
+    o.id,
+    new Date(o.createdAt).toLocaleString('uz-UZ'),
+    o.cashierName || 'Admin',
+    o.paymentType,
+    o.status === 'CANCELLED' ? 'BEKOR QILINGAN' : 'MUVAFFAQIYATLI',
+    o.totalAmount,
+    o.items?.map(i => `${i.product?.name} (x${i.quantity})`).join('; ') || ''
+  ]);
+  exportToExcel(
+    'Doston_Savdo_Tarixi',
+    ['Chek No', 'Buyurtma ID', 'Sana va Vaqt', 'Kassir', 'To\'lov Turi', 'Holat', 'Summa (so\'m)', 'Tarkibi'],
+    rows
+  );
+  toast.success('Savdo tarixi Excel (.csv) formatida yuklab olindi! 📊');
+}
 </script>
 
 <template>
@@ -262,6 +282,16 @@ async function handleClearSalesHistory() {
       </div>
 
       <div class="flex items-center gap-3">
+        <button 
+          v-if="posStore.orderHistory.length > 0"
+          @click="handleExportSalesExcel"
+          class="bg-emerald-500/10 hover:bg-emerald-600 text-emerald-600 hover:text-white dark:text-emerald-400 dark:hover:text-white border border-emerald-500/20 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+          title="Barcha filtrlangan savdo tarixini Excel formatida yuklab olish"
+        >
+          <FileSpreadsheet class="w-4 h-4" />
+          <span>Excelga Yuklash (.xlsx)</span>
+        </button>
+
         <button 
           v-if="posStore.orderHistory.length > 0"
           @click="handleClearSalesHistory"

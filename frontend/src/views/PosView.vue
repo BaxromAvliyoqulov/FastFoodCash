@@ -11,6 +11,7 @@ import ReceiptModal from '../components/ReceiptModal.vue';
 import KitchenReceiptModal from '../components/KitchenReceiptModal.vue';
 import ExpenseModal from '../components/ExpenseModal.vue';
 import WeightedProductModal from '../components/WeightedProductModal.vue';
+import CustomProductModal from '../components/pos/CustomProductModal.vue';
 import PosHeader from '../components/pos/PosHeader.vue';
 import PosCategoriesBar from '../components/pos/PosCategoriesBar.vue';
 import PosProductGrid from '../components/pos/PosProductGrid.vue';
@@ -53,6 +54,7 @@ const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
 const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId);
 const showExpenseModal = ref(false);
+const showCustomProductModal = ref(false);
 
 // --- Hotkeys Logic ---
 function handleGlobalKeydown(e: KeyboardEvent) {
@@ -298,6 +300,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
         <PosCategoriesBar 
           @change-tab="(t) => emit('change-tab', t)" 
           @back-to-table-map="backToTableMap" 
+          @open-custom-product="showCustomProductModal = true"
         />
 
         <!-- ZAL: stol/xona info banner -->
@@ -416,10 +419,35 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
           <div class="flex items-start gap-2.5">
             <div class="w-1 self-stretch rounded-full bg-gradient-to-b from-amber-500 to-orange-600 shrink-0 opacity-70"></div>
             <div class="flex-1 min-w-0">
-              <h5 class="font-bold text-sm text-slate-900 dark:text-white truncate leading-tight">{{ item.product.name }}</h5>
+              <div class="flex items-center justify-between gap-1">
+                <h5 class="font-bold text-sm text-slate-900 dark:text-white truncate leading-tight">{{ item.product.name }}</h5>
+                
+                <!-- ZAL: 1-Touch Aralash Saboy / Zal Toggle (0% xizmat haqi) -->
+                <button 
+                  v-if="posStore.operationMode === 'ZAL'"
+                  @click="posStore.toggleCartItemTakeaway(item.id)"
+                  :class="[
+                    'px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all shrink-0 cursor-pointer active:scale-95',
+                    item.isTakeaway 
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-sm' 
+                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                  ]"
+                  title="Ushbu taomni olib ketish (Saboy) deb belgilash — xizmat haqi olinmaydi"
+                >
+                  {{ item.isTakeaway ? '🛍️ Saboy (0% xizmat)' : '🍽️ Zal' }}
+                </button>
+              </div>
+
+              <!-- Modifiers -->
               <div v-if="item.selectedModifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
                 <span v-for="mod in item.selectedModifiers" :key="mod.modifierId" class="text-[9px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded-md">+{{ mod.name }}</span>
               </div>
+
+              <!-- Custom Note (e.g. 50 sm, piyozsiz) -->
+              <div v-if="item.customNote" class="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-0.5 flex items-center gap-1">
+                <span>📝 {{ item.customNote }}</span>
+              </div>
+
               <p class="text-[11px] text-slate-500 mt-1 font-mono font-medium">
                 {{ item.unitPrice.toLocaleString('uz-UZ') }} × {{ isWeightedProduct(item.product) ? item.quantity + ' kg' : item.quantity }}
               </p>
@@ -435,7 +463,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
               <span class="text-xs font-black text-slate-900 dark:text-white font-mono min-w-[36px] px-1 text-center">{{ isWeightedProduct(item.product) ? item.quantity + 'kg' : item.quantity }}</span>
               <button @click="updateQty(item.id, isWeightedProduct(item.product) ? 0.100 : 1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/20 transition-all active:scale-90"><Plus class="w-3.5 h-3.5" /></button>
             </div>
-            <button @click="removeItem(item.id)" class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500/60 dark:text-rose-500/60 hover:text-rose-500 dark:hover:text-rose-400 border border-rose-100 dark:border-rose-500/10 transition-all active:scale-90 flex items-center justify-center">
+            <button @click="removeItem(item.id)" class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500/60 dark:text-rose-500/60 hover:text-rose-500 dark:hover:text-rose-400 border border-rose-100 dark:border-rose-500/10 transition-all active:scale-90 flex items-center justify-center cursor-pointer">
               <Trash2 class="w-3.5 h-3.5" />
             </button>
           </div>
@@ -450,7 +478,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
             <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
           </div>
           <div v-if="posStore.activeServiceFeeAmount > 0" class="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
-            <span>Xizmat haqi ({{ posStore.serviceFeePercent }}%):</span>
+            <span>Xizmat haqi ({{ posStore.serviceFeePercent }}% zal taomlariga):</span>
             <span class="font-mono font-bold">+{{ posStore.activeServiceFeeAmount.toLocaleString('uz-UZ') }} so'm</span>
           </div>
         </div>
@@ -472,17 +500,17 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
         <!-- Buttons -->
         <template v-if="posStore.operationMode === 'ZAL'">
           <div class="grid grid-cols-2 gap-2">
-            <button :disabled="activeCart.length === 0" @click="saveTableOrder" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 active:scale-95">
+            <button :disabled="activeCart.length === 0" @click="saveTableOrder" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 active:scale-95 cursor-pointer">
               <Utensils class="w-4 h-4" /> Oshxona
             </button>
-            <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 active:scale-95">
+            <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3.5 rounded-xl font-black text-sm shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-40 active:scale-95 cursor-pointer">
               <CreditCard class="w-4 h-4" /> To'lov
               <span class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
             </button>
           </div>
         </template>
         <template v-else>
-          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
+          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5 cursor-pointer">
             <CreditCard class="w-5 h-5" />
             <span v-if="activeCart.length > 0">To'lov — {{ posStore.activeTotalWithServiceFee.toLocaleString('uz-UZ') }} so'm</span>
             <span v-else>Savat bo'sh</span>
@@ -507,5 +535,6 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
     <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
     <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />
     <WeightedProductModal :is-open="!!activeWeightedProduct" :product="activeWeightedProduct" @close="activeWeightedProduct = null" @confirm="confirmWeightedProduct" />
+    <CustomProductModal :is-open="showCustomProductModal" @close="showCustomProductModal = false" />
   </div>
 </template>
