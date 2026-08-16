@@ -99,9 +99,12 @@ export const usePosStore = defineStore('pos', () => {
   // Filter out any obsolete 'cat-all' entry from local storage
   parsedCategories = parsedCategories.filter(c => c.id !== 'cat-all' && c.name !== 'Barcha Taomlar');
 
-  // Merge missing initial categories (e.g. if new categories like Drinks were added to codebase)
+  // Sync initial categories names & add missing ones
   initialCategories.forEach(initialCat => {
-    if (!parsedCategories.find(c => c.id === initialCat.id || c.name.toLowerCase() === initialCat.name.toLowerCase())) {
+    const existing = parsedCategories.find(c => c.id === initialCat.id);
+    if (existing) {
+      existing.name = initialCat.name;
+    } else {
       parsedCategories.push(initialCat);
     }
   });
@@ -113,28 +116,29 @@ export const usePosStore = defineStore('pos', () => {
   const searchQuery = ref('');
 
   // ─── Products ────────────────────────────────────────────────────────────────
-  // Auto-clean any corrupted localStorage products (e.g. prod-lav-1 or General)
   const storedProducts = localStorage.getItem('doston_pos_products');
   let loadedProducts: Product[] = initialProducts;
   if (storedProducts) {
     try {
       const parsed = JSON.parse(storedProducts);
       if (Array.isArray(parsed)) {
-        loadedProducts = initialProducts.map(ip => {
-          const found = parsed.find((p: any) => p.id === ip.id);
-          if (found) {
-            const hasValidName = found.name && !found.name.startsWith('prod-');
-            const hasValidCategory = found.categoryName && found.categoryName !== 'General';
-            return {
-              ...ip,
-              name: hasValidName ? found.name : ip.name,
-              categoryName: hasValidCategory ? found.categoryName : ip.categoryName,
-              price: found.price || ip.price,
-              isStopList: found.isStopList ?? ip.isStopList
-            };
-          }
-          return ip;
-        });
+        const initialIds = new Set(initialProducts.map(p => p.id));
+        const customProducts = parsed.filter((p: any) => !initialIds.has(p.id));
+        
+        loadedProducts = [
+          ...initialProducts.map(ip => {
+            const found = parsed.find((p: any) => p.id === ip.id);
+            if (found) {
+              return {
+                ...ip,
+                price: found.price || ip.price,
+                isStopList: found.isStopList ?? ip.isStopList
+              };
+            }
+            return ip;
+          }),
+          ...customProducts
+        ];
       }
     } catch (e) {
       console.warn('Failed to parse local stored products:', e);

@@ -142,7 +142,7 @@ export const drinksProducts: Product[] = [
     categoryName: 'Salqin Ichimliklar',
     name: 'Nestle Gazli 1.5L',
     price: 6000,
-    imageUrl: '/images/food/glass_bottle.jpg',
+    imageUrl: '/images/food/nestle_water.jpg',
     recipe: []
   },
   {
@@ -151,7 +151,7 @@ export const drinksProducts: Product[] = [
     categoryName: 'Salqin Ichimliklar',
     name: 'Nestle Gazsiz 1.5L',
     price: 6000,
-    imageUrl: '/images/food/glass_bottle.jpg',
+    imageUrl: '/images/food/nestle_water.jpg',
     recipe: []
   }
 ];
