@@ -51,7 +51,7 @@ const tabs = [
   { id: 'menu',      label: 'Menyu & Kategoriyalar', icon: FolderKanban },
   { id: 'revision',  label: "Ombor Qoldig'i",        icon: Package },
   { id: 'shift',     label: 'Smena & Z-Report',      icon: Receipt },
-  { id: 'printer',   label: 'Sozlamalar & Xizmat Haqi', icon: Printer },
+  { id: 'printer',   label: 'Printer Sozlamalari',   icon: Printer },
 ];
 
 // Non-blocking background data synchronization on mount

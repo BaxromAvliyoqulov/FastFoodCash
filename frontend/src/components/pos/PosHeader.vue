@@ -105,6 +105,8 @@ onUnmounted(() => {
       <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
     </button>
 
+    <!-- RIGHT ACTION CONTROLS -->
+    <div class="ml-auto flex items-center gap-2">
       <!-- Sound Effects Toggle Button -->
       <button 
         @click="handleToggleSound" 
