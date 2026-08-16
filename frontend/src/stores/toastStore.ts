@@ -12,9 +12,19 @@ export interface Toast {
 
 export const useToastStore = defineStore('toast', () => {
   const toasts = ref<Toast[]>([]);
+  let lastToastMessage = '';
+  let lastToastTime = 0;
 
   function addToast(message: string, type: ToastType = 'info', duration: number = 3000) {
-    const id = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    const now = Date.now();
+    // 1500ms ichida bir xil matnli xabarnoma qayta chaqirilsa, uni e'tiborsiz qoldirish
+    if (lastToastMessage === message && (now - lastToastTime) < 1500) {
+      return;
+    }
+    lastToastMessage = message;
+    lastToastTime = now;
+
+    const id = 'toast-' + now + '-' + Math.random().toString(36).substr(2, 9);
     toasts.value.push({ id, message, type, duration });
 
     setTimeout(() => {

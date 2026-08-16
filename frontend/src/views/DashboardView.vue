@@ -53,7 +53,7 @@ const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 const filteredHistory = computed(() => {
   if (!Array.isArray(posStore.orderHistory)) return [];
   return posStore.orderHistory.filter(o => {
-    if (!o || !o.createdAt) return false;
+    if (!o || !o.createdAt || o.status === 'CANCELLED') return false;
     try {
       const d = new Date(o.createdAt).getTime();
       if (Number.isNaN(d)) return false;
@@ -71,7 +71,7 @@ const filteredHistory = computed(() => {
 const previousHistory = computed(() => {
   if (!Array.isArray(posStore.orderHistory)) return [];
   return posStore.orderHistory.filter(o => {
-    if (!o || !o.createdAt) return false;
+    if (!o || !o.createdAt || o.status === 'CANCELLED') return false;
     try {
       const d = new Date(o.createdAt).getTime();
       if (Number.isNaN(d)) return false;

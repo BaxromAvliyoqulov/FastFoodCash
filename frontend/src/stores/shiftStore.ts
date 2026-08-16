@@ -50,7 +50,7 @@ export const useShiftStore = defineStore('shift', () => {
       const shiftStartTime = new Date(currentShift.value.openedAt).getTime();
       if (Number.isNaN(shiftStartTime)) return [];
       return (posStore.orderHistory || []).filter(o => {
-        if (!o || !o.createdAt) return false;
+        if (!o || !o.createdAt || o.status === 'CANCELLED') return false;
         const t = new Date(o.createdAt).getTime();
         return !Number.isNaN(t) && t >= shiftStartTime;
       });

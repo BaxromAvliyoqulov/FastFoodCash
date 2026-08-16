@@ -39,11 +39,12 @@ const cashierList = computed(() => {
   return Array.from(names);
 });
 
-// ─── Kassalar kesimida hisobot ────────────────────────────────────────────────
+// ─── Kassalar kesimida hisobot (Faqat bekor qilinmagan haqiqiy savdolar) ─────
 const cashierStats = computed(() => {
   const all = Array.isArray(posStore.orderHistory) ? posStore.orderHistory : [];
   return cashierList.value.map(name => {
-    const orders = all.filter(o => o?.cashierName === name);
+    // Bekor qilingan buyurtmalar (CANCELLED) hisobotga qo'shilmaydi!
+    const orders = all.filter(o => o?.cashierName === name && o?.status !== 'CANCELLED');
     const totalRevenue = orders.reduce((s, o) => s + (o?.totalAmount || 0), 0);
     const cashRevenue = orders.filter(o => o?.paymentType === 'CASH').reduce((s, o) => s + (o?.totalAmount || 0), 0);
     const cardRevenue = orders.filter(o => o?.paymentType === 'CARD').reduce((s, o) => s + (o?.totalAmount || 0), 0);
@@ -129,10 +130,14 @@ const filteredOrders = computed(() => {
 });
 
 const totalSalesAmount = computed(() => 
-  filteredOrders.value.reduce((sum, o) => sum + o.totalAmount, 0)
+  filteredOrders.value
+    .filter(o => o?.status !== 'CANCELLED')
+    .reduce((sum, o) => sum + (o?.totalAmount || 0), 0)
 );
 
-const totalOrders = computed(() => filteredOrders.value.length);
+const totalOrders = computed(() => 
+  filteredOrders.value.filter(o => o?.status !== 'CANCELLED').length
+);
 
 function getPaymentIcon(type: string) {
   switch(type) {
@@ -567,16 +572,24 @@ async function handleClearSalesHistory() {
                   <button 
                     @click="openOrderDetails(order)"
                     title="Batafsil Ko'rish"
-                    class="p-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 transition-colors text-slate-600 dark:text-slate-300"
+                    class="p-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 transition-colors text-slate-600 dark:text-slate-300 cursor-pointer"
                   >
                     <Eye class="w-4 h-4" />
                   </button>
                   <button 
                     @click="triggerReprintReceipt(order)"
                     title="Chekni Qayta Chop Etish"
-                    class="p-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors"
+                    class="p-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors cursor-pointer"
                   >
                     <Printer class="w-4 h-4" />
+                  </button>
+                  <button 
+                    v-if="authStore.isAdmin && order.status !== 'CANCELLED'"
+                    @click="promptCancelOrder(order)"
+                    title="Tezkor Bekor Qilish"
+                    class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
               </td>
