@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const toast = useToastStore();
 const selectedPaymentType = ref<PaymentType>('CASH');
 const paidAmountInput = ref<number>(props.totalAmount);
+const isSubmitting = ref(false);
 
 const diffAmount = computed(() => {
   return (paidAmountInput.value || 0) - props.totalAmount;
@@ -52,10 +53,14 @@ function selectExactAmount(amount: number) {
 }
 
 function handleComplete() {
+  if (isSubmitting.value) return;
+
   if (selectedPaymentType.value === 'CASH' && (paidAmountInput.value || 0) < props.totalAmount) {
     toast.error('Kiritilgan naqd pul jami summadan kam bo\'lishi mumkin emas!');
     return;
   }
+  
+  isSubmitting.value = true;
   emit('success', selectedPaymentType.value, paidAmountInput.value || props.totalAmount);
 }
 </script>
@@ -201,16 +206,17 @@ function handleComplete() {
       <!-- Action Button -->
       <button 
         @click="handleComplete"
-        :disabled="selectedPaymentType === 'CASH' && !isSufficient"
+        :disabled="(selectedPaymentType === 'CASH' && !isSufficient) || isSubmitting"
         :class="[
-          'w-full py-4 rounded-2xl font-black text-base shadow-xl flex items-center justify-center space-x-2 transition-all active:scale-[0.98] cursor-pointer',
-          selectedPaymentType === 'CASH' && !isSufficient
-            ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed shadow-none'
-            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-amber-500/25'
+          'w-full py-4 rounded-2xl font-black text-base shadow-xl flex items-center justify-center space-x-2 transition-all cursor-pointer',
+          (selectedPaymentType === 'CASH' && !isSufficient) || isSubmitting
+            ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed shadow-none pointer-events-none opacity-80'
+            : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-amber-500/25 active:scale-[0.98]'
         ]"
       >
-        <CheckCircle2 class="w-6 h-6" />
-        <span>To'lovni Tasdiqlash va Chek Chop Etish</span>
+        <span v-if="isSubmitting" class="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+        <CheckCircle2 v-else class="w-6 h-6" />
+        <span>{{ isSubmitting ? "To'lov qabul qilinmoqda..." : "To'lovni Tasdiqlash va Chek Chop Etish" }}</span>
       </button>
 
     </div>

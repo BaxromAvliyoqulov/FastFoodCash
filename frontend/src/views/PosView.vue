@@ -187,67 +187,85 @@ function removeItem(cartItemId: string) {
   }
 }
 
+const isProcessingPayment = ref(false);
+const isSavingKitchenOrder = ref(false);
+
 function saveTableOrder() {
+  if (isSavingKitchenOrder.value) return;
   if (posStore.operationMode === 'ZAL' && posStore.activeTable) {
-    const tableNum = posStore.activeTable.number;
-    const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
-    kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
-    toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
-    showTableProducts.value = false;
-    posStore.clearActiveTable();
-    if (isKitchenPrinterOn) {
-      showKitchenReceiptModal.value = true;
+    isSavingKitchenOrder.value = true;
+    try {
+      const tableNum = posStore.activeTable.number;
+      const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
+      kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
+      toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
+      showTableProducts.value = false;
+      posStore.clearActiveTable();
+      if (isKitchenPrinterOn) {
+        showKitchenReceiptModal.value = true;
+      }
+    } finally {
+      setTimeout(() => {
+        isSavingKitchenOrder.value = false;
+      }, 500);
     }
   }
 }
 
 async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
-  if (!shiftStore.currentShift || shiftStore.currentShift.status !== 'OPEN') {
-    await shiftStore.openShift(100000);
-  }
-  const shiftId = shiftStore.currentShift?.id || 'default-shift';
-  const cashierName = shiftStore.currentShift?.cashierName || 'Kassir';
-  const subtotal = activeSubtotal.value;
-  const serviceFee = posStore.activeServiceFeeAmount;
-  const serviceFeePercent = posStore.serviceFeeEnabled ? posStore.serviceFeePercent : 0;
-  const totalAmount = posStore.activeTotalWithServiceFee;
+  if (isProcessingPayment.value) return;
+  isProcessingPayment.value = true;
 
-  let order: Order | null = null;
-  if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
-    const tableId = posStore.activeTableId;
-    order = await posStore.submitTableOrder(tableId, paymentType, paidAmount, cashierName, shiftId);
-    if (order) {
-      order.subtotal = subtotal;
-      order.serviceFee = serviceFee;
-      order.serviceFeePercent = serviceFeePercent;
-      order.totalAmount = totalAmount;
+  try {
+    if (!shiftStore.currentShift || shiftStore.currentShift.status !== 'OPEN') {
+      await shiftStore.openShift(100000);
     }
-    posStore.clearTableCart(tableId);
-    posStore.clearActiveTable();
-    showTableProducts.value = false;
-  } else {
-    order = await posStore.submitOrder(paymentType, paidAmount, cashierName, shiftId);
-    if (order) {
-      order.subtotal = subtotal;
-      order.serviceFee = serviceFee;
-      order.serviceFeePercent = serviceFeePercent;
-      order.totalAmount = totalAmount;
-    }
-    posStore.clearCart();
-  }
+    const shiftId = shiftStore.currentShift?.id || 'default-shift';
+    const cashierName = shiftStore.currentShift?.cashierName || 'Kassir';
+    const subtotal = activeSubtotal.value;
+    const serviceFee = posStore.activeServiceFeeAmount;
+    const serviceFeePercent = posStore.serviceFeeEnabled ? posStore.serviceFeePercent : 0;
+    const totalAmount = posStore.activeTotalWithServiceFee;
 
-  showPaymentModal.value = false;
-
-  if (order) {
-    const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
-    lastCompletedOrder.value = order;
-    if (isKassaPrinterOn) {
-      showReceiptModal.value = true;
+    let order: Order | null = null;
+    if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
+      const tableId = posStore.activeTableId;
+      order = await posStore.submitTableOrder(tableId, paymentType, paidAmount, cashierName, shiftId);
+      if (order) {
+        order.subtotal = subtotal;
+        order.serviceFee = serviceFee;
+        order.serviceFeePercent = serviceFeePercent;
+        order.totalAmount = totalAmount;
+      }
+      posStore.clearTableCart(tableId);
+      posStore.clearActiveTable();
+      showTableProducts.value = false;
     } else {
-      toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli saqlandi!`);
+      order = await posStore.submitOrder(paymentType, paidAmount, cashierName, shiftId);
+      if (order) {
+        order.subtotal = subtotal;
+        order.serviceFee = serviceFee;
+        order.serviceFeePercent = serviceFeePercent;
+        order.totalAmount = totalAmount;
+      }
+      posStore.clearCart();
     }
-  } else {
-    toast.success('Buyurtma bajarildi!');
+
+    showPaymentModal.value = false;
+
+    if (order) {
+      const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
+      lastCompletedOrder.value = order;
+      if (isKassaPrinterOn) {
+        showReceiptModal.value = true;
+      } else {
+        toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli saqlandi!`);
+      }
+    } else {
+      toast.success('Buyurtma bajarildi!');
+    }
+  } finally {
+    isProcessingPayment.value = false;
   }
 }
 </script>

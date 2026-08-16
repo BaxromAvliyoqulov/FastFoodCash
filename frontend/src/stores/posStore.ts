@@ -496,6 +496,9 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  // ─── Order Submission Lock (Multi-click / Double-submission protection) ─────
+  const isSubmittingOrder = ref(false);
+
   // ─── SABOY: submitOrder ───────────────────────────────────────────────────────
   async function submitOrder(
     paymentType: PaymentType,
@@ -504,6 +507,16 @@ export const usePosStore = defineStore('pos', () => {
     shiftId: string,
     _orderType?: OrderType
   ): Promise<Order | null> {
+    if (isSubmittingOrder.value) {
+      console.warn('⚠️ Buyurtma allaqachon yuborilmoqda, takroriy bosish bekor qilindi.');
+      return null;
+    }
+    if (cart.value.length === 0) {
+      console.warn('⚠️ Savatcha bo\'sh, buyurtma yuborilmaydi.');
+      return null;
+    }
+
+    isSubmittingOrder.value = true;
     const authStore = useAuthStore();
     
     try {
@@ -577,6 +590,8 @@ export const usePosStore = defineStore('pos', () => {
       
       toast.success('Internet yo\'q. Buyurtma oflayn saqlandi!', 3000);
       return tempOrder as any;
+    } finally {
+      isSubmittingOrder.value = false;
     }
   }
 
@@ -662,9 +677,15 @@ export const usePosStore = defineStore('pos', () => {
     _cashierName: string,
     shiftId: string
   ): Promise<Order | null> {
+    if (isSubmittingOrder.value) {
+      console.warn('⚠️ Stol buyurtmasi allaqachon yuborilmoqda, takroriy bosish bekor qilindi.');
+      return null;
+    }
+
     const table = tables.value.find(t => t.id === tableId);
     if (!table || table.cart.length === 0) return null;
 
+    isSubmittingOrder.value = true;
     const authStore = useAuthStore();
 
     try {
@@ -761,6 +782,8 @@ export const usePosStore = defineStore('pos', () => {
       
       toast.success('Internet yo\'q. Stol oflayn yopildi!', 3000);
       return tempOrder as any;
+    } finally {
+      isSubmittingOrder.value = false;
     }
   }
 
