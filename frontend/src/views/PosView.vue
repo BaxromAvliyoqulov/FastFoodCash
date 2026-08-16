@@ -18,7 +18,7 @@ import TableMapView from '../components/TableMapView.vue';
 import {
   Plus, Minus, Trash2, CreditCard, Utensils,
   ShoppingBag,
-  Printer, MessageSquare,
+  Printer,
   CheckCircle
 } from 'lucide-vue-next';
 
@@ -422,12 +422,6 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
             </button>
           </div>
         </div>
-      </div>
-
-      <!-- Waiter note -->
-      <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && activeCart.length > 0" class="shrink-0 px-3 pb-1 pt-2">
-        <label class="flex items-center gap-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1.5"><MessageSquare class="w-3 h-3" /> Ofitsiant izohi</label>
-        <textarea :value="posStore.activeTable?.waiterNote" @input="(e) => posStore.setWaiterNote(posStore.activeTableId!, (e.target as HTMLTextAreaElement).value)" placeholder="Allergy bor, alohida tarelka..." rows="2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none resize-none transition-colors" />
       </div>
 
       <!-- FOOTER -->
