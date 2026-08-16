@@ -421,30 +421,34 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-1">
                 <h5 class="font-bold text-sm text-slate-900 dark:text-white truncate leading-tight">{{ item.product.name }}</h5>
-                
-                <!-- ZAL: 1-Touch Aralash Saboy / Zal Toggle (0% xizmat haqi) -->
+              </div>
+
+              <!-- ZAL: 1-Touch Aralash Saboy / Zal Toggle (0% xizmat haqi) -->
+              <div v-if="posStore.operationMode === 'ZAL'" class="mt-1.5 flex items-center gap-2">
                 <button 
-                  v-if="posStore.operationMode === 'ZAL'"
                   @click="posStore.toggleCartItemTakeaway(item.id)"
                   :class="[
-                    'px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all shrink-0 cursor-pointer active:scale-95',
+                    'px-2.5 py-1 rounded-xl text-[11px] font-black border transition-all shrink-0 cursor-pointer active:scale-95 flex items-center gap-1 shadow-sm',
                     item.isTakeaway 
-                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-sm' 
-                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+                      ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-500/30' 
+                      : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/40 hover:bg-amber-500/20'
                   ]"
-                  title="Ushbu taomni olib ketish (Saboy) deb belgilash — xizmat haqi olinmaydi"
+                  title="Ushbu taomni olib ketish (Saboy) deb belgilash — 7% xizmat haqi olinmaydi"
                 >
-                  {{ item.isTakeaway ? '🛍️ Saboy (0% xizmat)' : '🍽️ Zal' }}
+                  <span>{{ item.isTakeaway ? '🛍️ Saboy (0% xizmat)' : '🍽️ Zal (7% xizmat)' }}</span>
                 </button>
+                <span v-if="item.isTakeaway" class="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                  ✓ Xizmat haqi olinmaydi
+                </span>
               </div>
 
               <!-- Modifiers -->
-              <div v-if="item.selectedModifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
+              <div v-if="item.selectedModifiers && item.selectedModifiers.length > 0" class="flex flex-wrap gap-1 mt-1">
                 <span v-for="mod in item.selectedModifiers" :key="mod.modifierId" class="text-[9px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-1.5 py-0.5 rounded-md">+{{ mod.name }}</span>
               </div>
 
               <!-- Custom Note (e.g. 50 sm, piyozsiz) -->
-              <div v-if="item.customNote" class="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-0.5 flex items-center gap-1">
+              <div v-if="item.customNote" class="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1">
                 <span>📝 {{ item.customNote }}</span>
               </div>
 
