@@ -134,7 +134,7 @@ export const useShiftStore = defineStore('shift', () => {
   function closeShiftBlindReconciliation(declaredCash: number, declaredCard: number, declaredQr: number, notes?: string): ShiftCashAudit {
     const activeShiftObj = currentShift.value || {
       id: 'shift-' + Date.now(),
-      cashierName: 'Kassir',
+      cashierName: 'Admin',
       openedAt: new Date().toISOString(),
       initialCash: 0,
       status: 'OPEN' as const,
@@ -145,13 +145,39 @@ export const useShiftStore = defineStore('shift', () => {
     };
 
     const shiftOrders = currentShiftOrders.value;
-    const totalOrderCash = shiftOrders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + o.totalAmount, 0);
-    const totalExpenses = (activeShiftObj.expenses || []).reduce((sum, e) => sum + e.amount, 0);
+    const totalOrderCash = shiftOrders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + (o?.totalAmount || 0), 0);
+    const totalOrderCard = shiftOrders.filter(o => o.paymentType === 'CARD').reduce((sum, o) => sum + (o?.totalAmount || 0), 0);
+    const totalRevenue = totalOrderCash + totalOrderCard;
+    const totalExpenses = (activeShiftObj.expenses || []).reduce((sum, e) => sum + (e?.amount || 0), 0);
 
-    const initialCash = activeShiftObj.initialCash || 0;
+    const initialCash = Number(activeShiftObj.initialCash) || 0;
     const expectedCash = initialCash + totalOrderCash - totalExpenses;
     const declaredCashNum = Number(declaredCash) || 0;
     const difference = declaredCashNum - expectedCash;
+
+    // Kassir 1 (1-qavat) va Kassir 2 (2-qavat) kesimidagi savdo tahlili
+    const c1Orders = shiftOrders.filter(o => {
+      const name = (o?.cashierName || '').toLowerCase();
+      return name.includes('1') || (!name.includes('2') && !name.includes('vip'));
+    });
+    const c2Orders = shiftOrders.filter(o => {
+      const name = (o?.cashierName || '').toLowerCase();
+      return name.includes('2') || name.includes('vip');
+    });
+
+    const cashier1Stats = {
+      total: c1Orders.reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      cash: c1Orders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      card: c1Orders.filter(o => o.paymentType === 'CARD').reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      count: c1Orders.length
+    };
+
+    const cashier2Stats = {
+      total: c2Orders.reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      cash: c2Orders.filter(o => o.paymentType === 'CASH').reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      card: c2Orders.filter(o => o.paymentType === 'CARD').reduce((sum, o) => sum + (o?.totalAmount || 0), 0),
+      count: c2Orders.length
+    };
 
     let status: 'BALANCED' | 'SHORTAGE' | 'SURPLUS' = 'BALANCED';
     if (difference < -100) status = 'SHORTAGE';
@@ -160,13 +186,24 @@ export const useShiftStore = defineStore('shift', () => {
     const audit: ShiftCashAudit = {
       id: 'aud-' + Date.now().toString().slice(-6),
       shiftId: activeShiftObj.id,
+      cashierName: activeShiftObj.cashierName || 'Admin',
+      openedAt: activeShiftObj.openedAt,
+      closedAt: new Date().toISOString(),
+      initialCash,
+      totalRevenue,
+      totalCashSales: totalOrderCash,
+      totalCardSales: totalOrderCard,
+      totalExpenses,
       expectedCash,
       declaredCash: declaredCashNum,
       declaredCard: Number(declaredCard) || 0,
       declaredQr: Number(declaredQr) || 0,
-      totalExpenses,
       difference,
       status,
+      ordersCount: shiftOrders.length,
+      expensesList: [...(activeShiftObj.expenses || [])],
+      cashier1Stats,
+      cashier2Stats,
       notes: notes || '',
       createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
     };

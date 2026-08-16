@@ -130,13 +130,24 @@ export interface Shift {
 export interface ShiftCashAudit {
   id: string;
   shiftId: string;
+  cashierName?: string;
+  openedAt?: string;
+  closedAt?: string;
+  initialCash: number;
+  totalRevenue?: number;
+  totalCashSales?: number;
+  totalCardSales?: number;
+  totalExpenses: number;
   expectedCash: number;
   declaredCash: number;
-  difference: number; // declared - expected
   declaredCard: number;
   declaredQr: number;
-  totalExpenses: number;
+  difference: number; // declared - expected
   status: 'BALANCED' | 'SHORTAGE' | 'SURPLUS';
+  ordersCount?: number;
+  expensesList?: ShiftExpense[];
+  cashier1Stats?: { total: number; cash: number; card: number; count: number };
+  cashier2Stats?: { total: number; cash: number; card: number; count: number };
   notes?: string;
   createdAt: string;
 }
