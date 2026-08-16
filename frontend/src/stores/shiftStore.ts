@@ -67,9 +67,10 @@ export const useShiftStore = defineStore('shift', () => {
         const body = await res.json();
         if (body.success && body.data && body.data.activeShift) {
           const s = body.data.activeShift;
+          const rawName = s.cashier?.fullName || s.cashierName || 'Admin';
           currentShift.value = {
             ...s,
-            cashierName: s.cashier?.fullName || 'Admin',
+            cashierName: rawName.replace(/baxrom\s*/i, '').trim() || 'Admin',
             expenses: s.expenses || currentShift.value?.expenses || []
           };
           return;
