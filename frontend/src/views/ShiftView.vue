@@ -1,3 +1,5 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
 import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
