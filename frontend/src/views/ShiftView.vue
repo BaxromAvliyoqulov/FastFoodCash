@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useShiftStore } from '../stores/shiftStore';
+import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
 import { formatMoney } from '../utils/formatters';
 import { 
@@ -15,10 +16,12 @@ import {
   LockOpen,
   Banknote,
   CreditCard,
+  Trash2,
   X
 } from 'lucide-vue-next';
 
 const shiftStore = useShiftStore();
+const posStore = usePosStore();
 const toast = useToastStore();
 
 const showCloseModal = ref(false);
@@ -95,6 +98,15 @@ function submitOpenShift() {
   showOpenShiftModal.value = false;
   toast.success('Yangi smena muvaffaqiyatli ochildi!');
 }
+
+async function handleClearSalesHistory() {
+  if (!confirm("Diqqat! Barcha test/fake savdolar, cheklar va smenalar tarixi 0 ga tushiriladi.\n\nTaomlar, narxlar, retseptlar va stollarga TEGILMAYDI.\n\nDavom ettirilsinmi?")) {
+    return;
+  }
+  await posStore.clearAllSalesHistory();
+  lastAuditResult.value = null;
+  toast.success("Barcha test savdolar va smenalar tarixi tozalandi!");
+}
 </script>
 
 <template>
@@ -125,7 +137,18 @@ function submitOpenShift() {
         </div>
       </div>
 
-      <div class="relative z-10 flex gap-3">
+      <div class="relative z-10 flex flex-wrap gap-2.5 items-center">
+        <button 
+          v-if="shiftStore.shiftAudits.length > 0 || (posStore.orderHistory && posStore.orderHistory.length > 0)"
+          @click="handleClearSalesHistory"
+          class="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95"
+          title="Barcha test smenalar va cheklarni tozalash"
+        >
+          <Trash2 class="w-4 h-4" />
+          <span class="hidden sm:inline">Test ma'lumotlarni tozalash</span>
+          <span class="sm:hidden">Tozalash</span>
+        </button>
+
         <button 
           v-if="shiftStore.isShiftOpen"
           @click="showExpenseModal = true"

@@ -352,7 +352,7 @@ export const getOrders = async (req: Request, res: Response) => {
     const formattedOrders = orders.map(o => ({
       id: o.id,
       orderNumber: o.orderNumber,
-      cashierName: o.cashier?.fullName || 'Kassir',
+      cashierName: (o.cashier?.fullName || 'Kassir').replace(/baxrom\s*/i, '').trim() || 'Kassir',
       totalAmount: o.totalAmount,
       paymentType: o.paymentType,
       status: o.status,
@@ -360,7 +360,7 @@ export const getOrders = async (req: Request, res: Response) => {
       items: o.items.map(i => ({
         product: {
           id: i.product?.id || '',
-          name: i.product?.name || 'Nomsiz',
+          name: i.product?.name || 'Taom',
           price: i.product?.price || 0,
           categoryName: (i.product as any)?.categoryName || '',
           imageUrl: (i.product as any)?.imageUrl || ''

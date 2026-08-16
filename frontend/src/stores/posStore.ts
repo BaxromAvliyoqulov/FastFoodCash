@@ -444,7 +444,7 @@ export const usePosStore = defineStore('pos', () => {
   function addToCart(product: Product, selectedModifiers: Modifier[] = [], customQuantity: number = 1) {
     const cat = categories.value.find(c => c.id === product.categoryId);
     if (product.isStopList || cat?.isHidden) {
-      alert(`"${product.name}" vaqtinchalik yopilgan (Stop-List)! Ushbu taomni sotish taqiqlangan.`);
+      toast.warning(`"${product.name}" vaqtinchalik yopilgan (Stop-List)! Ushbu taomni sotish taqiqlangan.`);
       return;
     }
     const modPriceSum = selectedModifiers.reduce((acc, m) => acc + m.price, 0);
@@ -538,7 +538,7 @@ export const usePosStore = defineStore('pos', () => {
         _deductIngredients(cartItemsCopy);
         return body.data.order;
       } else {
-        alert(body.error || 'Buyurtma saqlashda xatolik');
+        toast.error(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
     } catch (e: any) {
@@ -584,7 +584,7 @@ export const usePosStore = defineStore('pos', () => {
   function addToTableCart(tableId: string, product: Product, selectedModifiers: Modifier[] = [], customQuantity: number = 1) {
     const cat = categories.value.find(c => c.id === product.categoryId);
     if (product.isStopList || cat?.isHidden) {
-      alert(`"${product.name}" vaqtinchalik yopilgan (Stop-List)!`);
+      toast.warning(`"${product.name}" vaqtinchalik yopilgan (Stop-List)!`);
       return;
     }
 
@@ -713,7 +713,7 @@ export const usePosStore = defineStore('pos', () => {
 
         return body.data.order;
       } else {
-        alert(body.error || 'Buyurtma saqlashda xatolik');
+        toast.error(body.error || 'Buyurtma saqlashda xatolik');
         return null;
       }
     } catch (e: any) {

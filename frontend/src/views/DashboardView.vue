@@ -230,23 +230,26 @@ const comparisonGraph = computed(() => {
 });
 
 const topBestsellers = computed(() => {
-  if (dashboardStats.value.topItems.length > 0 && selectedPeriod.value === 'today') return dashboardStats.value.topItems;
-  
   const map: Record<string, { name: string; category: string; price: number; soldCount: number; totalRevenue: number; imageUrl: string }> = {};
   
   filteredHistory.value.forEach((order: Order) => {
     if (!order?.items) return;
     order.items.forEach((item: CartItem) => {
-      const productId = item?.product?.id;
+      const productId = item?.product?.id || (item as any)?.productId;
       if (!productId) return;
       if (!map[productId]) {
+        let pName = item.product?.name;
+        const foundProd = posStore.products.find(p => p.id === productId);
+        if (!pName || pName.startsWith('prod-')) {
+          pName = foundProd?.name || 'Taom';
+        }
         map[productId] = {
-          name: item.product.name || 'Nomsiz',
-          category: item.product.categoryName || '',
-          price: item.product.price || 0,
+          name: pName,
+          category: item.product?.categoryName || foundProd?.categoryName || 'Taom',
+          price: item.product?.price || item.unitPrice || foundProd?.price || 0,
           soldCount: 0,
           totalRevenue: 0,
-          imageUrl: item.product.imageUrl || ''
+          imageUrl: item.product?.imageUrl || foundProd?.imageUrl || ''
         };
       }
       map[productId].soldCount += item.quantity || 0;

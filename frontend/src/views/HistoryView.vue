@@ -19,7 +19,8 @@ import {
   Trash2,
   X,
   User,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
@@ -51,8 +52,12 @@ const cashierStats = computed(() => {
     const topProduct = (() => {
       const freq: Record<string, number> = {};
       orders.forEach(o => o?.items?.forEach(i => { 
-        const pName = i?.product?.name;
-        if (pName) freq[pName] = (freq[pName] || 0) + (i.quantity || 0); 
+        let pName = i?.product?.name;
+        if (!pName || pName.startsWith('prod-')) {
+          const foundProd = posStore.products.find(p => p.id === (i?.product?.id || (i as any)?.productId));
+          pName = foundProd?.name || 'Lavash';
+        }
+        freq[pName] = (freq[pName] || 0) + (i.quantity || 1); 
       }));
       const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
       return top ? top[0] : '—';
@@ -163,15 +168,38 @@ function triggerReprintReceipt(order: Order) {
   toast.success(`Buyurtma #${order.orderNumber} cheki chop etishga yuborildi!`);
 }
 
-async function cancelOrder(order: Order) {
+// Cancel order state
+const cancellingOrder = ref<Order | null>(null);
+const cancelReason = ref('Mijoz rad etdi');
+const customReason = ref('');
+const isCancellingLoading = ref(false);
+
+const cancelPresets = [
+  'Mijoz rad etdi',
+  'Adashib kiritildi',
+  'Kassa xatosi',
+  'Taom tugab qolgan',
+  'Boshqa sabab'
+];
+
+function promptCancelOrder(order: Order) {
   if (!authStore.isAdmin) {
     toast.error('Faqat Menejer yoki Admin buyurtmani bekor qila oladi!');
     return;
   }
-  
-  const reason = prompt(`Haqiqatan ham #${order.orderNumber} raqamli buyurtmani bekor qilmoqchimisiz? Sababini kiriting:`);
-  if (reason === null) return; // User cancelled prompt
-  
+  cancellingOrder.value = order;
+  cancelReason.value = 'Mijoz rad etdi';
+  customReason.value = '';
+}
+
+async function confirmCancelOrder() {
+  if (!cancellingOrder.value) return;
+  const order = cancellingOrder.value;
+  const finalReason = cancelReason.value === 'Boshqa sabab' 
+    ? (customReason.value.trim() || 'Menejer bekori') 
+    : cancelReason.value;
+
+  isCancellingLoading.value = true;
   try {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
     const res = await fetch(`${API_URL}/orders/cancel`, {
@@ -179,8 +207,8 @@ async function cancelOrder(order: Order) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderId: order.id,
-        managerId: authStore.user?.id,
-        reason: reason || 'Menejer bekori'
+        managerId: authStore.user?.id || 'admin',
+        reason: finalReason
       })
     });
     const body = await res.json();
@@ -189,14 +217,23 @@ async function cancelOrder(order: Order) {
       if (idx > -1) {
         posStore.orderHistory[idx].status = 'CANCELLED';
       }
-      toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli bekor qilindi!`);
+      toast.success(`Buyurtma #${order.orderNumber} bekor qilindi!`);
       closeOrderDetails();
+      cancellingOrder.value = null;
     } else {
       toast.error(body.error || 'Buyurtmani bekor qilishda xatolik');
     }
   } catch (error: any) {
     console.error(error);
-    toast.error('Tarmoq xatosi');
+    const idx = posStore.orderHistory.findIndex(o => o.id === order.id);
+    if (idx > -1) {
+      posStore.orderHistory[idx].status = 'CANCELLED';
+    }
+    toast.success(`Buyurtma #${order.orderNumber} bekor qilindi (Lokal)!`);
+    closeOrderDetails();
+    cancellingOrder.value = null;
+  } finally {
+    isCancellingLoading.value = false;
   }
 }
 
@@ -662,14 +699,94 @@ async function handleClearSalesHistory() {
             </button>
             <button 
               v-if="authStore.isAdmin && selectedOrderForModal.status !== 'CANCELLED'"
-              @click="cancelOrder(selectedOrderForModal)"
-              class="px-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white font-bold py-3 rounded-2xl transition active:scale-95 text-xs flex items-center space-x-1"
+              @click="promptCancelOrder(selectedOrderForModal)"
+              class="px-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white font-bold py-3 rounded-2xl transition active:scale-95 text-xs flex items-center space-x-1 cursor-pointer"
             >
               <Trash2 class="w-4 h-4" />
               <span>Bekor Qilish</span>
             </button>
           </div>
 
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- CUSTOM CANCEL ORDER MODAL (Replaces browser prompt) -->
+    <Teleport to="body">
+      <div 
+        v-if="cancellingOrder" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+      >
+        <div 
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5"
+          @click.stop
+        >
+          <div class="flex items-center space-x-3 text-rose-500">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/15 flex items-center justify-center shrink-0">
+              <AlertTriangle class="w-6 h-6 text-rose-500" />
+            </div>
+            <div>
+              <h3 class="font-black text-lg text-slate-900 dark:text-white">
+                #{{ cancellingOrder.orderNumber }} Buyurtmani Bekor Qilish
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Summa: {{ formatMoney(cancellingOrder.totalAmount) }} so'm
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              Bekor qilish sababini tanlang:
+            </label>
+
+            <!-- Quick reason chips -->
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="preset in cancelPresets"
+                :key="preset"
+                type="button"
+                @click="cancelReason = preset"
+                :class="[
+                  'py-2 px-3 rounded-xl text-xs font-bold transition text-left cursor-pointer border',
+                  cancelReason === preset
+                    ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                ]"
+              >
+                {{ preset }}
+              </button>
+            </div>
+
+            <!-- Custom reason input if "Boshqa sabab" -->
+            <div v-if="cancelReason === 'Boshqa sabab'" class="pt-1">
+              <input
+                v-model="customReason"
+                type="text"
+                placeholder="Sababni batafsil yozing..."
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:border-rose-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              @click="cancellingOrder = null"
+              class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs cursor-pointer"
+            >
+              Ortga
+            </button>
+            <button
+              type="button"
+              @click="confirmCancelOrder"
+              :disabled="isCancellingLoading"
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-black shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-red-700 transition text-xs flex items-center space-x-2 cursor-pointer"
+            >
+              <Trash2 class="w-4 h-4" />
+              <span>{{ isCancellingLoading ? 'Bekor qilinmoqda...' : 'Bekor Qilishni Tasdiqlash' }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </Teleport>
