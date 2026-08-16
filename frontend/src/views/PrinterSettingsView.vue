@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useToastStore } from '../stores/toastStore';
+import { usePosStore } from '../stores/posStore';
 import { 
   Printer, 
   UtensilsCrossed, 
@@ -18,10 +19,17 @@ import {
   Wifi,
   Eye,
   X,
-  Server
+  Server,
+  Percent
 } from 'lucide-vue-next';
 
 const toast = useToastStore();
+const posStore = usePosStore();
+
+// Service Fee (Xizmat haqi) state
+const serviceFeeEnabled = ref(posStore.serviceFeeEnabled);
+const serviceFeePercent = ref(posStore.serviceFeePercent);
+const serviceFeeOnlyZal = ref(posStore.serviceFeeOnlyZal);
 
 // Printer state toggles
 const kassaPrinterEnabled = ref(localStorage.getItem('doston_pos_printer_kassa') !== 'false');
@@ -51,7 +59,19 @@ function selectPaperWidth(w: '80mm' | '58mm') {
   toast.success(`Chek qog'ozi eni ${w} o'zgardi! 🧾`);
 }
 
+function selectQuickFee(pct: number) {
+  serviceFeePercent.value = pct;
+  serviceFeeEnabled.value = pct > 0;
+}
+
 function saveSettings() {
+  // Save service fee config in store and localstorage
+  posStore.setServiceFeeConfig(
+    serviceFeeEnabled.value, 
+    Number(serviceFeePercent.value) || 0, 
+    serviceFeeOnlyZal.value
+  );
+
   localStorage.setItem('doston_pos_printer_kassa', String(kassaPrinterEnabled.value));
   localStorage.setItem('doston_pos_printer_kitchen', String(kitchenPrinterEnabled.value));
   localStorage.setItem('doston_pos_paper_width', paperWidth.value);
@@ -67,7 +87,7 @@ function saveSettings() {
   localStorage.setItem('doston_pos_receipt_phone', receiptPhone.value);
   localStorage.setItem('doston_pos_receipt_footer', receiptFooter.value);
 
-  toast.success("Barcha printer va chek sozlamalari muvaffaqiyatli saqlandi! 🖨️✨");
+  toast.success("Barcha tizim, xizmat haqi va printer sozlamalari saqlandi! 🚀✨");
 }
 
 function runTestPrint(type: 'Kassa' | 'Oshxona') {
@@ -358,9 +378,127 @@ function executeSystemPrint() {
 
       </div>
 
-      <!-- RIGHT COLUMN: Receipt Branding Customization & Live Mockup Preview (5 cols) -->
+      <!-- RIGHT COLUMN: Service Fee & Receipt Branding (5 cols) -->
       <div class="lg:col-span-5 space-y-6">
         
+        <!-- 0. SERVICE FEE (XIZMAT HAQI) SETTINGS CARD -->
+        <div 
+          :class="[
+            'p-6 rounded-3xl border transition-all duration-300 shadow-sm space-y-4 relative overflow-hidden',
+            serviceFeeEnabled 
+              ? 'bg-white dark:bg-slate-900 border-amber-500/40 ring-1 ring-amber-500/20' 
+              : 'bg-slate-50/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800'
+          ]"
+        >
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center space-x-3">
+              <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Percent class="w-5 h-5" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-black text-base text-slate-900 dark:text-white">Xizmat Haqi (Service Fee)</h3>
+                  <span v-if="serviceFeeEnabled" class="text-[10px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                    {{ serviceFeePercent }}% FAOL
+                  </span>
+                  <span v-else class="text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">
+                    O'CHIQ
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Umumiy chekka foizli xizmat haqi qo'shish</p>
+              </div>
+            </div>
+
+            <!-- Toggle Switch -->
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" v-model="serviceFeeEnabled" class="sr-only peer" />
+              <div class="w-13 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+
+          <!-- Quick Percentage Buttons -->
+          <div class="space-y-2">
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Xizmat Foizini Tanlang:</label>
+            <div class="grid grid-cols-4 gap-2">
+              <button 
+                v-for="pct in [0, 5, 7, 10]" 
+                :key="pct"
+                @click="selectQuickFee(pct)"
+                :class="[
+                  'py-2 rounded-xl text-xs font-black border transition-all cursor-pointer',
+                  (serviceFeePercent === pct && serviceFeeEnabled) || (pct === 0 && !serviceFeeEnabled)
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-md shadow-amber-500/20 scale-[1.03]'
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                ]"
+              >
+                {{ pct === 0 ? "0% (Yo'q)" : pct + '%' }}
+              </button>
+            </div>
+
+            <!-- Custom % input -->
+            <div class="pt-1 flex items-center gap-2">
+              <span class="text-xs text-slate-500 font-bold">Boshqa foiz:</span>
+              <div class="relative flex-1">
+                <input 
+                  type="number" 
+                  v-model.number="serviceFeePercent" 
+                  min="0" 
+                  max="100" 
+                  placeholder="Masalan: 7"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-3 pr-7 py-1.5 text-xs font-black text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none font-mono"
+                />
+                <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Application Mode (Faqat ZAL yoki Barchasi) -->
+          <div class="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Qo'llash Tartibi:</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button 
+                @click="serviceFeeOnlyZal = true"
+                :class="[
+                  'py-2 px-2.5 rounded-xl text-[11px] font-black border transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                  serviceFeeOnlyZal
+                    ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black'
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500'
+                ]"
+              >
+                <span>🏛️ Faqat Zalda (Stol/Xona)</span>
+              </button>
+              <button 
+                @click="serviceFeeOnlyZal = false"
+                :class="[
+                  'py-2 px-2.5 rounded-xl text-[11px] font-black border transition-all cursor-pointer flex items-center justify-center gap-1.5',
+                  !serviceFeeOnlyZal
+                    ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 font-black'
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500'
+                ]"
+              >
+                <span>🛍️ Barcha savdolarda</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Sample Calculation -->
+          <div class="bg-amber-50/50 dark:bg-slate-950/60 p-3 rounded-2xl border border-amber-200/40 dark:border-slate-800 text-xs space-y-1">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Namunaviy Hisob:</div>
+            <div class="flex justify-between text-slate-600 dark:text-slate-400">
+              <span>Taomlar:</span>
+              <span class="font-mono font-bold">100 000 so'm</span>
+            </div>
+            <div class="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
+              <span>Xizmat haqi ({{ serviceFeeEnabled ? serviceFeePercent : 0 }}%):</span>
+              <span class="font-mono">+{{ serviceFeeEnabled ? ((100000 * serviceFeePercent) / 100).toLocaleString('uz-UZ') : 0 }} so'm</span>
+            </div>
+            <div class="flex justify-between font-black text-slate-900 dark:text-white pt-1 border-t border-slate-200 dark:border-slate-800">
+              <span>Chek Jami:</span>
+              <span class="font-mono text-amber-600 dark:text-amber-400">{{ (100000 + (serviceFeeEnabled ? ((100000 * serviceFeePercent) / 100) : 0)).toLocaleString('uz-UZ') }} so'm</span>
+            </div>
+          </div>
+        </div>
+
         <!-- BRANDING INPUTS CARD -->
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
           <div class="flex items-center space-x-3 border-b border-slate-100 dark:border-slate-800 pb-3">

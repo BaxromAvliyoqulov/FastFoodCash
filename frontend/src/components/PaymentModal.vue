@@ -4,9 +4,16 @@ import type { PaymentType } from '../types/pos';
 import { useToastStore } from '../stores/toastStore';
 import { X, Banknote, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   totalAmount: number;
-}>();
+  subtotal?: number;
+  serviceFee?: number;
+  serviceFeePercent?: number;
+}>(), {
+  subtotal: 0,
+  serviceFee: 0,
+  serviceFeePercent: 7
+});
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -113,9 +120,22 @@ function handleComplete() {
       </div>
 
       <!-- Total & Cash Calculation Box -->
-      <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-inner">
+      <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-inner">
+        
+        <!-- Breakdown if service fee exists -->
+        <div v-if="serviceFee && serviceFee > 0" class="space-y-1 text-xs border-b border-slate-200 dark:border-slate-800 pb-2.5">
+          <div class="flex justify-between text-slate-500">
+            <span>Taomlar summasi:</span>
+            <span class="font-mono font-bold">{{ (subtotal || totalAmount - serviceFee).toLocaleString('uz-UZ') }} so'm</span>
+          </div>
+          <div class="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
+            <span>Xizmat haqi ({{ serviceFeePercent }}%):</span>
+            <span class="font-mono">+{{ serviceFee.toLocaleString('uz-UZ') }} so'm</span>
+          </div>
+        </div>
+
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-sm font-bold">
-          <span>Jami To'lov Summasi:</span>
+          <span>Jami To'lov:</span>
           <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ totalAmount.toLocaleString('uz-UZ') }} so'm</span>
         </div>
 

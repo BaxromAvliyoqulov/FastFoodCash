@@ -168,7 +168,15 @@ const formattedDate = computed(() => {
 
             <!-- Totals & Change -->
             <div class="py-2.5 border-b border-slate-900 space-y-1" :class="receiptWidth === '58mm' ? 'text-[10px]' : 'text-[11px]'">
-              <div class="flex justify-between font-bold pt-1" :class="receiptWidth === '58mm' ? 'text-xs' : 'text-sm'">
+              <div v-if="order.serviceFee && order.serviceFee > 0" class="flex justify-between text-slate-600">
+                <span>Taomlar jami:</span>
+                <span>{{ formatMoney(order.subtotal || (order.totalAmount - order.serviceFee)) }} so'm</span>
+              </div>
+              <div v-if="order.serviceFee && order.serviceFee > 0" class="flex justify-between font-bold text-slate-800">
+                <span>Xizmat haqi ({{ order.serviceFeePercent || 7 }}%):</span>
+                <span>{{ formatMoney(order.serviceFee) }} so'm</span>
+              </div>
+              <div class="flex justify-between font-bold pt-1 border-t border-dotted border-slate-400" :class="receiptWidth === '58mm' ? 'text-xs' : 'text-sm'">
                 <span>JAMI SUMMA:</span>
                 <span class="text-slate-900 font-extrabold">{{ formatMoney(order.totalAmount) }} SO'M</span>
               </div>

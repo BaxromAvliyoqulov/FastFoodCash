@@ -207,16 +207,32 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
   }
   const shiftId = shiftStore.currentShift?.id || 'default-shift';
   const cashierName = shiftStore.currentShift?.cashierName || 'Kassir';
+  const subtotal = activeSubtotal.value;
+  const serviceFee = posStore.activeServiceFeeAmount;
+  const serviceFeePercent = posStore.serviceFeeEnabled ? posStore.serviceFeePercent : 0;
+  const totalAmount = posStore.activeTotalWithServiceFee;
 
   let order: Order | null = null;
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     const tableId = posStore.activeTableId;
     order = await posStore.submitTableOrder(tableId, paymentType, paidAmount, cashierName, shiftId);
+    if (order) {
+      order.subtotal = subtotal;
+      order.serviceFee = serviceFee;
+      order.serviceFeePercent = serviceFeePercent;
+      order.totalAmount = totalAmount;
+    }
     posStore.clearTableCart(tableId);
     posStore.clearActiveTable();
     showTableProducts.value = false;
   } else {
     order = await posStore.submitOrder(paymentType, paidAmount, cashierName, shiftId);
+    if (order) {
+      order.subtotal = subtotal;
+      order.serviceFee = serviceFee;
+      order.serviceFeePercent = serviceFeePercent;
+      order.totalAmount = totalAmount;
+    }
     posStore.clearCart();
   }
 
@@ -416,22 +432,31 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
 
       <!-- FOOTER -->
       <div class="shrink-0 p-4 space-y-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-transparent">
-        <div v-if="activeCart.length > 0" class="flex justify-between text-xs text-slate-500">
-          <span>{{ activeCart.length }} xil taom</span>
-          <span class="font-mono">{{ activeCart.reduce((s, i) => s + (isWeightedProduct(i.product) ? 1 : i.quantity), 0) }} d/kg</span>
+        <div v-if="activeCart.length > 0" class="space-y-1.5 text-xs text-slate-500">
+          <div class="flex justify-between">
+            <span>Taomlar jami ({{ activeCart.length }} xil):</span>
+            <span class="font-mono font-bold text-slate-700 dark:text-slate-300">{{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
+          </div>
+          <div v-if="posStore.activeServiceFeeAmount > 0" class="flex justify-between text-amber-600 dark:text-amber-400 font-semibold">
+            <span>Xizmat haqi ({{ posStore.serviceFeePercent }}%):</span>
+            <span class="font-mono font-bold">+{{ posStore.activeServiceFeeAmount.toLocaleString('uz-UZ') }} so'm</span>
+          </div>
         </div>
+
         <!-- Total card -->
         <div class="relative overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 px-4 py-3">
           <div class="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 pointer-events-none"></div>
           <div class="relative flex items-center justify-between">
             <span class="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Jami to'lov</span>
-            <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ activeSubtotal.toLocaleString('uz-UZ') }} <span class="text-sm text-amber-500 dark:text-amber-400">so'm</span></span>
+            <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ posStore.activeTotalWithServiceFee.toLocaleString('uz-UZ') }} <span class="text-sm text-amber-500 dark:text-amber-400">so'm</span></span>
           </div>
         </div>
+
         <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable && posStore.activeTable.totalPaid > 0" class="flex items-center justify-between text-xs">
           <span class="text-slate-600">✅ Oldin to'langan</span>
           <span class="text-emerald-500 font-mono font-bold">{{ posStore.activeTable.totalPaid.toLocaleString('uz-UZ') }} so'm</span>
         </div>
+
         <!-- Buttons -->
         <template v-if="posStore.operationMode === 'ZAL'">
           <div class="grid grid-cols-2 gap-2">
@@ -447,7 +472,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
         <template v-else>
           <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5">
             <CreditCard class="w-5 h-5" />
-            <span v-if="activeCart.length > 0">To'lov — {{ activeSubtotal.toLocaleString('uz-UZ') }} so'm</span>
+            <span v-if="activeCart.length > 0">To'lov — {{ posStore.activeTotalWithServiceFee.toLocaleString('uz-UZ') }} so'm</span>
             <span v-else>Savat bo'sh</span>
             <span v-if="activeCart.length > 0" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
           </button>
@@ -457,7 +482,15 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
 
     <!-- ═══ Modals ═══ -->
     <ModifierModal v-if="activeModifierProduct" :product="activeModifierProduct" @close="activeModifierProduct = null" @confirm="confirmModifiers" />
-    <PaymentModal v-if="showPaymentModal" :total-amount="activeSubtotal" @close="showPaymentModal = false" @success="handlePaymentSuccess" />
+    <PaymentModal 
+      v-if="showPaymentModal" 
+      :total-amount="posStore.activeTotalWithServiceFee" 
+      :subtotal="activeSubtotal"
+      :service-fee="posStore.activeServiceFeeAmount"
+      :service-fee-percent="posStore.serviceFeeEnabled ? posStore.serviceFeePercent : 0"
+      @close="showPaymentModal = false" 
+      @success="handlePaymentSuccess" 
+    />
     <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
     <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
     <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />

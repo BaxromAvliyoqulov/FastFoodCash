@@ -80,7 +80,10 @@ export interface Order {
   tableNumber?: number;   // Zal rejimida stol raqami
   waiterNote?: string;    // Ofitsiant izohi
   items: CartItem[];
-  totalAmount: number;
+  subtotal?: number;      // Taomlar jami
+  serviceFee?: number;    // 7% Xizmat haqi summasi
+  serviceFeePercent?: number; // Masalan: 7
+  totalAmount: number;    // Subtotal + serviceFee
   paymentType: PaymentType;
   paidAmount: number;
   changeAmount: number;

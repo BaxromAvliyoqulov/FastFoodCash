@@ -332,6 +332,39 @@ export const usePosStore = defineStore('pos', () => {
     return (activeTable.value?.cart ?? []).reduce((sum, item) => sum + item.totalPrice, 0);
   });
 
+  // ─── 7% Xizmat Haqi (Service Fee) ──────────────────────────────────────────
+  const serviceFeeEnabled = ref(localStorage.getItem('doston_pos_service_fee_enabled') !== 'false');
+  const serviceFeePercent = ref(
+    Number(localStorage.getItem('doston_pos_service_fee_percent')) > 0 
+      ? Number(localStorage.getItem('doston_pos_service_fee_percent')) 
+      : 7
+  );
+  const serviceFeeOnlyZal = ref(localStorage.getItem('doston_pos_service_fee_only_zal') !== 'false');
+
+  function setServiceFeeConfig(enabled: boolean, percent: number, onlyZal: boolean = true) {
+    serviceFeeEnabled.value = enabled;
+    serviceFeePercent.value = percent;
+    serviceFeeOnlyZal.value = onlyZal;
+    localStorage.setItem('doston_pos_service_fee_enabled', String(enabled));
+    localStorage.setItem('doston_pos_service_fee_percent', String(percent));
+    localStorage.setItem('doston_pos_service_fee_only_zal', String(onlyZal));
+    toast.success(`Xizmat haqi sozlamalari saqlandi: ${enabled ? percent + '%' : 'O\'chirilgan'}! ✨`);
+  }
+
+  // Faol buyurtma uchun xizmat haqi summasi
+  const activeServiceFeeAmount = computed(() => {
+    if (!serviceFeeEnabled.value || serviceFeePercent.value <= 0) return 0;
+    if (serviceFeeOnlyZal.value && operationMode.value !== 'ZAL') return 0;
+    const subtotal = operationMode.value === 'ZAL' ? activeTableSubtotal.value : cartSubtotal.value;
+    return Math.round((subtotal * serviceFeePercent.value) / 100);
+  });
+
+  // Xizmat haqi qo'shilgan jami summa
+  const activeTotalWithServiceFee = computed(() => {
+    const subtotal = operationMode.value === 'ZAL' ? activeTableSubtotal.value : cartSubtotal.value;
+    return subtotal + activeServiceFeeAmount.value;
+  });
+
   // ─── Computed ────────────────────────────────────────────────────────────────
   const filteredProducts = computed(() => {
     let result = products.value;
@@ -908,6 +941,14 @@ export const usePosStore = defineStore('pos', () => {
     closeTable,
     setWaiterNote,
     submitTableOrder,
+
+    // 7% Xizmat haqi (Service Fee)
+    serviceFeeEnabled,
+    serviceFeePercent,
+    serviceFeeOnlyZal,
+    setServiceFeeConfig,
+    activeServiceFeeAmount,
+    activeTotalWithServiceFee,
 
     // Menu CRUD
     toggleStopList,
