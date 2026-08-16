@@ -31,19 +31,52 @@ onMounted(() => {
   posStore.loadTables();
 });
 
+// ─── Kassir qavat aniqlash ─────────────────────────────────────────────────────
+// Kassa 1 (Kassir 1) → 1-qavat (faqat stollar: 1–15)
+// Kassa 2 (Kassir 2) → 2-qavat (faqat xonalar: 16–21)
+// Admin → barchasi
+const cashierFloor = computed<'ALL' | 'FLOOR_1' | 'FLOOR_2'>(() => {
+  const user = authStore.user;
+  if (!user) return 'ALL';
+  if (user.role === 'ADMIN') return 'ALL';
+  
+  const name = (user.fullName || '').toLowerCase();
+  if (name.includes('kassir 2') || name.includes('kassa 2') || name.includes('2-kassir') || name.includes('2')) {
+    return 'FLOOR_2';
+  }
+  return 'FLOOR_1';
+});
+
+function isVipTable(table: Table): boolean {
+  const name = (table.name || '').toLowerCase();
+  return name.includes('xona') || name.includes('vip') || table.number >= 16;
+}
+
+// Qavat bo'yicha stollar ro'yxati (Kassir 1 = 1-qavat 15 ta stol, Kassir 2 = 2-qavat 6 ta xona)
+const floorTables = computed(() => {
+  const all = posStore.tables;
+  if (cashierFloor.value === 'FLOOR_1') {
+    return all.filter(t => !isVipTable(t)); // Faqat 1-qavat stollari (1-15)
+  }
+  if (cashierFloor.value === 'FLOOR_2') {
+    return all.filter(t => isVipTable(t)); // Faqat 2-qavat xonalari (1-6)
+  }
+  return all;
+});
+
 // Computed Table Metrics
-const totalTablesCount = computed(() => posStore.tables.length);
+const totalTablesCount = computed(() => floorTables.value.length);
 
 const freeTablesCount = computed(() => {
-  return posStore.tables.filter(t => t.isActive && getTableState(t) === 'FREE').length;
+  return floorTables.value.filter(t => t.isActive && getTableState(t) === 'FREE').length;
 });
 
 const occupiedTablesCount = computed(() => {
-  return posStore.tables.filter(t => t.isActive && getTableState(t) === 'OCCUPIED').length;
+  return floorTables.value.filter(t => t.isActive && getTableState(t) === 'OCCUPIED').length;
 });
 
 const inactiveTablesCount = computed(() => {
-  return posStore.tables.filter(t => !t.isActive).length;
+  return floorTables.value.filter(t => !t.isActive).length;
 });
 
 // Helper to determine real table state (FREE vs OCCUPIED)
@@ -66,14 +99,9 @@ function getTableOrderSum(table: Table): number {
   return cartSum;
 }
 
-function isVipTable(table: Table): boolean {
-  const name = (table.name || '').toLowerCase();
-  return name.includes('xona') || name.includes('vip') || table.number >= 16;
-}
-
 // Filtered Tables List
 const filteredTables = computed(() => {
-  return posStore.tables.filter(table => {
+  return floorTables.value.filter(table => {
     if (activeFilter.value === 'FREE') return table.isActive && getTableState(table) === 'FREE';
     if (activeFilter.value === 'OCCUPIED') return table.isActive && getTableState(table) === 'OCCUPIED';
     if (activeFilter.value === 'INACTIVE') return !table.isActive;
@@ -191,14 +219,14 @@ function handleSelectTableForOrder(table: Table) {
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">
-              Zal & Stollar Boshqaruvi
+              {{ cashierFloor === 'FLOOR_2' ? '2-Qavat · VIP Xonalar' : cashierFloor === 'FLOOR_1' ? '1-Qavat · Asosiy Zal Stollari' : 'Zal & Stollar Boshqaruvi' }}
             </h2>
             <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
               LIVE STATUS MONITORING
             </span>
           </div>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            Stollar holatini real-vaqtda nazorat qilish, band va bo'sh stollarni boshqarish
+            {{ cashierFloor === 'FLOOR_2' ? '6 ta VIP xona holatini real-vaqtda nazorat qilish' : cashierFloor === 'FLOOR_1' ? '15 ta stol holatini real-vaqtda nazorat qilish' : 'Stollar va xonalar holatini real-vaqtda nazorat qilish' }}
           </p>
         </div>
       </div>
