@@ -4,6 +4,7 @@ import { usePosStore } from '../stores/posStore';
 import { useShiftStore } from '../stores/shiftStore';
 import { useToastStore } from '../stores/toastStore';
 import { useAuthStore } from '../stores/authStore';
+import { playAddSound, playPaySound, playDeleteSound } from '../utils/posSounds';
 import type { Product, Modifier, PaymentType, CartItem, Order } from '../types/pos';
 import ModifierModal from '../components/ModifierModal.vue';
 import PaymentModal from '../components/PaymentModal.vue';
@@ -138,6 +139,7 @@ function handleProductClick(product: Product) {
   } else {
     posStore.addToCart(product);
   }
+  playAddSound();
 }
 
 function confirmWeightedProduct(product: Product, weightKg: number) {
@@ -146,6 +148,7 @@ function confirmWeightedProduct(product: Product, weightKg: number) {
   } else {
     posStore.addToCart(product, [], weightKg);
   }
+  playAddSound();
   toast.success(`"${product.name}" (${weightKg} kg) savatga qo'shildi!`);
   activeWeightedProduct.value = null;
 }
@@ -162,10 +165,16 @@ function confirmModifiers(modifiers: Modifier[]) {
   } else {
     posStore.addToCart(activeModifierProduct.value, modifiers);
   }
+  playAddSound();
   activeModifierProduct.value = null;
 }
 
 function updateQty(cartItemId: string, delta: number) {
+  if (delta > 0) {
+    playAddSound();
+  } else {
+    playDeleteSound();
+  }
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     posStore.updateTableQuantity(posStore.activeTableId, cartItemId, delta);
   } else {
@@ -174,6 +183,7 @@ function updateQty(cartItemId: string, delta: number) {
 }
 
 function clearActiveCart() {
+  playDeleteSound();
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     posStore.clearTableCart(posStore.activeTableId);
   } else {
@@ -182,6 +192,7 @@ function clearActiveCart() {
 }
 
 function removeItem(cartItemId: string) {
+  playDeleteSound();
   if (posStore.operationMode === 'ZAL' && posStore.activeTableId) {
     posStore.removeTableCartItem(posStore.activeTableId, cartItemId);
   } else {
@@ -200,6 +211,7 @@ function saveTableOrder() {
       const tableNum = posStore.activeTable.number;
       const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
       kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
+      playPaySound();
       toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
       showTableProducts.value = false;
       posStore.clearActiveTable();
@@ -253,6 +265,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
       posStore.clearCart();
     }
 
+    playPaySound();
     showPaymentModal.value = false;
 
     if (order) {

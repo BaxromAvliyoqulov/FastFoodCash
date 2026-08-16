@@ -2,7 +2,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePosStore } from '../../stores/posStore';
 import { useAuthStore } from '../../stores/authStore';
-import { Search, ShoppingBag, ArrowLeft, Maximize, Minimize } from 'lucide-vue-next';
+import { Search, ShoppingBag, ArrowLeft, Maximize, Minimize, Volume2, VolumeX } from 'lucide-vue-next';
+import { isSoundEnabled, toggleSoundEnabled } from '../../utils/posSounds';
+
+const soundOn = ref(isSoundEnabled());
+
+function handleToggleSound() {
+  soundOn.value = toggleSoundEnabled();
+}
 
 defineProps<{
   activeCartLength: number;
@@ -98,12 +105,27 @@ onUnmounted(() => {
       <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
     </button>
 
-    <div class="ml-auto flex items-center gap-2">
+      <!-- Sound Effects Toggle Button -->
+      <button 
+        @click="handleToggleSound" 
+        :title="soundOn ? 'Kassa tovushlarini o\'chirish' : 'Kassa tovushlarini yoqish'"
+        :class="[
+          'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 border cursor-pointer',
+          soundOn 
+            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20' 
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-600'
+        ]"
+      >
+        <Volume2 v-if="soundOn" class="w-4 h-4 text-amber-500" />
+        <VolumeX v-else class="w-4 h-4 text-slate-400" />
+        <span class="hidden md:inline">{{ soundOn ? 'Ovoz: Yoqiq' : 'Ovoz: O\'chiq' }}</span>
+      </button>
+
       <!-- Fullscreen Toggle Button -->
       <button 
         @click="toggleFullscreen" 
         :title="isFullscreen ? 'To\'liq ekrandan chiqish' : 'To\'liq ekran rejimi (F11)'"
-        class="hidden sm:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+        class="hidden sm:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
       >
         <Minimize v-if="isFullscreen" class="w-4 h-4 text-amber-500" />
         <Maximize v-else class="w-4 h-4 text-slate-500" />

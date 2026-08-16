@@ -142,6 +142,40 @@ function elapsedTime(table: Table): string {
   return `${totalSec}s`;
 }
 
+function getTableElapsedMinutes(table: Table): number {
+  if (!table.openedAt) return 0;
+  return Math.floor((now.value - table.openedAt) / 60000);
+}
+
+function getTableTimerStyle(table: Table) {
+  const mins = getTableElapsedMinutes(table);
+  if (mins >= 60) {
+    return {
+      text: 'text-rose-600 dark:text-rose-400 font-black',
+      pill: 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/30',
+      border: 'border-rose-500 shadow-rose-500/15 ring-2 ring-rose-500/25',
+      tag: '1s+ o\'tirdi',
+      tagClass: 'bg-rose-600 text-white animate-pulse'
+    };
+  }
+  if (mins >= 30) {
+    return {
+      text: 'text-amber-600 dark:text-amber-400 font-bold',
+      pill: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30',
+      border: 'border-amber-500/80 shadow-amber-500/10 ring-2 ring-amber-500/20',
+      tag: '30m+ o\'tirdi',
+      tagClass: 'bg-amber-500 text-white'
+    };
+  }
+  return {
+    text: 'text-emerald-600 dark:text-emerald-400 font-bold',
+    pill: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30',
+    border: 'border-rose-500',
+    tag: 'Yangi',
+    tagClass: 'bg-emerald-500 text-white'
+  };
+}
+
 function startedAt(table: Table): string {
   if (!table.openedAt) return '';
   return new Date(table.openedAt).toLocaleTimeString('uz-UZ', {
@@ -296,7 +330,10 @@ function cancelCloseTable() {
                 ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 shadow-lg ring-4 ring-amber-500/30'
                 : table.status === 'FREE'
                 ? 'border-emerald-500 bg-white dark:bg-slate-900 hover:border-emerald-600 hover:shadow-md'
-                : 'border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 hover:border-rose-600 hover:shadow-md'
+                : [
+                    'bg-rose-50/50 dark:bg-rose-950/30 hover:shadow-md',
+                    getTableTimerStyle(table).border
+                  ]
             ]"
           >
             <!-- Action buttons for occupied tables -->
@@ -340,11 +377,11 @@ function cancelCloseTable() {
                     'text-[10px] font-black px-2 py-0.5 rounded-full mt-1 inline-flex items-center gap-1 uppercase tracking-wider',
                     table.status === 'FREE'
                       ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300'
-                      : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300'
+                      : getTableTimerStyle(table).pill
                   ]"
                 >
                   <span :class="['w-1.5 h-1.5 rounded-full', table.status === 'FREE' ? 'bg-emerald-500' : 'bg-rose-500 animate-ping']"></span>
-                  <span>{{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}</span>
+                  <span>{{ table.status === 'FREE' ? 'BO\'SH' : getTableTimerStyle(table).tag }}</span>
                 </div>
               </div>
             </div>
@@ -363,12 +400,12 @@ function cancelCloseTable() {
 
               <template v-else>
                 <div class="space-y-1">
-                  <div class="flex items-center justify-between text-[10px] font-bold text-rose-700 dark:text-rose-400">
-                    <span class="flex items-center gap-1">
-                      <Clock class="w-3 h-3 text-rose-500" />
+                  <div class="flex items-center justify-between text-[10px] font-bold">
+                    <span :class="['flex items-center gap-1', getTableTimerStyle(table).text]">
+                      <Clock class="w-3 h-3" />
                       <span>{{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
                     </span>
-                    <span v-if="tableCartCount(table) > 0" class="font-mono bg-rose-200/60 dark:bg-rose-900/40 px-1.5 py-0.5 rounded">
+                    <span v-if="tableCartCount(table) > 0" class="font-mono bg-rose-200/60 dark:bg-rose-900/40 px-1.5 py-0.5 rounded text-rose-800 dark:text-rose-200">
                       {{ tableCartCount(table) }} taom
                     </span>
                   </div>
@@ -397,7 +434,10 @@ function cancelCloseTable() {
                 ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-transparent shadow-xl ring-4 ring-amber-500/40'
                 : table.status === 'FREE'
                 ? 'border-amber-500/80 bg-white dark:bg-slate-900 hover:border-amber-500 hover:shadow-lg'
-                : 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/40 hover:border-rose-600 hover:shadow-lg'
+                : [
+                    'bg-rose-50/60 dark:bg-rose-950/40 hover:shadow-lg',
+                    getTableTimerStyle(table).border
+                  ]
             ]"
           >
             <!-- Action buttons for occupied VIP rooms -->
@@ -427,10 +467,10 @@ function cancelCloseTable() {
               <span 
                 :class="[
                   'text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider',
-                  table.status === 'FREE' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400'
+                  table.status === 'FREE' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : getTableTimerStyle(table).pill
                 ]"
               >
-                {{ table.status === 'FREE' ? 'BO\'SH' : 'BAND' }}
+                {{ table.status === 'FREE' ? 'BO\'SH' : getTableTimerStyle(table).tag }}
               </span>
             </div>
 
@@ -468,9 +508,12 @@ function cancelCloseTable() {
 
               <template v-else>
                 <div class="space-y-1">
-                  <div class="flex items-center justify-between text-xs font-bold text-rose-700 dark:text-rose-400">
-                    <span>⏱️ {{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
-                    <span v-if="tableCartCount(table) > 0" class="font-mono bg-rose-200/60 dark:bg-rose-900/40 px-2 py-0.5 rounded">
+                  <div class="flex items-center justify-between text-xs font-bold">
+                    <span :class="['flex items-center gap-1', getTableTimerStyle(table).text]">
+                      <Clock class="w-3.5 h-3.5" />
+                      <span>⏱️ {{ startedAt(table) }} ({{ elapsedTime(table) }})</span>
+                    </span>
+                    <span v-if="tableCartCount(table) > 0" class="font-mono bg-rose-200/60 dark:bg-rose-900/40 px-2 py-0.5 rounded text-rose-800 dark:text-rose-200">
                       🛒 {{ tableCartCount(table) }} taom
                     </span>
                   </div>
