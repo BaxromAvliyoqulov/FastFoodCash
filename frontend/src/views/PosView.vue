@@ -29,6 +29,19 @@ const shiftStore = useShiftStore();
 const toast = useToastStore();
 const authStore = useAuthStore();
 
+// Kassir qaysi qavatga biriktirilgan?
+const cashierFloor = computed<'ALL' | 'FLOOR_1' | 'FLOOR_2'>(() => {
+  const user = authStore.user;
+  if (!user) return 'ALL';
+  if (user.role === 'ADMIN') return 'ALL';
+  const name = (user.fullName || '').toLowerCase();
+  if (name.includes('kassir 2') || name.includes('kassa 2') || name.includes('2-kassir')) {
+    return 'FLOOR_2';
+  }
+  return 'FLOOR_1';
+});
+const isRoomCashier = computed(() => cashierFloor.value === 'FLOOR_2');
+
 // ─── UI State ─────────────────────────────────────────────────────────────────
 const activeModifierProduct = ref<Product | null>(null);
 const activeWeightedProduct = ref<Product | null>(null);
@@ -253,11 +266,11 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
           @back-to-table-map="backToTableMap" 
         />
 
-        <!-- ZAL: stol info banner -->
+        <!-- ZAL: stol/xona info banner -->
         <div v-if="posStore.operationMode === 'ZAL' && posStore.activeTable" class="shrink-0 mx-3 mt-2.5 mb-0 px-4 py-2.5 rounded-2xl flex items-center justify-between border" :class="activeCart.length > 0 ? 'bg-amber-500/8 border-amber-500/25 dark:bg-amber-500/5' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800'">
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-            <span class="text-base">🏛️</span>
-            <span>{{ posStore.activeTable.number }}-Stol</span>
+            <span class="text-base">{{ isRoomCashier ? '👑' : '🏛️' }}</span>
+            <span>{{ posStore.activeTable.name || (posStore.activeTable.number + (isRoomCashier ? '-Xona' : '-Stol')) }}</span>
             <span class="text-slate-400">·</span>
             <span class="text-amber-600 dark:text-amber-400">{{ activeCart.length }} ta taom</span>
           </div>
@@ -285,7 +298,9 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
     </div>
 
     <!-- ═══════════════════════════ RIGHT PANEL: Premium Cart ═══════════════════════════ -->
+    <!-- Stol xaritasi ko'rilayotganda savat yashiriladi, stollar butun ekranni egallaydi -->
     <div
+      v-if="posStore.operationMode === 'SABOY' || showTableProducts"
       :class="[
         'flex flex-col h-full transition-all duration-300 shrink-0 z-40',
         'w-full lg:w-[340px] xl:w-[380px]',
@@ -321,7 +336,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
           <div class="flex items-center gap-2">
             <ShoppingBag class="w-4 h-4 text-amber-500" />
             <h3 class="font-black text-sm text-slate-900 dark:text-white leading-none">
-              <template v-if="posStore.operationMode === 'ZAL' && posStore.activeTable">{{ posStore.activeTable.number }}-Stol Buyurtmasi</template>
+              <template v-if="posStore.operationMode === 'ZAL' && posStore.activeTable">{{ posStore.activeTable.name || (posStore.activeTable.number + (isRoomCashier ? '-Xona' : '-Stol')) }} Buyurtmasi</template>
               <template v-else>Savat</template>
             </h3>
             <span v-if="activeCart.length > 0" class="ml-auto bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm shadow-amber-500/20">{{ activeCart.length }} ta</span>
@@ -335,9 +350,9 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
 
       <!-- ZAL no table -->
       <div v-if="posStore.operationMode === 'ZAL' && !posStore.activeTable" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4"><span class="text-4xl">🏛️</span></div>
-        <p class="text-sm font-black text-slate-300 mb-1">Stol tanlanmagan</p>
-        <p class="text-xs text-slate-600">Stol xaritasidan stol tanlang</p>
+        <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4"><span class="text-4xl">{{ isRoomCashier ? '👑' : '🏛️' }}</span></div>
+        <p class="text-sm font-black text-slate-300 mb-1">{{ isRoomCashier ? 'Xona tanlanmagan' : 'Stol tanlanmagan' }}</p>
+        <p class="text-xs text-slate-600">{{ isRoomCashier ? 'Xonalar xaritasidan xona tanlang' : 'Stol xaritasidan stol tanlang' }}</p>
       </div>
 
       <!-- Empty cart -->

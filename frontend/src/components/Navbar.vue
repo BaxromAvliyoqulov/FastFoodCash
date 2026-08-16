@@ -80,11 +80,14 @@ const themeStore = useThemeStore();
         ]"
       >
         <LayoutDashboard class="w-4 h-4" />
-        <span>Stollar</span>
+        <span v-if="authStore.user?.fullName?.toLowerCase().includes('2')">2-Qavat · Xonalar</span>
+        <span v-else-if="authStore.user?.fullName?.toLowerCase().includes('1')">1-Qavat · Stollar</span>
+        <span v-else>Zal & Xonalar</span>
       </button>
 
-      <!-- SMENA TAB -->
+      <!-- SMENA TAB — Faqat Admin uchun yoki Admin paneli orqali -->
       <button 
+        v-if="authStore.isAdmin"
         @click="emit('change-tab', 'shift')"
         :class="[
           'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
@@ -94,7 +97,7 @@ const themeStore = useThemeStore();
         ]"
       >
         <Receipt class="w-4 h-4" />
-        <span>Smena</span>
+        <span>Smena & Z-Report</span>
       </button>
 
       <!-- DIVIDER FOR ADMIN SECTION -->

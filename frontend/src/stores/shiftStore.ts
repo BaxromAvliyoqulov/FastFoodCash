@@ -61,18 +61,16 @@ export const useShiftStore = defineStore('shift', () => {
   });
 
   async function fetchActiveShift() {
-    const authStore = useAuthStore();
-    if (!authStore.user) return;
-    
     try {
-      const res = await fetchWithTimeout(`${API_URL}/shifts/active?cashierId=${authStore.user.id}`);
+      const res = await fetchWithTimeout(`${API_URL}/shifts/active`);
       if (res.ok) {
         const body = await res.json();
         if (body.success && body.data && body.data.activeShift) {
+          const s = body.data.activeShift;
           currentShift.value = {
-            ...body.data.activeShift,
-            cashierName: authStore.user.fullName,
-            expenses: currentShift.value?.expenses || []
+            ...s,
+            cashierName: s.cashier?.fullName || 'Admin',
+            expenses: s.expenses || currentShift.value?.expenses || []
           };
           return;
         }
@@ -80,17 +78,12 @@ export const useShiftStore = defineStore('shift', () => {
     } catch (e) {
       console.warn('Backend API unreachable, preserving local shift state:', e);
     }
-
-    // Preserve local OPEN shift if present
-    if (currentShift.value && currentShift.value.status === 'OPEN') {
-      currentShift.value.cashierName = authStore.user.fullName;
-    }
   }
 
-  // Chaqmoq tezligida (0ms instant UI update) smena ochish
-  function openShift(initialCash: number, _cashierName: string = 'ADMIN') {
+  // Chaqmoq tezligida (0ms instant UI update) markaziy smena ochish
+  function openShift(initialCash: number, _cashierName: string = 'Admin') {
     const authStore = useAuthStore();
-    const cashierName = authStore.user?.fullName || _cashierName;
+    const cashierName = authStore.isAdmin ? (authStore.user?.fullName || 'Admin') : 'Admin';
     const cashierId = authStore.user?.id || 'admin-1';
 
     const localShift: Shift = {

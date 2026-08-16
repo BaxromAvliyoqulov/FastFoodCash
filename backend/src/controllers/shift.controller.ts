@@ -4,12 +4,13 @@ import { sendTelegramMessage } from '../utils/telegram';
 
 export const getActiveShift = async (req: Request, res: Response) => {
   try {
-    const { cashierId } = req.query;
-
+    // Restoranda bitta umumiy markaziy smena (Admin smenasi) bo'ladi
     const shift = await prisma.shift.findFirst({
       where: {
-        ...(cashierId ? { cashierId: String(cashierId) } : {}),
         status: 'OPEN'
+      },
+      orderBy: {
+        openedAt: 'desc'
       },
       include: {
         cashier: {
