@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { usePosStore } from '../../stores/posStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
 import { playPaySound, playAddSound } from '../../utils/posSounds';
 import type { Order } from '../../types/pos';
@@ -25,14 +26,26 @@ const emit = defineEmits<{
 }>();
 
 const posStore = usePosStore();
+const authStore = useAuthStore();
 const toast = useToastStore();
 
 const searchQuery = ref('');
 const activeFilter = ref<'ALL' | 'SABOY' | 'ZAL' | 'COOKING' | 'READY'>('ALL');
 
-// Bugungi buyurtmalar
+// Bugungi buyurtmalar (Kassir faqat o'zinikini ko'radi, Admin barchasini)
 const allOrders = computed(() => {
-  return posStore.orderHistory || [];
+  const history = posStore.orderHistory || [];
+  if (authStore.isAdmin) return history;
+  
+  const myName = (authStore.user?.fullName || '').toLowerCase().trim();
+  const myId = authStore.user?.id;
+
+  return history.filter(o => {
+    const cName = (o.cashierName || '').toLowerCase().trim();
+    if (myId && (o as any).cashierId === myId) return true;
+    if (myName && (cName.includes(myName) || myName.includes(cName))) return true;
+    return false;
+  });
 });
 
 const filteredOrders = computed(() => {

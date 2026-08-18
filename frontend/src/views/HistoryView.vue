@@ -81,6 +81,23 @@ const filteredOrders = computed(() => {
   if (!Array.isArray(posStore.orderHistory)) return [];
   let result = posStore.orderHistory.filter(o => o && o.id);
   
+  // Agar oddiy kassir bo'lsa — faqat o'z savdolarini ko'radi (Xar biriga o'zini ko'rinadi)
+  if (!authStore.isAdmin) {
+    const myName = (authStore.user?.fullName || '').toLowerCase().trim();
+    const myId = authStore.user?.id;
+    result = result.filter(o => {
+      const cName = (o.cashierName || '').toLowerCase().trim();
+      if (myId && (o as any).cashierId === myId) return true;
+      if (myName && (cName.includes(myName) || myName.includes(cName))) return true;
+      return false;
+    });
+  } else {
+    // Admin uchun alohida kassir filtri
+    if (selectedCashierFilter.value !== 'ALL') {
+      result = result.filter(o => o.cashierName === selectedCashierFilter.value);
+    }
+  }
+
   // Date filtering
   const now = new Date();
   const todayStr = now.toDateString();
@@ -110,11 +127,6 @@ const filteredOrders = computed(() => {
   // Payment type filtering
   if (selectedPaymentFilter.value !== 'ALL') {
     result = result.filter(o => o.paymentType === selectedPaymentFilter.value);
-  }
-
-  // Cashier filter
-  if (selectedCashierFilter.value !== 'ALL') {
-    result = result.filter(o => o.cashierName === selectedCashierFilter.value);
   }
 
   // Search query
@@ -277,8 +289,20 @@ function handleExportSalesExcel() {
     <!-- Header Title -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">Savdo Tarixi & Cheklar Audit (History)</h2>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Barcha yopilgan cheklar, ularning detallari va qayta chop etish</p>
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-wide">
+            {{ authStore.isAdmin ? 'Savdo Tarixi & Cheklar Audit' : 'Mening Savdo Tarixim' }}
+          </h2>
+          <span 
+            v-if="!authStore.isAdmin"
+            class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
+          >
+            👤 {{ authStore.user?.fullName || 'Kassir' }}
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          {{ authStore.isAdmin ? 'Barcha kassalar bo\'yicha yopilgan cheklar, detallar va qayta chop etish' : 'Siz chiqargan cheklar ro\'yxati va qayta chop etish' }}
+        </p>
       </div>
 
       <div class="flex items-center gap-3">
@@ -293,7 +317,7 @@ function handleExportSalesExcel() {
         </button>
 
         <button 
-          v-if="posStore.orderHistory.length > 0"
+          v-if="authStore.isAdmin && posStore.orderHistory.length > 0"
           @click="handleClearSalesHistory"
           class="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95"
           title="Mijozga topshirishdan oldin barcha test savdolarni tozalash (Tovar va retseptlarga tegilmaydi)"
@@ -309,7 +333,7 @@ function handleExportSalesExcel() {
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition"></div>
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
-          <span>Filtrlangan Buyurtmalar</span>
+          <span>{{ authStore.isAdmin ? 'Filtrlangan Buyurtmalar' : 'Mening Cheklarim Soni' }}</span>
           <ClipboardList class="w-4 h-4 text-indigo-500" />
         </div>
         <div class="text-xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono relative z-10">
@@ -321,7 +345,7 @@ function handleExportSalesExcel() {
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 space-y-3 shadow-sm dark:shadow-xl relative overflow-hidden group">
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition"></div>
         <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold relative z-10">
-          <span>Filtrlangan Jami Savdo</span>
+          <span>{{ authStore.isAdmin ? 'Filtrlangan Jami Savdo' : 'Mening Kassam Tushumi' }}</span>
           <Banknote class="w-4 h-4 text-emerald-500" />
         </div>
         <div class="text-xl sm:text-3xl font-black text-emerald-500 dark:text-emerald-400 font-mono relative z-10">
@@ -331,8 +355,8 @@ function handleExportSalesExcel() {
       </div>
     </div>
 
-    <!-- ══════════════════ KASSALAR KESIMIDA HISOBOT ══════════════════ -->
-    <div v-if="cashierStats.length > 0" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl">
+    <!-- ══════════════════ KASSALAR KESIMIDA HISOBOT (Faqat Admin uchun) ══════════════════ -->
+    <div v-if="authStore.isAdmin && cashierStats.length > 0" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl">
       <!-- Section header -->
       <div class="flex items-center justify-between mb-5">
         <div>
