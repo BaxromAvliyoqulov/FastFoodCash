@@ -613,7 +613,7 @@ export const usePosStore = defineStore('pos', () => {
       const serviceFeePercentVal = serviceFeeEnabled.value ? serviceFeePercent.value : 0;
       const totalAmount = activeTotalWithServiceFee.value;
       const changeAmount = Math.max(0, (paidAmount || totalAmount) - totalAmount);
-      const dailyQueueNumber = getNextDailyQueueNumber();
+      const dailyQueueNumber = getNextDailyQueueNumber(shiftId);
       const cashierFloorInfo = getCashierFloorInfo(authStore.user);
 
       try {
@@ -710,10 +710,10 @@ export const usePosStore = defineStore('pos', () => {
       const cartItemsCopy = [...cart.value];
       const subtotal = cartSubtotal.value;
       const totalAmount = subtotal; // Saboyda xizmat haqi 0%
-      const dailyQueueNumber = getNextDailyQueueNumber();
+      const effectiveShiftId = shiftId || 'default-shift';
+      const dailyQueueNumber = getNextDailyQueueNumber(effectiveShiftId);
       const cashierFloorInfo = getCashierFloorInfo(authStore.user);
       const effectiveCashier = cashierName || authStore.user?.fullName || 'Kassir';
-      const effectiveShiftId = shiftId || 'default-shift';
 
       const orderNumber = activeOrderNumber.value++;
       const orderId = 'saboy-kitch-' + Date.now();
@@ -834,6 +834,7 @@ export const usePosStore = defineStore('pos', () => {
     if (table.status === 'FREE') {
       table.status = 'OCCUPIED';
       table.orderNumber = activeOrderNumber.value;
+      table.dailyQueueNumber = getNextDailyQueueNumber();
       table.openedAt = Date.now();
       table.totalPaid = 0;
     }
@@ -905,7 +906,7 @@ export const usePosStore = defineStore('pos', () => {
     const serviceFee = serviceFeeEnabled.value ? Math.round(subtotal * (serviceFeePercentVal / 100)) : 0;
     const totalAmount = subtotal + serviceFee;
     const changeAmount = Math.max(0, (paidAmount || totalAmount) - totalAmount);
-    const dailyQueueNumber = getNextDailyQueueNumber();
+    const dailyQueueNumber = table.dailyQueueNumber || getNextDailyQueueNumber(shiftId);
     const cashierFloorInfo = getCashierFloorInfo(authStore.user);
     const isDoZakaz = tableCartCopy.some(i => i.isNewAddition || (i.sentQuantity && i.quantity > i.sentQuantity));
 

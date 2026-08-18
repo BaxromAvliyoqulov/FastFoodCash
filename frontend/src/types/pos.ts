@@ -110,6 +110,7 @@ export interface Table {
   cart: CartItem[];     // Har bir stolning o'z alohida savati
   openedAt: number | null;   // Date.now() — stol band bo'lgan vaqt (timer uchun)
   orderNumber?: number;      // Birinchi buyurtma raqami
+  dailyQueueNumber?: number; // Kunlik/Smena navbat raqami (#1, #2, ...)
   waiterNote: string;        // Ofitsiant izohi maydoni
   totalPaid: number;         // Sessiya davomida to'langan jami summa
 

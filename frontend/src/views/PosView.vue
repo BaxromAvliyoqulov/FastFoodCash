@@ -231,12 +231,15 @@ function saveTableOrder() {
       const hasNewItems = cartSnapshot.some(i => !i.isSentToKitchen || (i.sentQuantity && i.quantity > i.sentQuantity) || i.isNewAddition);
       const isDoZakaz = hasPreviousItems && hasNewItems;
 
+      const queueNum = table.dailyQueueNumber || getNextDailyQueueNumber(shiftStore.currentShift?.id);
+      table.dailyQueueNumber = queueNum;
+
       kitchenReceiptData.value = {
         tableNumber: tableNum,
         tableName,
         items: cartSnapshot,
         isDoZakaz,
-        dailyQueueNumber: getNextDailyQueueNumber(),
+        dailyQueueNumber: queueNum,
         cashierFloor: getCashierFloorInfo(authStore.user).badge
       };
 

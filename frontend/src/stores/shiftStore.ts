@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import type { Shift, ShiftCashAudit } from '../types/pos';
 import { useAuthStore } from './authStore';
 import { usePosStore } from './posStore';
+import { resetDailyQueueNumber } from '../utils/formatters';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
@@ -212,6 +213,7 @@ export const useShiftStore = defineStore('shift', () => {
     shiftAudits.value.unshift(audit);
     currentShift.value = null;
     localStorage.removeItem('doston_current_shift');
+    resetDailyQueueNumber(); // Yangi smena uchun navbat #1 dan boshlanadi!
 
     // Background async sync to backend
     fetchWithTimeout(`${API_URL}/shifts/close-blind`, {
