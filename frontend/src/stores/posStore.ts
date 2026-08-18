@@ -94,23 +94,73 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── Categories ──────────────────────────────────────────────────────────────
+  function normalizeCategoryName(catName?: string, catId?: string) {
+    const lower = `${catName || ''} ${catId || ''}`.toLowerCase().trim();
+    if (lower.includes('drink') || lower.includes('salqin') || lower.includes('ichimlik') || lower.includes('napitk')) {
+      return { id: 'cat-drinks', name: 'Salqin Ichimliklar' };
+    }
+    if (lower.includes('burger') || lower.includes('gamburger')) {
+      return { id: 'cat-burger', name: 'Burger' };
+    }
+    if (lower.includes('lavash')) {
+      return { id: 'cat-lavash', name: 'Lavash' };
+    }
+    if (lower.includes('hotdog') || lower.includes('hot-dog') || lower.includes('hot dog')) {
+      return { id: 'cat-hotdog', name: 'Hot-Dog' };
+    }
+    if (lower.includes('fries') || lower.includes('fri') || lower.includes('kartoshka')) {
+      return { id: 'cat-fries', name: 'Fri' };
+    }
+    if (lower.includes('pizza') || lower.includes('pitsa')) {
+      return { id: 'cat-pizza', name: 'Pitsa' };
+    }
+    if (lower.includes('salad') || lower.includes('salat')) {
+      return { id: 'cat-salads', name: 'Salatlar' };
+    }
+    if (lower.includes('dessert') || lower.includes('shirin') || lower.includes('tort')) {
+      return { id: 'cat-desserts', name: 'Shirinliklar' };
+    }
+    if (lower.includes('coffee') || lower.includes('kofe') || lower.includes('qahva')) {
+      return { id: 'cat-coffee', name: 'Kofe' };
+    }
+    if (lower.includes('energy') || lower.includes('energetik') || lower.includes('moxito') || lower.includes('mojito')) {
+      return { id: 'cat-energy', name: 'Energetik' };
+    }
+    if (lower.includes('juice') || lower.includes('sok') || lower.includes('sharbat')) {
+      return { id: 'cat-juices', name: 'Soklar' };
+    }
+    return { id: catId || 'cat-other', name: catName || 'Boshqa' };
+  }
+
   const storedCategories = localStorage.getItem('doston_pos_categories');
   let parsedCategories: Category[] = storedCategories ? JSON.parse(storedCategories) : initialCategories;
   
   // Filter out any obsolete 'cat-all' entry from local storage
   parsedCategories = parsedCategories.filter(c => c.id !== 'cat-all' && c.name !== 'Barcha Taomlar');
 
-  // Sync initial categories names & add missing ones
-  initialCategories.forEach(initialCat => {
-    const existing = parsedCategories.find(c => c.id === initialCat.id);
-    if (existing) {
-      existing.name = initialCat.name;
-    } else {
-      parsedCategories.push(initialCat);
+  // Normalize category names (e.g. merge 'Drinks' -> 'Salqin Ichimliklar')
+  parsedCategories = parsedCategories.map(c => {
+    const norm = normalizeCategoryName(c.name, c.id);
+    return { ...c, id: norm.id, name: norm.name };
+  });
+
+  // Deduplicate categories by ID
+  const uniqueCatMap = new Map<string, Category>();
+  parsedCategories.forEach(c => {
+    if (!uniqueCatMap.has(c.id)) {
+      uniqueCatMap.set(c.id, c);
     }
   });
 
-  const categories = ref<Category[]>(parsedCategories);
+  // Sync initial categories names & add missing ones
+  initialCategories.forEach(initialCat => {
+    const norm = normalizeCategoryName(initialCat.name, initialCat.id);
+    if (!uniqueCatMap.has(norm.id)) {
+      uniqueCatMap.set(norm.id, { ...initialCat, id: norm.id, name: norm.name });
+    }
+  });
+
+  const categories = ref<Category[]>(Array.from(uniqueCatMap.values()));
   watch(categories, (newVal) => localStorage.setItem('doston_pos_categories', JSON.stringify(newVal)), { deep: true });
   
   const selectedCategory = ref('cat-all');
@@ -129,16 +179,26 @@ export const usePosStore = defineStore('pos', () => {
         loadedProducts = [
           ...initialProducts.map(ip => {
             const found = parsed.find((p: any) => p.id === ip.id);
+            const norm = normalizeCategoryName(found?.categoryName || ip.categoryName, found?.categoryId || ip.categoryId);
             if (found) {
               return {
                 ...ip,
+                categoryId: norm.id,
+                categoryName: norm.name,
                 price: found.price || ip.price,
                 isStopList: found.isStopList ?? ip.isStopList
               };
             }
-            return ip;
+            return {
+              ...ip,
+              categoryId: norm.id,
+              categoryName: norm.name
+            };
           }),
-          ...customProducts
+          ...customProducts.map((cp: any) => {
+            const norm = normalizeCategoryName(cp.categoryName, cp.categoryId);
+            return { ...cp, categoryId: norm.id, categoryName: norm.name };
+          })
         ];
       }
     } catch (e) {
@@ -164,18 +224,24 @@ export const usePosStore = defineStore('pos', () => {
           
           if (backendMatch) {
             const hasValidName = backendMatch.name && !backendMatch.name.startsWith('prod-');
-            const hasValidCategory = backendMatch.categoryName && backendMatch.categoryName !== 'General';
+            const norm = normalizeCategoryName(backendMatch.categoryName || localProd.categoryName, localProd.categoryId);
             return {
               ...localProd,
               id: backendMatch.id || localProd.id,
               name: hasValidName ? backendMatch.name : localProd.name,
               price: backendMatch.price || localProd.price,
-              categoryName: hasValidCategory ? backendMatch.categoryName : localProd.categoryName,
+              categoryId: norm.id,
+              categoryName: norm.name,
               imageUrl: (backendMatch.imageUrl && !backendMatch.imageUrl.includes('placeholder')) ? backendMatch.imageUrl : localProd.imageUrl,
               isStopList: backendMatch.isStopList ?? localProd.isStopList
             };
           }
-          return localProd;
+          const norm = normalizeCategoryName(localProd.categoryName, localProd.categoryId);
+          return {
+            ...localProd,
+            categoryId: norm.id,
+            categoryName: norm.name
+          };
         });
       }
     } catch (e) {

@@ -58,7 +58,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 2. 🍔 PREMIUM 3D GOURMET BURGER (Layered Brioche Cheeseburger) -->
-    <svg v-else-if="safeCatId.includes('burger')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('burger') || safeCatId.includes('gamburger')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pBunTop" x1="6" y1="4" x2="42" y2="20" gradientUnits="userSpaceOnUse">
           <stop stop-color="#FDE047" />
@@ -98,33 +98,37 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 3. 🌭 PREMIUM 3D HOT DOG (Brioche Roll & Grilled Sausage) -->
-    <svg v-else-if="safeCatId.includes('hotdog')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('hotdog') || safeCatId.includes('hot-dog') || safeCatId.includes('hot dog')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="pSausage" x1="10" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#F87171" />
-          <stop offset="0.4" stop-color="#DC2626" />
-          <stop offset="1" stop-color="#881337" />
+        <linearGradient id="pHotdogBun" x1="4" y1="18" x2="44" y2="36" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FDE047" />
+          <stop offset="0.5" stop-color="#F59E0B" />
+          <stop offset="1" stop-color="#B45309" />
+        </linearGradient>
+        <linearGradient id="pSausage" x1="2" y1="20" x2="46" y2="28" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#EF4444" />
+          <stop offset="0.5" stop-color="#B91C1C" />
+          <stop offset="1" stop-color="#7F1D1D" />
         </linearGradient>
       </defs>
-      <!-- Bun Rear -->
-      <rect x="8" y="18" width="32" height="16" rx="8" transform="rotate(-30 8 18)" fill="#B45309" opacity="0.9" />
-      <!-- Smoked Sausage Body -->
-      <rect x="5" y="21" width="40" height="12" rx="6" transform="rotate(-30 5 21)" fill="url(#pSausage)" />
-      <!-- Sausage Grill Marks & Glint -->
-      <path d="M10 34L38 18" stroke="#FECACA" stroke-width="1.5" stroke-linecap="round" opacity="0.65" />
-      <line x1="17" y1="30" x2="19" y2="25" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
-      <line x1="24" y1="26" x2="26" y2="21" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
-      <line x1="31" y1="22" x2="33" y2="17" stroke="#450A0A" stroke-width="2" stroke-linecap="round" />
-      <!-- Bun Front Wrap -->
-      <path d="M15 37C19 41 28 37 34 28L38 21C41 16 37 12 32 15L18 23C13 26 11 34 15 37Z" fill="#F59E0B" />
-      <!-- Mustard Stream Wave -->
-      <path d="M14 32C17 28 21 31 24 27C27 23 31 26 34 22" stroke="#FACC15" stroke-width="3" stroke-linecap="round" />
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="42" rx="18" ry="3" fill="#000" opacity="0.25" />
+      <!-- Soft Brioche Bun Base -->
+      <rect x="4" y="22" width="40" height="16" rx="8" fill="url(#pHotdogBun)" />
+      <!-- Juicy Grilled Beef Frank Sausage -->
+      <rect x="2" y="16" width="44" height="14" rx="7" fill="url(#pSausage)" />
+      <path d="M5 23C15 20 33 20 43 23" stroke="#F87171" stroke-width="1.5" stroke-linecap="round" opacity="0.6" />
+      <!-- Zigzag Mustard Swirl -->
+      <path d="M7 23C9 19 12 27 15 23C18 19 21 27 24 23C27 19 30 27 33 23C36 19 39 27 41 23" stroke="#FACC15" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Ketchup Drops -->
+      <circle cx="10" cy="21" r="1.5" fill="#EF4444" />
+      <circle cx="28" cy="21" r="1.5" fill="#EF4444" />
     </svg>
 
-    <!-- 4. 🍟 PREMIUM 3D FRENCH FRIES (Golden Sticks in Crimson Box) -->
-    <svg v-else-if="safeCatId.includes('fried')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <!-- 4. 🍟 PREMIUM 3D CRISPY FRIES (Golden French Fries in Classic Red Box) -->
+    <svg v-else-if="safeCatId.includes('fries') || safeCatId.includes('fri') || safeCatId.includes('kartoshka')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
-        <linearGradient id="pFry" x1="12" y1="4" x2="36" y2="28" gradientUnits="userSpaceOnUse">
+        <linearGradient id="pFry" x1="12" y1="4" x2="12" y2="30" gradientUnits="userSpaceOnUse">
           <stop stop-color="#FEF08A" />
           <stop offset="0.6" stop-color="#FACC15" />
           <stop offset="1" stop-color="#D97706" />
@@ -146,7 +150,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 5. 🍕 PREMIUM 3D PIZZA SLICE (Supreme Pepperoni Mozzarella) -->
-    <svg v-else-if="safeCatId.includes('pizza')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('pizza') || safeCatId.includes('pitsa')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pPizzaCheese" x1="24" y1="8" x2="24" y2="40" gradientUnits="userSpaceOnUse">
           <stop stop-color="#FEF9C3" />
@@ -172,7 +176,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 6. 🥗 PREMIUM 3D SALATLAR (Garden Fresh Avocado Bowl) -->
-    <svg v-else-if="safeCatId.includes('salad')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('salad') || safeCatId.includes('salat')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <!-- Fresh Lettuce Bouquet -->
       <circle cx="15" cy="18" r="8" fill="#10B981" />
       <circle cx="24" cy="14" r="9.5" fill="#059669" />
@@ -189,7 +193,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 7. 🍰 PREMIUM 3D SHIRINLIKLAR / TORT (Velvet Strawberry Cream Cake) -->
-    <svg v-else-if="safeCatId.includes('dessert')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('dessert') || safeCatId.includes('shirin') || safeCatId.includes('tort')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <!-- Sponge Layer 1 -->
       <path d="M7 28H41V39C41 41.2091 39.2091 43 37 43H11C8.79086 43 7 41.2091 7 39V28Z" fill="#F472B6" />
       <!-- Cream Filling Strips -->
@@ -206,7 +210,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 8. ☕ PREMIUM 3D COFFEE MENU (Crema Espresso & Steam Waves) -->
-    <svg v-else-if="safeCatId.includes('coffee')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('coffee') || safeCatId.includes('kofe') || safeCatId.includes('qahva')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <!-- Saucer Plate -->
       <ellipse cx="23" cy="40" rx="19" ry="3.5" fill="#94A3B8" />
       <ellipse cx="23" cy="40" rx="14" ry="2" fill="#E2E8F0" />
@@ -225,7 +229,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 9. 🥤 PREMIUM 3D SALQIN ICHIMLIKLAR (Icy Refreshing Cola Drink) -->
-    <svg v-else-if="safeCatId.includes('drink')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('drink') || safeCatId.includes('salqin') || safeCatId.includes('ichimlik') || safeCatId.includes('napitk')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pDrinkGlass" x1="8" y1="12" x2="40" y2="44" gradientUnits="userSpaceOnUse">
           <stop stop-color="#06B6D4" />
@@ -247,7 +251,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 10. ⚡ PREMIUM 3D ENERGETIK & MOXITO (Neon Spark Energy Can) -->
-    <svg v-else-if="safeCatId.includes('energy')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('energy') || safeCatId.includes('energetik') || safeCatId.includes('moxito') || safeCatId.includes('mojito')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pEnergyCan" x1="10" y1="5" x2="38" y2="43" gradientUnits="userSpaceOnUse">
           <stop stop-color="#818CF8" />
@@ -268,7 +272,7 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
     </svg>
 
     <!-- 11. 🧃 PREMIUM 3D SOKLAR / SHARBATLAR (Juice Box Tetrapack) -->
-    <svg v-else-if="safeCatId.includes('juice')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+    <svg v-else-if="safeCatId.includes('juice') || safeCatId.includes('sok') || safeCatId.includes('sharbat')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pJuiceBox" x1="10" y1="8" x2="38" y2="42" gradientUnits="userSpaceOnUse">
           <stop stop-color="#FB923C" />

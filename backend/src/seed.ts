@@ -189,7 +189,7 @@ async function main() {
 
   const pCola = await prisma.product.create({
     data: {
-      categoryName: 'Drinks',
+      categoryName: 'Salqin Ichimliklar',
       name: 'Coca-Cola 0.5L',
       price: 10000,
       imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400',
