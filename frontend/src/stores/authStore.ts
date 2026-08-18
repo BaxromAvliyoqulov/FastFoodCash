@@ -12,8 +12,8 @@ const OFFLINE_USERS: Array<{ id: string; fullName: string; phone: string; pinCod
   { id: 'offline-kassir-2', fullName: 'Kassir 2', phone: '998909876543', pinCode: '2222', role: 'CASHIER' },
 ];
 
-// Login freezing oldini olish uchun 3s timeout (5s emas — mijoz kutib turmaydi!)
-async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 3000): Promise<Response> {
+// Login freezing oldini olish uchun 800ms ultra-tezkor timeout (mijoz kutib turmaydi!)
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 800): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

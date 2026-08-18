@@ -70,13 +70,18 @@ export interface CartItem {
   totalPrice: number;
   isTakeaway?: boolean; // Zalda o'tirib buyurtma qilganda Saboy (0% xizmat haqi) belgisi
   customNote?: string;  // Maxsus istak / o'lcham (masalan: "50 sm", "Piyozsiz")
+  sentQuantity?: number; // Oldin oshxonaga yuborilgan miqdor
+  isSentToKitchen?: boolean; // Oldin oshxonaga ketganmi
+  isNewAddition?: boolean; // Do-zakaz (yangi qo'shilgan) taommi
 }
 
 export interface Order {
   id: string;
   orderNumber: number;
+  dailyQueueNumber?: number; // Kunlik avtomatik navbat raqami (#1, #2, ...)
   shiftId: string;
   cashierName: string;
+  cashierFloor?: string; // "KASSA 1 (1-Qavat)" yoki "KASSA 2 (2-Qavat)"
   orderType: OrderType; // DINE_IN | TAKEAWAY | DELIVERY
   tableId?: string;       // Zal rejimida stol ID si
   tableNumber?: number;   // Zal rejimida stol raqami
@@ -91,6 +96,7 @@ export interface Order {
   changeAmount: number;
   status: 'COOKING' | 'READY' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
+  isDoZakaz?: boolean;   // Buyurtmaga qo'shimcha taom qo'shilganmi
 }
 
 export type TableStatus = 'FREE' | 'OCCUPIED';

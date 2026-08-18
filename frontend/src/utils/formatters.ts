@@ -51,3 +51,65 @@ export function formatDualCurrency(amount: number | string | null | undefined, u
   return `${num.toLocaleString('uz-UZ')} so'm ($${usd})`;
 }
 
+/**
+ * Returns cashier floor designation, e.g. "KASSA 1 (1-Qavat • Asosiy Zal)"
+ */
+export function getCashierFloorInfo(userNameOrObj?: string | { fullName?: string; id?: string; role?: string } | null): {
+  kassaName: string;
+  floorName: string;
+  badge: string;
+} {
+  const name = typeof userNameOrObj === 'string' 
+    ? userNameOrObj 
+    : (userNameOrObj?.fullName || userNameOrObj?.id || '');
+    
+  const lower = name.toLowerCase();
+
+  if (lower.includes('2') || lower.includes('kassir 2') || lower.includes('kassir-2')) {
+    return {
+      kassaName: 'KASSA 2',
+      floorName: '2-Qavat (VIP Xonalar)',
+      badge: '👑 KASSA 2 (2-Qavat • VIP Xonalar)'
+    };
+  }
+
+  if (lower.includes('1') || lower.includes('kassir 1') || lower.includes('kassir-1')) {
+    return {
+      kassaName: 'KASSA 1',
+      floorName: '1-Qavat (Asosiy Zal)',
+      badge: '🏛️ KASSA 1 (1-Qavat • Asosiy Zal)'
+    };
+  }
+
+  return {
+    kassaName: 'BOSH KASSA',
+    floorName: '1-Qavat (Asosiy Zal)',
+    badge: '🏛️ KASSA 1 (1-Qavat)'
+  };
+}
+
+/**
+ * Generates an automatic daily queue token (#1, #2, ...) that resets each day
+ */
+export function getNextDailyQueueNumber(): number {
+  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const savedDate = localStorage.getItem('doston_pos_daily_queue_date');
+  let currentQueue = Number(localStorage.getItem('doston_pos_daily_queue_number')) || 0;
+
+  if (savedDate !== todayStr) {
+    // New calendar day: reset to 1
+    currentQueue = 1;
+    localStorage.setItem('doston_pos_daily_queue_date', todayStr);
+    localStorage.setItem('doston_pos_daily_queue_number', '1');
+  } else {
+    currentQueue += 1;
+    localStorage.setItem('doston_pos_daily_queue_number', String(currentQueue));
+  }
+
+  return currentQueue;
+}
+
+export function getCurrentDailyQueueNumber(): number {
+  return Number(localStorage.getItem('doston_pos_daily_queue_number')) || 1;
+}
+

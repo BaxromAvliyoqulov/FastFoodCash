@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import type { Order } from '../types/pos';
-import { Printer, X, Flame } from 'lucide-vue-next';
-import { formatMoney } from '../utils/formatters';
+import { Printer, X, Flame, Sparkles } from 'lucide-vue-next';
+import { formatMoney, getCashierFloorInfo, getCurrentDailyQueueNumber } from '../utils/formatters';
 
 const props = defineProps<{
   order: Order | null;
@@ -48,11 +48,20 @@ watch(() => props.isOpen, (newVal) => {
       });
     }
   }
-});
+}, { immediate: true });
 
 const formattedDate = computed(() => {
   if (!props.order) return '';
   return new Date().toLocaleDateString('uz-UZ', { year: 'numeric', month: '2-digit', day: '2-digit' });
+});
+
+const floorBadge = computed(() => {
+  if (props.order?.cashierFloor) return props.order.cashierFloor;
+  return getCashierFloorInfo(props.order?.cashierName).badge;
+});
+
+const queueNumber = computed(() => {
+  return props.order?.dailyQueueNumber || getCurrentDailyQueueNumber();
 });
 </script>
 
@@ -60,30 +69,35 @@ const formattedDate = computed(() => {
   <Teleport to="body">
     <div 
       v-if="isOpen && order" 
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 select-none bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
     >
       <!-- Modal Box -->
       <div 
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-colors"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[94vh] overflow-hidden transition-colors"
       >
         <!-- Header Controls (Hidden during print) -->
-        <div class="print:hidden p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
+        <div class="print:hidden p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50 shrink-0">
           <div class="flex items-center space-x-2">
-            <Printer class="w-5 h-5 text-amber-500" />
-            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Kassa Cheki (Receipt)</h3>
+            <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Printer class="w-4 h-4" />
+            </div>
+            <div>
+              <h3 class="font-black text-sm text-slate-900 dark:text-white">Kassa Cheki (Receipt)</h3>
+              <p class="text-[10px] text-amber-600 dark:text-amber-400 font-bold font-mono">NAVBAT #{{ queueNumber }}</p>
+            </div>
           </div>
 
           <!-- Paper Width Toggle Buttons -->
           <div class="flex items-center bg-slate-200 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
             <button 
               @click="setWidth('80mm')"
-              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer', receiptWidth === '80mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
+              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs', receiptWidth === '80mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
             >
               80mm
             </button>
             <button 
               @click="setWidth('58mm')"
-              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer', receiptWidth === '58mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
+              :class="['px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs', receiptWidth === '58mm' ? 'bg-amber-500 text-white shadow-sm font-black' : 'text-slate-600 dark:text-slate-400']"
             >
               58mm
             </button>
@@ -91,14 +105,14 @@ const formattedDate = computed(() => {
 
           <button 
             @click="emit('close')"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X class="w-5 h-5" />
           </button>
         </div>
 
         <!-- Printable Thermal Receipt Container -->
-        <div class="flex-1 overflow-y-auto p-4 sm:p-6 flex justify-center bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
+        <div class="flex-1 overflow-y-auto min-h-0 p-3 sm:p-5 flex justify-center bg-slate-100 dark:bg-slate-950 print:p-0 print:bg-white print:overflow-visible">
           
           <div 
             id="printable-receipt"
@@ -108,8 +122,20 @@ const formattedDate = computed(() => {
             ]"
           >
             <!-- Receipt Header Logo & Details -->
-            <div class="text-center pb-3 border-b border-dashed border-slate-400">
-              <div class="flex items-center justify-center space-x-1.5 mb-1">
+            <div class="text-center pb-2.5 border-b border-dashed border-slate-400 space-y-1">
+              <!-- Queue Token Box -->
+              <div class="bg-slate-900 text-white py-1 px-3 rounded-xl flex items-center justify-between">
+                <span class="text-[11px] font-bold tracking-wider uppercase">KUNLIK NAVBAT:</span>
+                <span class="text-lg sm:text-xl font-black text-amber-400">#{{ queueNumber }}</span>
+              </div>
+
+              <!-- Do-Zakaz Badge if applicable -->
+              <div v-if="order.isDoZakaz" class="bg-amber-100 text-amber-900 py-0.5 px-2 rounded-lg font-black text-[10px] tracking-wide uppercase flex items-center justify-center gap-1">
+                <Sparkles class="w-3 h-3 text-amber-600" />
+                <span>QO'SHIMCHA BUYURTMA (DO-ZAKAZ)</span>
+              </div>
+
+              <div class="flex items-center justify-center space-x-1.5 pt-1">
                 <div class="w-6 h-6 rounded-lg bg-slate-900 text-amber-500 flex items-center justify-center font-bold">
                   <Flame class="w-4 h-4 fill-amber-500" />
                 </div>
@@ -118,11 +144,15 @@ const formattedDate = computed(() => {
                 </span>
               </div>
               <p class="text-[10px] font-sans font-medium text-slate-600">{{ receiptAddress }}</p>
-              <p class="text-[10px] text-slate-600 font-mono mt-0.5">Tel: {{ receiptPhone }}</p>
+              <p class="text-[10px] text-slate-600 font-mono">Tel: {{ receiptPhone }}</p>
             </div>
 
             <!-- Meta Order Info -->
             <div class="py-2.5 border-b border-dashed border-slate-400 space-y-1" :class="receiptWidth === '58mm' ? 'text-[9px]' : 'text-[11px]'">
+              <div class="flex justify-between font-black">
+                <span class="text-slate-600">Kassa & Qavat:</span>
+                <span class="text-slate-900">{{ floorBadge }}</span>
+              </div>
               <div class="flex justify-between">
                 <span class="text-slate-600">Buyurtma #:</span>
                 <span class="font-bold text-slate-900">#{{ order.orderNumber }}</span>
@@ -132,13 +162,13 @@ const formattedDate = computed(() => {
                 <span>{{ formattedDate }} {{ order.createdAt }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-slate-600">Kassir:</span>
-                <span class="font-semibold">{{ order.cashierName }}</span>
+                <span class="text-slate-600">Kassir / Mas'ul:</span>
+                <span class="font-semibold">{{ order.cashierName || 'Kassir' }}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-slate-600">To'lov Turi:</span>
                 <span class="font-bold uppercase text-slate-900 bg-slate-100 px-1 py-0.5 rounded border border-slate-300">
-                  {{ order.paymentType }}
+                  {{ order.paymentType || 'CASH' }}
                 </span>
               </div>
             </div>
@@ -151,13 +181,16 @@ const formattedDate = computed(() => {
 
             <!-- Itemized Table List -->
             <div class="py-2 border-b border-dashed border-slate-400 space-y-2" :class="receiptWidth === '58mm' ? 'text-[9px]' : 'text-[11px]'">
-              <div v-for="item in order.items" :key="item.id" class="space-y-0.5">
+              <div v-for="item in (order.items || [])" :key="item.id || item.product?.id" class="space-y-0.5">
                 <div class="flex justify-between font-semibold">
-                  <span class="truncate" :class="receiptWidth === '58mm' ? 'max-w-[120px]' : 'max-w-[170px]'">{{ item.product.name }}</span>
-                  <span>{{ formatMoney(item.totalPrice) }}</span>
+                  <span class="truncate" :class="receiptWidth === '58mm' ? 'max-w-[120px]' : 'max-w-[170px]'">
+                    <span v-if="item.isNewAddition" class="text-amber-600 font-bold mr-1">✨</span>
+                    {{ item.product?.name || (item as any).productName || 'Taom' }}
+                  </span>
+                  <span>{{ formatMoney(item.totalPrice || 0) }}</span>
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-600">
-                  <span>{{ item.quantity }} x {{ formatMoney(item.unitPrice) }} so'm</span>
+                  <span>{{ item.quantity }} x {{ formatMoney(item.unitPrice || item.product?.price || (item.totalPrice / (item.quantity || 1))) }} so'm</span>
                 </div>
                 <!-- Modifiers line if any -->
                 <div v-if="item.selectedModifiers && item.selectedModifiers.length" class="text-[9px] text-slate-500 italic pl-2">
@@ -178,11 +211,11 @@ const formattedDate = computed(() => {
               </div>
               <div class="flex justify-between font-bold pt-1 border-t border-dotted border-slate-400" :class="receiptWidth === '58mm' ? 'text-xs' : 'text-sm'">
                 <span>JAMI SUMMA:</span>
-                <span class="text-slate-900 font-extrabold">{{ formatMoney(order.totalAmount) }} SO'M</span>
+                <span class="text-slate-900 font-extrabold">{{ formatMoney(order.totalAmount || 0) }} SO'M</span>
               </div>
               <div class="flex justify-between text-slate-600 pt-1">
-                <span>Berilgan Naqd/Summa:</span>
-                <span>{{ formatMoney(order.paidAmount ?? order.totalAmount) }} so'm</span>
+                <span>Berilgan Pul:</span>
+                <span>{{ formatMoney(order.paidAmount ?? order.totalAmount ?? 0) }} so'm</span>
               </div>
               <div class="flex justify-between font-bold text-emerald-700">
                 <span>QAYTIM (CHANGE):</span>
@@ -204,17 +237,17 @@ const formattedDate = computed(() => {
         </div>
 
         <!-- Footer Action Buttons (Hidden during print) -->
-        <div class="print:hidden p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3">
+        <div class="print:hidden p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3 shrink-0">
           <button 
             @click="triggerPrint"
-            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs cursor-pointer"
+            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black py-3 rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs cursor-pointer"
           >
             <Printer class="w-4 h-4" />
-            <span>Chop etish (Print)</span>
+            <span>Chop etish (Printerni tanlash)</span>
           </button>
           <button 
             @click="emit('close')"
-            class="px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl transition-all text-xs cursor-pointer"
+            class="px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all text-xs cursor-pointer"
           >
             Yopish
           </button>

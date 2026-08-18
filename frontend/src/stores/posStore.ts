@@ -7,6 +7,7 @@ import {
 import { initialIngredients, initialCategories, initialProducts } from '../data/menu';
 import { useAuthStore } from './authStore';
 import { useToastStore } from './toastStore';
+import { getCashierFloorInfo, getNextDailyQueueNumber } from '../utils/formatters';
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
@@ -506,8 +507,8 @@ export const usePosStore = defineStore('pos', () => {
   // ─── SABOY: submitOrder ───────────────────────────────────────────────────────
   async function submitOrder(
     paymentType: PaymentType,
-    _paidAmount: number,
-    _cashierName: string,
+    paidAmount: number,
+    cashierName: string,
     shiftId: string,
     _orderType?: OrderType
   ): Promise<Order | null> {
@@ -540,59 +541,88 @@ export const usePosStore = defineStore('pos', () => {
         }))
       };
 
-      const res = await fetchWithTimeout(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 8000);
-      
-      const body = await res.json();
-      
-      if (res.ok && body.success) {
-        const cartItemsCopy = [...cart.value];
-        orderHistory.value.unshift(body.data.order);
-        clearCart();
-        _deductIngredients(cartItemsCopy);
-        return body.data.order;
-      } else {
-        toast.error(body.error || 'Buyurtma saqlashda xatolik');
-        return null;
+      const cartItemsCopy = [...cart.value];
+      const subtotal = cartSubtotal.value;
+      const serviceFee = activeServiceFeeAmount.value;
+      const serviceFeePercentVal = serviceFeeEnabled.value ? serviceFeePercent.value : 0;
+      const totalAmount = activeTotalWithServiceFee.value;
+      const changeAmount = Math.max(0, (paidAmount || totalAmount) - totalAmount);
+      const dailyQueueNumber = getNextDailyQueueNumber();
+      const cashierFloorInfo = getCashierFloorInfo(authStore.user);
+
+      try {
+        const res = await fetchWithTimeout(`${API_URL}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 1000);
+        
+        const body = await res.json();
+        
+        if (res.ok && body.success && body.data?.order) {
+          const completedOrder = {
+            ...body.data.order,
+            dailyQueueNumber,
+            cashierFloor: cashierFloorInfo.badge,
+            subtotal,
+            serviceFee,
+            serviceFeePercent: serviceFeePercentVal,
+            paidAmount: paidAmount || totalAmount,
+            changeAmount,
+            cashierName: cashierName || authStore.user?.fullName || 'Kassir',
+            items: cartItemsCopy.map(c => ({
+              id: 'item-' + Math.random().toString(36).substr(2, 6),
+              product: { ...c.product },
+              quantity: c.quantity,
+              unitPrice: c.unitPrice || c.product.price,
+              totalPrice: c.totalPrice,
+              selectedModifiers: c.selectedModifiers || []
+            }))
+          };
+          orderHistory.value.unshift(completedOrder);
+          clearCart();
+          _deductIngredients(cartItemsCopy);
+          return completedOrder;
+        }
+      } catch (_backendErr) {
+        console.warn('Backend unavailable or timed out. Order saved locally!');
       }
-    } catch (e: any) {
-      console.warn('Backend unavailable. Order saved offline!', e);
-      
-      // B2B Enterprise Mastery: Offline Queue
+
+      // Offline order fallback
       const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
       const tempOrder = {
         id: 'offline-' + Date.now(),
-        orderNumber: Date.now() % 10000,
-        totalAmount: cartSubtotal.value,
+        orderNumber: activeOrderNumber.value++,
+        dailyQueueNumber,
+        cashierFloor: cashierFloorInfo.badge,
+        totalAmount,
+        subtotal,
+        serviceFee,
+        serviceFeePercent: serviceFeePercentVal,
         paymentType,
+        paidAmount: paidAmount || totalAmount,
+        changeAmount,
+        cashierName: cashierName || authStore.user?.fullName || 'Kassir',
         status: 'COMPLETED',
-        createdAt: new Date().toISOString(),
-        items: cart.value.map(c => ({ product: c.product, quantity: c.quantity, totalPrice: c.totalPrice })),
-        offlinePayload: {
-          cashierId: authStore.user?.id || 'default',
-          shiftId,
-          paymentType,
-          items: cart.value.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice
-          }))
-        }
+        createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+        items: cartItemsCopy.map(c => ({
+          id: 'item-' + Math.random().toString(36).substr(2, 6),
+          product: { ...c.product },
+          quantity: c.quantity,
+          unitPrice: c.unitPrice || c.product.price,
+          totalPrice: c.totalPrice,
+          selectedModifiers: c.selectedModifiers || []
+        })),
+        offlinePayload: payload
       };
       
       offlineOrders.push(tempOrder);
       localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
       
       orderHistory.value.unshift(tempOrder as any);
-      const cartItemsCopy = [...cart.value];
       clearCart();
       _deductIngredients(cartItemsCopy);
       
-      toast.success('Internet yo\'q. Buyurtma oflayn saqlandi!', 3000);
       return tempOrder as any;
     } finally {
       isSubmittingOrder.value = false;
@@ -614,6 +644,8 @@ export const usePosStore = defineStore('pos', () => {
     const unitPrice = product.price + modPriceSum;
     const modIds = selectedModifiers.map(m => m.id).sort().join(',');
 
+    const hasAnySentItems = table.cart.some(i => i.isSentToKitchen || (i.sentQuantity && i.sentQuantity > 0));
+
     const existingIndex = table.cart.findIndex(item => {
       const itemModIds = item.selectedModifiers.map(m => m.modifierId).sort().join(',');
       return item.product.id === product.id && itemModIds === modIds;
@@ -622,6 +654,9 @@ export const usePosStore = defineStore('pos', () => {
     if (existingIndex > -1) {
       table.cart[existingIndex].quantity = Number((table.cart[existingIndex].quantity + customQuantity).toFixed(3));
       table.cart[existingIndex].totalPrice = Math.round(table.cart[existingIndex].quantity * table.cart[existingIndex].unitPrice);
+      if (hasAnySentItems) {
+        table.cart[existingIndex].isNewAddition = true;
+      }
     } else {
       table.cart.push({
         id: 'tcart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
@@ -629,7 +664,10 @@ export const usePosStore = defineStore('pos', () => {
         quantity: customQuantity,
         selectedModifiers: selectedModifiers.map(m => ({ modifierId: m.id, name: m.name, price: m.price, ingredientDeduction: m.ingredientDeduction })),
         unitPrice,
-        totalPrice: Math.round(customQuantity * unitPrice)
+        totalPrice: Math.round(customQuantity * unitPrice),
+        sentQuantity: 0,
+        isSentToKitchen: false,
+        isNewAddition: hasAnySentItems
       });
     }
 
@@ -657,7 +695,18 @@ export const usePosStore = defineStore('pos', () => {
         item.totalPrice = item.quantity * item.unitPrice;
       }
     }
-    // NOT: savat bo'shsa ham stol ochiq qoladi — faqat closeTable() yopadi
+  }
+
+  // Oshxonaga yuborilgach, barcha taomlar yuborilgan deb belgilanadi
+  function markTableCartAsSent(tableId: string) {
+    const table = tables.value.find(t => t.id === tableId);
+    if (!table) return;
+    table.cart.forEach(item => {
+      item.sentQuantity = item.quantity;
+      item.isSentToKitchen = true;
+      item.isNewAddition = false;
+    });
+    localStorage.setItem('doston_pos_tables', JSON.stringify(tables.value));
   }
 
   // Savat tozalash (stol hali ochiq qoladi — mijoz o'tirib turibdi!)
@@ -666,7 +715,6 @@ export const usePosStore = defineStore('pos', () => {
     if (!table) return;
     table.cart = [];
   }
-
 
   function setWaiterNote(tableId: string, note: string) {
     const table = tables.value.find(t => t.id === tableId);
@@ -677,8 +725,8 @@ export const usePosStore = defineStore('pos', () => {
   async function submitTableOrder(
     tableId: string,
     paymentType: PaymentType,
-    _paidAmount: number,
-    _cashierName: string,
+    paidAmount: number,
+    cashierName: string,
     shiftId: string
   ): Promise<Order | null> {
     if (isSubmittingOrder.value) {
@@ -692,12 +740,22 @@ export const usePosStore = defineStore('pos', () => {
     isSubmittingOrder.value = true;
     const authStore = useAuthStore();
 
+    const tableCartCopy = [...table.cart];
+    const subtotal = tableCartCopy.reduce((sum, i) => sum + i.totalPrice, 0);
+    const serviceFeePercentVal = serviceFeeEnabled.value ? serviceFeePercent.value : 0;
+    const serviceFee = serviceFeeEnabled.value ? Math.round(subtotal * (serviceFeePercentVal / 100)) : 0;
+    const totalAmount = subtotal + serviceFee;
+    const changeAmount = Math.max(0, (paidAmount || totalAmount) - totalAmount);
+    const dailyQueueNumber = getNextDailyQueueNumber();
+    const cashierFloorInfo = getCashierFloorInfo(authStore.user);
+    const isDoZakaz = tableCartCopy.some(i => i.isNewAddition || (i.sentQuantity && i.quantity > i.sentQuantity));
+
     try {
       const payload = {
         cashierId: authStore.user?.id || 'default',
         shiftId,
         paymentType,
-        items: table.cart.map(item => ({
+        items: tableCartCopy.map(item => ({
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
@@ -709,68 +767,92 @@ export const usePosStore = defineStore('pos', () => {
         }))
       };
 
-      const res = await fetch(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      const body = await res.json();
-      
-      if (res.ok && body.success) {
-        orderHistory.value.unshift(body.data.order);
+      try {
+        const res = await fetchWithTimeout(`${API_URL}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 1000);
         
-        // Optimistically deduct
-        _deductIngredients(table.cart);
+        const body = await res.json();
+        
+        if (res.ok && body.success && body.data?.order) {
+          const completedOrder = {
+            ...body.data.order,
+            dailyQueueNumber,
+            cashierFloor: cashierFloorInfo.badge,
+            isDoZakaz,
+            subtotal,
+            serviceFee,
+            serviceFeePercent: serviceFeePercentVal,
+            paidAmount: paidAmount || totalAmount,
+            changeAmount,
+            cashierName: cashierName || authStore.user?.fullName || 'Kassir',
+            items: tableCartCopy.map(c => ({
+              id: 'item-' + Math.random().toString(36).substr(2, 6),
+              product: { ...c.product },
+              quantity: c.quantity,
+              unitPrice: c.unitPrice || c.product.price,
+              totalPrice: c.totalPrice,
+              selectedModifiers: c.selectedModifiers || []
+            }))
+          };
 
-        // ✅ Stol to'liq yopiladi va bo'shatiladi
-        table.cart = [];
-        table.status = 'FREE';
-        table.orderNumber = undefined;
-        table.openedAt = null;
-        table.totalPaid = 0;
-        table.waiterNote = '';
+          orderHistory.value.unshift(completedOrder);
+          _deductIngredients(tableCartCopy);
 
-        if (activeTableId.value === tableId) {
-          activeTableId.value = null;
-          localStorage.removeItem('doston_pos_active_table');
+          table.cart = [];
+          table.status = 'FREE';
+          table.orderNumber = undefined;
+          table.openedAt = null;
+          table.totalPaid = 0;
+          table.waiterNote = '';
+
+          if (activeTableId.value === tableId) {
+            activeTableId.value = null;
+            localStorage.removeItem('doston_pos_active_table');
+          }
+
+          return completedOrder;
         }
-
-        return body.data.order;
-      } else {
-        toast.error(body.error || 'Buyurtma saqlashda xatolik');
-        return null;
+      } catch (_backendErr) {
+        console.warn('Backend unavailable or timed out. Table order saved locally!');
       }
-    } catch (e: any) {
-      console.warn('Backend unavailable. Table Order saved offline!', e);
-      
+
+      // Offline table order
       const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
       const tempOrder = {
         id: 'offline-' + Date.now(),
-        orderNumber: Date.now() % 10000,
-        totalAmount: table.cart.reduce((sum, i) => sum + i.totalPrice, 0),
+        orderNumber: activeOrderNumber.value++,
+        dailyQueueNumber,
+        cashierFloor: cashierFloorInfo.badge,
+        isDoZakaz,
+        totalAmount,
+        subtotal,
+        serviceFee,
+        serviceFeePercent: serviceFeePercentVal,
         paymentType,
+        paidAmount: paidAmount || totalAmount,
+        changeAmount,
+        cashierName: cashierName || authStore.user?.fullName || 'Kassir',
         status: 'COMPLETED',
-        createdAt: new Date().toISOString(),
-        items: table.cart.map(c => ({ product: c.product, quantity: c.quantity, totalPrice: c.totalPrice })),
-        offlinePayload: {
-          cashierId: authStore.user?.id || 'default',
-          shiftId,
-          paymentType,
-          items: table.cart.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice
-          }))
-        }
+        createdAt: new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+        items: tableCartCopy.map(c => ({
+          id: 'item-' + Math.random().toString(36).substr(2, 6),
+          product: { ...c.product },
+          quantity: c.quantity,
+          unitPrice: c.unitPrice || c.product.price,
+          totalPrice: c.totalPrice,
+          selectedModifiers: c.selectedModifiers || []
+        })),
+        offlinePayload: payload
       };
       
       offlineOrders.push(tempOrder);
       localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
       
       orderHistory.value.unshift(tempOrder as any);
-      _deductIngredients(table.cart);
+      _deductIngredients(tableCartCopy);
 
       table.cart = [];
       table.status = 'FREE';
@@ -784,7 +866,6 @@ export const usePosStore = defineStore('pos', () => {
         localStorage.removeItem('doston_pos_active_table');
       }
       
-      toast.success('Internet yo\'q. Stol oflayn yopildi!', 3000);
       return tempOrder as any;
     } finally {
       isSubmittingOrder.value = false;
@@ -1084,6 +1165,7 @@ export const usePosStore = defineStore('pos', () => {
     updateTableQuantity,
     removeTableCartItem,
     clearTableCart,
+    markTableCartAsSent,
     closeTable,
     setWaiterNote,
     submitTableOrder,

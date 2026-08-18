@@ -17,6 +17,7 @@ import PosHeader from '../components/pos/PosHeader.vue';
 import PosCategoriesBar from '../components/pos/PosCategoriesBar.vue';
 import PosProductGrid from '../components/pos/PosProductGrid.vue';
 import TableMapView from '../components/TableMapView.vue';
+import { getCashierFloorInfo, getNextDailyQueueNumber } from '../utils/formatters';
 import {
   Plus, Minus, Trash2, CreditCard, Utensils,
   ShoppingBag,
@@ -50,7 +51,14 @@ const activeWeightedProduct = ref<Product | null>(null);
 const showPaymentModal = ref(false);
 const showReceiptModal = ref(false);
 const showKitchenReceiptModal = ref(false);
-const kitchenReceiptData = ref<{ tableNumber: number | null, items: CartItem[] }>({ tableNumber: null, items: [] });
+const kitchenReceiptData = ref<{ 
+  tableNumber: number | null; 
+  tableName?: string;
+  items: CartItem[]; 
+  dailyQueueNumber?: number; 
+  cashierFloor?: string; 
+  isDoZakaz?: boolean 
+}>({ tableNumber: null, items: [] });
 const lastCompletedOrder = ref<any | null>(null);
 const mobileCartOpen = ref(false);
 const showTableProducts = ref(posStore.operationMode === 'ZAL' && !!posStore.activeTableId);
@@ -208,11 +216,30 @@ function saveTableOrder() {
   if (posStore.operationMode === 'ZAL' && posStore.activeTable) {
     isSavingKitchenOrder.value = true;
     try {
-      const tableNum = posStore.activeTable.number;
+      const table = posStore.activeTable;
+      const tableNum = table.number;
+      const tableName = table.name || `${tableNum}-Stol`;
       const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
-      kitchenReceiptData.value = { tableNumber: tableNum, items: [...posStore.activeTable.cart] };
+      
+      const cartSnapshot = table.cart.map(item => ({ ...item }));
+      const hasPreviousItems = cartSnapshot.some(i => i.isSentToKitchen || (i.sentQuantity && i.sentQuantity > 0));
+      const hasNewItems = cartSnapshot.some(i => !i.isSentToKitchen || (i.sentQuantity && i.quantity > i.sentQuantity) || i.isNewAddition);
+      const isDoZakaz = hasPreviousItems && hasNewItems;
+
+      kitchenReceiptData.value = {
+        tableNumber: tableNum,
+        tableName,
+        items: cartSnapshot,
+        isDoZakaz,
+        dailyQueueNumber: getNextDailyQueueNumber(),
+        cashierFloor: getCashierFloorInfo(authStore.user).badge
+      };
+
+      // Mark table items as sent so future additions will be recognized as Do-zakaz
+      posStore.markTableCartAsSent(table.id);
+
       playPaySound();
-      toast.success(`${tableNum}-stol buyurtmasi oshxonaga yuborildi!`);
+      toast.success(`${tableName} buyurtmasi oshxonaga yuborildi!`);
       showTableProducts.value = false;
       posStore.clearActiveTable();
       if (isKitchenPrinterOn) {
@@ -269,15 +296,11 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
     showPaymentModal.value = false;
 
     if (order) {
-      const isKassaPrinterOn = localStorage.getItem('doston_pos_printer_kassa') !== 'false';
       lastCompletedOrder.value = order;
-      if (isKassaPrinterOn) {
-        showReceiptModal.value = true;
-      } else {
-        toast.success(`Buyurtma #${order.orderNumber} muvaffaqiyatli saqlandi!`);
-      }
+      showReceiptModal.value = true;
+      toast.success(`Buyurtma #${order.orderNumber} to'lovi qabul qilindi!`);
     } else {
-      toast.success('Buyurtma bajarildi!');
+      toast.success('Buyurtma muvaffaqiyatli bajarildi!');
     }
   } finally {
     isProcessingPayment.value = false;
@@ -549,7 +572,17 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
       @success="handlePaymentSuccess" 
     />
     <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
-    <KitchenReceiptModal :is-open="showKitchenReceiptModal" :table-number="kitchenReceiptData.tableNumber" :items="kitchenReceiptData.items" :cashier-name="authStore.user?.fullName" @close="showKitchenReceiptModal = false" />
+    <KitchenReceiptModal 
+      :is-open="showKitchenReceiptModal" 
+      :table-number="kitchenReceiptData.tableNumber" 
+      :table-name="kitchenReceiptData.tableName"
+      :items="kitchenReceiptData.items" 
+      :cashier-name="authStore.user?.fullName" 
+      :cashier-floor="kitchenReceiptData.cashierFloor"
+      :daily-queue-number="kitchenReceiptData.dailyQueueNumber"
+      :is-do-zakaz="kitchenReceiptData.isDoZakaz"
+      @close="showKitchenReceiptModal = false" 
+    />
     <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />
     <WeightedProductModal :is-open="!!activeWeightedProduct" :product="activeWeightedProduct" @close="activeWeightedProduct = null" @confirm="confirmWeightedProduct" />
     <CustomProductModal :is-open="showCustomProductModal" @close="showCustomProductModal = false" />

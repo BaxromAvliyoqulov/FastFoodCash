@@ -647,104 +647,106 @@ function printAuditReceipt(audit: ShiftCashAudit) {
     <!-- ════════════════════ DETAILED Z-REPORT MODAL ════════════════════ -->
     <div 
       v-if="selectedAuditForModal" 
-      class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 select-none animate-in fade-in duration-200"
     >
       <div 
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[94vh] flex flex-col shadow-2xl overflow-hidden"
         @click.stop
       >
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+        <!-- Modal Header (Sticky) -->
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 shrink-0 bg-slate-50/50 dark:bg-slate-950/40">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <FileSpreadsheet class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="font-black text-lg text-slate-900 dark:text-white">
+              <h3 class="font-black text-base sm:text-lg text-slate-900 dark:text-white">
                 Z-REPORT #{{ selectedAuditForModal.id }}
               </h3>
-              <p class="text-xs text-slate-500">
+              <p class="text-[11px] text-slate-500">
                 Smena vaqti: {{ selectedAuditForModal.createdAt }}
               </p>
             </div>
           </div>
           <button 
             @click="selectedAuditForModal = null" 
-            class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
           >
             <X class="w-5 h-5" />
           </button>
         </div>
 
-        <!-- Printable Receipt Sheet Preview -->
-        <div class="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-xs font-mono">
-          <div class="text-center pb-3 border-b border-dashed border-slate-300 dark:border-slate-700">
-            <h4 class="font-black text-sm text-slate-900 dark:text-white">DOSTON FAST FOOD</h4>
-            <p class="text-[10px] text-slate-500 mt-0.5">SMENA YAKUNIY FISKAL Z-REPORT</p>
-            <p class="text-[10px] text-slate-400">Mas'ul: {{ selectedAuditForModal.cashierName || 'Admin' }}</p>
-          </div>
+        <!-- Printable Receipt Sheet Preview (Scrollable) -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5">
+          <div class="bg-slate-50 dark:bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 text-xs font-mono">
+            <div class="text-center pb-2.5 border-b border-dashed border-slate-300 dark:border-slate-700">
+              <h4 class="font-black text-sm text-slate-900 dark:text-white">DOSTON FAST FOOD</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">SMENA YAKUNIY FISKAL Z-REPORT</p>
+              <p class="text-[10px] text-slate-400">Mas'ul: {{ selectedAuditForModal.cashierName || 'Admin' }}</p>
+            </div>
 
-          <!-- Main Financials -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between">
-              <span class="text-slate-500">1. Boshlang'ich Kassa:</span>
-              <span class="font-bold text-slate-900 dark:text-white">{{ formatMoney(selectedAuditForModal.initialCash || 0) }} so'm</span>
+            <!-- Main Financials -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between">
+                <span class="text-slate-500">1. Boshlang'ich Kassa:</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ formatMoney(selectedAuditForModal.initialCash || 0) }} so'm</span>
+              </div>
+              <div class="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                <span>2. Naqd Pul Tushumi:</span>
+                <span>+{{ formatMoney(selectedAuditForModal.totalCashSales || selectedAuditForModal.declaredCash) }} so'm</span>
+              </div>
+              <div class="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
+                <span>3. Terminal (Humo/Uzcard):</span>
+                <span>{{ formatMoney(selectedAuditForModal.totalCardSales || selectedAuditForModal.declaredCard) }} so'm</span>
+              </div>
+              <div class="flex justify-between text-rose-500 font-bold">
+                <span>4. Chiqimlar (Xarajatlar):</span>
+                <span>-{{ formatMoney(selectedAuditForModal.totalExpenses || 0) }} so'm</span>
+              </div>
+              <div class="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 flex justify-between font-black text-slate-900 dark:text-white text-sm">
+                <span>JAMI TUSHUM:</span>
+                <span>{{ formatMoney((selectedAuditForModal.totalCashSales || 0) + (selectedAuditForModal.totalCardSales || selectedAuditForModal.declaredCard || 0)) }} so'm</span>
+              </div>
             </div>
-            <div class="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
-              <span>2. Naqd Pul Tushumi:</span>
-              <span>+{{ formatMoney(selectedAuditForModal.totalCashSales || selectedAuditForModal.declaredCash) }} so'm</span>
-            </div>
-            <div class="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
-              <span>3. Terminal (Humo/Uzcard):</span>
-              <span>{{ formatMoney(selectedAuditForModal.totalCardSales || selectedAuditForModal.declaredCard) }} so'm</span>
-            </div>
-            <div class="flex justify-between text-rose-500 font-bold">
-              <span>4. Chiqimlar (Xarajatlar):</span>
-              <span>-{{ formatMoney(selectedAuditForModal.totalExpenses || 0) }} so'm</span>
-            </div>
-            <div class="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 flex justify-between font-black text-slate-900 dark:text-white text-sm">
-              <span>JAMI TUSHUM:</span>
-              <span>{{ formatMoney((selectedAuditForModal.totalCashSales || 0) + (selectedAuditForModal.totalCardSales || selectedAuditForModal.declaredCard || 0)) }} so'm</span>
-            </div>
-          </div>
 
-          <!-- Drawer Audit Section -->
-          <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-            <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
-              <span>Kutilgan Naqd Pul:</span>
-              <span>{{ formatMoney(selectedAuditForModal.expectedCash) }} so'm</span>
+            <!-- Drawer Audit Section -->
+            <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                <span>Kutilgan Naqd Pul:</span>
+                <span>{{ formatMoney(selectedAuditForModal.expectedCash) }} so'm</span>
+              </div>
+              <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                <span>Kassir Sanagan Pul:</span>
+                <span>{{ formatMoney(selectedAuditForModal.declaredCash) }} so'm</span>
+              </div>
+              <div :class="['flex justify-between font-black pt-1 border-t border-slate-200 dark:border-slate-800', (selectedAuditForModal.difference || 0) < 0 ? 'text-rose-500' : 'text-emerald-500']">
+                <span>Kassa Farqi (Diff):</span>
+                <span>{{ (selectedAuditForModal.difference || 0) > 0 ? '+' : '' }}{{ formatMoney(selectedAuditForModal.difference) }} so'm</span>
+              </div>
             </div>
-            <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
-              <span>Kassir Sanagan Pul:</span>
-              <span>{{ formatMoney(selectedAuditForModal.declaredCash) }} so'm</span>
-            </div>
-            <div :class="['flex justify-between font-black pt-1 border-t border-slate-200 dark:border-slate-800', (selectedAuditForModal.difference || 0) < 0 ? 'text-rose-500' : 'text-emerald-500']">
-              <span>Kassa Farqi (Diff):</span>
-              <span>{{ (selectedAuditForModal.difference || 0) > 0 ? '+' : '' }}{{ formatMoney(selectedAuditForModal.difference) }} so'm</span>
-            </div>
-          </div>
 
-          <!-- Cashier 1 & 2 Breakdown in Z-Report -->
-          <div class="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Qavatlar & Kassirlar Tahlili:</span>
-            
-            <div class="flex justify-between">
-              <span>🏛️ Kassir 1 (1-Qavat • Stollar):</span>
-              <span class="font-bold">{{ formatMoney(selectedAuditForModal.cashier1Stats?.total || 0) }} so'm ({{ selectedAuditForModal.cashier1Stats?.count || 0 }} ta)</span>
+            <!-- Cashier 1 & 2 Breakdown in Z-Report -->
+            <div class="pt-2 border-t border-dashed border-slate-300 dark:border-slate-700 space-y-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Qavatlar & Kassirlar Tahlili:</span>
+              
+              <div class="flex justify-between">
+                <span>🏛️ Kassir 1 (1-Qavat • Stollar):</span>
+                <span class="font-bold">{{ formatMoney(selectedAuditForModal.cashier1Stats?.total || 0) }} so'm ({{ selectedAuditForModal.cashier1Stats?.count || 0 }} ta)</span>
+              </div>
+              <div class="flex justify-between">
+                <span>👑 Kassir 2 (2-Qavat • VIP Xonalar):</span>
+                <span class="font-bold">{{ formatMoney(selectedAuditForModal.cashier2Stats?.total || 0) }} so'm ({{ selectedAuditForModal.cashier2Stats?.count || 0 }} ta)</span>
+              </div>
             </div>
-            <div class="flex justify-between">
-              <span>👑 Kassir 2 (2-Qavat • VIP Xonalar):</span>
-              <span class="font-bold">{{ formatMoney(selectedAuditForModal.cashier2Stats?.total || 0) }} so'm ({{ selectedAuditForModal.cashier2Stats?.count || 0 }} ta)</span>
-            </div>
-          </div>
 
-          <div v-if="selectedAuditForModal.notes" class="pt-2 text-slate-500 text-[10px]">
-            <span class="font-bold">Izoh:</span> {{ selectedAuditForModal.notes }}
+            <div v-if="selectedAuditForModal.notes" class="pt-2 text-slate-500 text-[10px]">
+              <span class="font-bold">Izoh:</span> {{ selectedAuditForModal.notes }}
+            </div>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center space-x-3 pt-2">
+        <!-- Action Buttons (Sticky Footer) -->
+        <div class="flex items-center space-x-3 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 shrink-0">
           <button 
             @click="selectedAuditForModal = null" 
             class="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
@@ -763,102 +765,105 @@ function printAuditReceipt(audit: ShiftCashAudit) {
     </div>
 
     <!-- ════════════════════ BLIND CASH RECONCILIATION MODAL ════════════════════ -->
-    <div v-if="showCloseModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div class="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 sm:p-7 shadow-2xl space-y-6 transition-all">
+    <div v-if="showCloseModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-2 sm:p-4 select-none animate-in fade-in duration-200">
+      <div class="bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-lg max-h-[94vh] flex flex-col shadow-2xl overflow-hidden transition-all">
         
-        <!-- Header -->
-        <div class="border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center justify-between">
+        <!-- Header (Sticky) -->
+        <div class="border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 sm:py-4 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between">
           <div>
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-black rounded-full mb-2">
-              <Receipt class="w-3.5 h-3.5 text-amber-500" />
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black rounded-full mb-1">
+              <Receipt class="w-3 h-3 text-amber-500" />
               <span>SMENANI YOPISH & AUDIT</span>
             </div>
-            <h3 class="text-xl font-black text-slate-900 dark:text-white tracking-wide">Smenani Yopish (Z-Report)</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kassadagi sanalgan naqd va terminal tushumlarini kiriting</p>
+            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-wide">Smenani Yopish (Z-Report)</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Kassadagi sanalgan naqd va terminal tushumlarini kiriting</p>
           </div>
 
           <button 
-            @click="showCloseModal = false"
-            class="p-2 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            @click="showCloseModal = false" 
+            class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
           >
             <X class="w-5 h-5" />
           </button>
         </div>
 
-        <!-- Live Total Counter Summary Card -->
-        <div class="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Jami Sanalgan Pul:</span>
-            <span class="text-2xl font-black text-slate-900 dark:text-white font-mono">{{ totalDeclaredSum.toLocaleString('uz-UZ') }} so'm</span>
-          </div>
-          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 font-black text-sm">
-            Z
-          </div>
-        </div>
-
-        <!-- Input Fields Grid -->
-        <div class="space-y-4">
-          <!-- 1. CASH INPUT -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Banknote class="w-4 h-4 text-emerald-500" />
-              <span>Sanatilgan Naqd Pul (Kassadagi boshlang'ich float bilan):</span>
-            </label>
-            <div class="relative">
-              <input 
-                type="text" 
-                :value="declaredCashInput ? declaredCashInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-                @input="declaredCashInput = formatMoneyInput($event)"
-                placeholder="Masalan: 1 450 000"
-                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-amber-500 focus:outline-none transition shadow-sm"
-              />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
+        <!-- Scrollable Body -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5">
+          <!-- Live Total Counter Summary Card -->
+          <div class="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/30 rounded-2xl p-3.5 flex items-center justify-between">
+            <div>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Jami Sanalgan Pul:</span>
+              <span class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono">{{ totalDeclaredSum.toLocaleString('uz-UZ') }} so'm</span>
+            </div>
+            <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 font-black text-xs">
+              Z
             </div>
           </div>
 
-          <!-- 2. CARD INPUT -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <CreditCard class="w-4 h-4 text-blue-500" />
-              <span>Uzcard / Humo Terminal Summasi:</span>
-            </label>
-            <div class="relative">
+          <!-- Input Fields Grid -->
+          <div class="space-y-3">
+            <!-- 1. CASH INPUT -->
+            <div class="space-y-1">
+              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Banknote class="w-3.5 h-3.5 text-emerald-500" />
+                <span>Sanatilgan Naqd Pul (Kassadagi float bilan):</span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  :value="declaredCashInput ? declaredCashInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
+                  @input="declaredCashInput = formatMoneyInput($event)"
+                  placeholder="Masalan: 1 450 000"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white text-base sm:text-lg font-black font-mono focus:border-amber-500 focus:outline-none transition shadow-sm"
+                />
+                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 pointer-events-none">SO'M</span>
+              </div>
+            </div>
+
+            <!-- 2. CARD INPUT -->
+            <div class="space-y-1">
+              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <CreditCard class="w-3.5 h-3.5 text-blue-500" />
+                <span>Uzcard / Humo Terminal Summasi:</span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  :value="declaredCardInput ? declaredCardInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
+                  @input="declaredCardInput = formatMoneyInput($event)"
+                  placeholder="Masalan: 850 000"
+                  class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white text-base sm:text-lg font-black font-mono focus:border-blue-500 focus:outline-none transition shadow-sm"
+                />
+                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 pointer-events-none">SO'M</span>
+              </div>
+            </div>
+
+            <!-- 3. NOTES -->
+            <div class="space-y-1">
+              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Smena Yopish Izohi (Ixtiyoriy):
+              </label>
               <input 
                 type="text" 
-                :value="declaredCardInput ? declaredCardInput.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
-                @input="declaredCardInput = formatMoneyInput($event)"
-                placeholder="Masalan: 850 000"
-                class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-white text-lg font-black font-mono focus:border-blue-500 focus:outline-none transition shadow-sm"
+                v-model="auditNotes"
+                placeholder="Masalan: 50 000 so'm maydalashga berilgan..."
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
               />
-              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">SO'M</span>
             </div>
-          </div>
-
-          <!-- 3. NOTES -->
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Smena Yopish Izohi (Ixtiyoriy):
-            </label>
-            <input 
-              type="text" 
-              v-model="auditNotes"
-              placeholder="Masalan: 50 000 so'm maydalashga berilgan..."
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white focus:border-amber-500 focus:outline-none"
-            />
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex items-center space-x-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <!-- Action Buttons (Sticky Footer) -->
+        <div class="flex items-center space-x-3 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 shrink-0">
           <button 
             @click="showCloseModal = false" 
-            class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3.5 rounded-2xl font-bold text-xs transition cursor-pointer"
+            class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold text-xs transition cursor-pointer"
           >
             Bekor qilish
           </button>
           <button 
             @click="handleCloseShiftSubmit" 
-            class="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white py-3.5 rounded-2xl font-black text-xs shadow-lg shadow-rose-600/25 active:scale-95 transition cursor-pointer flex items-center justify-center gap-2"
+            class="flex-1 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white py-3 rounded-xl font-black text-xs shadow-lg shadow-rose-600/25 active:scale-95 transition cursor-pointer flex items-center justify-center gap-2"
           >
             <Receipt class="w-4 h-4" />
             <span>Z-Reportni Yopish</span>
@@ -869,46 +874,53 @@ function printAuditReceipt(audit: ShiftCashAudit) {
     </div>
 
     <!-- ════════════════════ CASH EXPENSE MODAL ════════════════════ -->
-    <div v-if="showExpenseModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl space-y-6">
+    <div v-if="showExpenseModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 select-none">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
         
-        <div class="border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-full mb-2">
-            <DollarSign class="w-3.5 h-3.5" />
-            <span>KASSA XARAJATI</span>
+        <!-- Header (Sticky) -->
+        <div class="border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between">
+          <div>
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold rounded-full mb-1">
+              <DollarSign class="w-3 h-3" />
+              <span>KASSA XARAJATI</span>
+            </div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Kassadan Pul Olish (Chiqim)</h3>
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">Kassadan Pul Olish (Chiqim)</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Xarajat qilingan summani va uning sababini kiriting (Z-Reportda kutilgan naqddan ayirib hisoblanadi)</p>
+          <button @click="showExpenseModal = false" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer">
+            <X class="w-5 h-5" />
+          </button>
         </div>
 
-        <div class="space-y-4">
+        <!-- Body (Scrollable) -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Olinayotgan Summa:</label>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Olinayotgan Summa:</label>
             <input 
               type="text" 
               :value="expenseAmount ? expenseAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
               @input="expenseAmount = formatMoneyInput($event)"
               placeholder="Masalan: 50 000"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-lg font-bold font-mono focus:border-rose-500 focus:outline-none"
+              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white text-base sm:text-lg font-bold font-mono focus:border-rose-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Xarajat Sababi:</label>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Xarajat Sababi:</label>
             <input 
               type="text" 
               v-model="expenseReason"
               placeholder="Masalan: Suv uchun, Bozordan pomidor..."
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-rose-500 focus:outline-none"
+              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:border-rose-500 focus:outline-none"
             />
           </div>
         </div>
 
-        <div class="flex items-center space-x-3 pt-3">
-          <button @click="showExpenseModal = false" class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold text-sm transition">
+        <!-- Footer (Sticky) -->
+        <div class="flex items-center space-x-3 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 shrink-0">
+          <button @click="showExpenseModal = false" class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer">
             Bekor qilish
           </button>
-          <button @click="handleAddExpense" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-rose-600/25 transition">
+          <button @click="handleAddExpense" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-rose-600/25 transition cursor-pointer">
             Tasdiqlash va Olish
           </button>
         </div>
@@ -917,36 +929,44 @@ function printAuditReceipt(audit: ShiftCashAudit) {
     </div>
 
     <!-- ════════════════════ OPEN NEW SHIFT MODAL ════════════════════ -->
-    <div v-if="showOpenShiftModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl space-y-6">
+    <div v-if="showOpenShiftModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 select-none">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
         
-        <div class="border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full mb-2">
-            <LockOpen class="w-3.5 h-3.5" />
-            <span>YANGI SMENA</span>
+        <!-- Header (Sticky) -->
+        <div class="border-b border-slate-200 dark:border-slate-800 px-5 py-3.5 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between">
+          <div>
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-full mb-1">
+              <LockOpen class="w-3 h-3" />
+              <span>YANGI SMENA</span>
+            </div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Smenani Ochish</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Boshlang'ich qaytim pulini (Float cash) kiriting</p>
           </div>
-          <h3 class="text-xl font-bold text-slate-900 dark:text-white">Smenani Ochish</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Kassadagi boshlang'ich qaytim pulini (Float cash) kiriting</p>
+          <button @click="showOpenShiftModal = false" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer">
+            <X class="w-5 h-5" />
+          </button>
         </div>
 
-        <div class="space-y-4">
+        <!-- Body (Scrollable) -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Boshlang'ich Kassa (Float Cash):</label>
+            <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Boshlang'ich Kassa (Float Cash):</label>
             <input 
               type="text" 
               :value="initialFloatCash !== null ? initialFloatCash.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''"
               @input="initialFloatCash = formatMoneyInput($event)"
               placeholder="Masalan: 200 000"
-              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-lg font-bold font-mono focus:border-emerald-500 focus:outline-none"
+              class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white text-base sm:text-lg font-bold font-mono focus:border-emerald-500 focus:outline-none"
             />
           </div>
         </div>
 
-        <div class="flex items-center space-x-3 pt-3">
-          <button @click="showOpenShiftModal = false" class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold text-sm transition">
+        <!-- Footer (Sticky) -->
+        <div class="flex items-center space-x-3 p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/70 shrink-0">
+          <button @click="showOpenShiftModal = false" class="flex-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer">
             Bekor qilish
           </button>
-          <button @click="submitOpenShift" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/25 transition">
+          <button @click="submitOpenShift" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 transition cursor-pointer">
             Smenani Boshlash
           </button>
         </div>

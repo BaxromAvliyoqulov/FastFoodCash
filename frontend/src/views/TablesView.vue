@@ -133,18 +133,53 @@ async function handleSaveTable() {
 
   try {
     if (isEditing.value && currentTableId.value) {
-      await fetch(`${API_URL}/tables/${currentTableId.value}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form.value)
-      });
+      try {
+        await fetch(`${API_URL}/tables/${currentTableId.value}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form.value)
+        });
+      } catch (_e) {
+        console.warn('Backend offline, updating table locally');
+      }
+      
+      // Update locally
+      const idx = posStore.tables.findIndex(t => t.id === currentTableId.value);
+      if (idx > -1) {
+        posStore.tables[idx].name = form.value.name;
+        posStore.tables[idx].number = form.value.number;
+        localStorage.setItem('doston_pos_tables', JSON.stringify(posStore.tables));
+      }
       toast.success("Stol ma'lumotlari yangilandi!");
     } else {
-      await fetch(`${API_URL}/tables`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form.value)
+      let createdTableId = `tbl-${Date.now()}`;
+      try {
+        const res = await fetch(`${API_URL}/tables`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form.value)
+        });
+        if (res.ok) {
+          const body = await res.json();
+          if (body.data?.id) createdTableId = body.data.id;
+        }
+      } catch (_e) {
+        console.warn('Backend offline, adding table locally');
+      }
+
+      // Add locally
+      posStore.tables.push({
+        id: createdTableId,
+        number: form.value.number,
+        name: form.value.name,
+        status: 'FREE',
+        cart: [],
+        openedAt: null,
+        waiterNote: '',
+        totalPaid: 0,
+        isActive: true
       });
+      localStorage.setItem('doston_pos_tables', JSON.stringify(posStore.tables));
       toast.success("Yangi stol muvaffaqiyatli qo'shildi!");
     }
     await posStore.loadTables();
@@ -159,13 +194,18 @@ async function handleSaveTable() {
 
 async function toggleActive(table: Table) {
   try {
-    await fetch(`${API_URL}/tables/${table.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !table.isActive })
-    });
-    toast.info(`Stol holati ${!table.isActive ? 'yoqildi' : 'o\'chirildi'}`);
-    await posStore.loadTables();
+    try {
+      await fetch(`${API_URL}/tables/${table.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !table.isActive })
+      });
+    } catch (_e) {
+      console.warn('Backend offline, toggling table locally');
+    }
+    table.isActive = !table.isActive;
+    localStorage.setItem('doston_pos_tables', JSON.stringify(posStore.tables));
+    toast.info(`Stol holati ${table.isActive ? 'yoqildi' : 'o\'chirildi'}`);
   } catch (error) {
     console.error('Toggle table active error:', error);
   }
@@ -181,11 +221,16 @@ async function confirmDeleteTable() {
   if (!tableToDelete.value) return;
   const table = tableToDelete.value;
   try {
-    await fetch(`${API_URL}/tables/${table.id}`, {
-      method: 'DELETE'
-    });
+    try {
+      await fetch(`${API_URL}/tables/${table.id}`, {
+        method: 'DELETE'
+      });
+    } catch (_e) {
+      console.warn('Backend offline, deleting table locally');
+    }
+    posStore.tables = posStore.tables.filter(t => t.id !== table.id);
+    localStorage.setItem('doston_pos_tables', JSON.stringify(posStore.tables));
     toast.success(`${table.name || table.number + '-Stol'} muvaffaqiyatli o'chirildi!`);
-    await posStore.loadTables();
   } catch (error) {
     console.error('Delete table error:', error);
     toast.error("Stolni o'chirishda xatolik yuz berdi");
@@ -467,13 +512,14 @@ function handleSelectTableForOrder(table: Table) {
     </div>
 
     <!-- ── EDIT / ADD TABLE MODAL ── -->
-    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl space-y-0">
+    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 select-none bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md max-h-[94vh] flex flex-col overflow-hidden shadow-2xl space-y-0">
         
-        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/50">
+        <!-- Header (Sticky) -->
+        <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
           <div class="flex items-center gap-2">
             <Sparkles class="w-5 h-5 text-amber-500" />
-            <h3 class="font-black text-base text-slate-900 dark:text-white">
+            <h3 class="font-black text-sm sm:text-base text-slate-900 dark:text-white">
               {{ isEditing ? 'Stolni Tahrirlash' : 'Yangi Stol Qo\'shish' }}
             </h3>
           </div>
@@ -482,32 +528,34 @@ function handleSelectTableForOrder(table: Table) {
           </button>
         </div>
         
-        <div class="p-6 space-y-4">
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stol Raqami (Tartib):</label>
+        <!-- Body (Scrollable) -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5">
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stol Raqami (Tartib):</label>
             <input 
               v-model="form.number" 
               type="number" 
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 outline-none focus:border-amber-500 text-slate-900 dark:text-white font-black font-mono text-lg" 
+              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 outline-none focus:border-amber-500 text-slate-900 dark:text-white font-black font-mono text-base" 
             />
           </div>
 
-          <div class="space-y-1.5">
-            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stol Nomi (masalan: VIP 1, Stol 5):</label>
+          <div class="space-y-1">
+            <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Stol Nomi (masalan: VIP 1, Stol 5):</label>
             <input 
               v-model="form.name" 
               type="text" 
               placeholder="Masalan: Stol #5"
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 outline-none focus:border-amber-500 text-slate-900 dark:text-white font-bold text-sm" 
+              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 outline-none focus:border-amber-500 text-slate-900 dark:text-white font-bold text-xs sm:text-sm" 
             />
           </div>
         </div>
         
-        <div class="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex gap-3">
-          <button @click="closeModal" class="flex-1 px-4 py-3 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl transition cursor-pointer">
+        <!-- Footer (Sticky) -->
+        <div class="p-3.5 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex gap-2.5 shrink-0">
+          <button @click="closeModal" class="flex-1 px-4 py-2.5 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer">
             Bekor qilish
           </button>
-          <button @click="handleSaveTable" :disabled="isLoading" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer">
+          <button @click="handleSaveTable" :disabled="isLoading" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 cursor-pointer">
             <Save class="w-4 h-4" /> 
             <span>{{ isLoading ? 'Saqlanmoqda...' : 'Saqlash' }}</span>
           </button>
