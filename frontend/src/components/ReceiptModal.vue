@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
+  (e: 'print-kitchen', order: Order): void;
 }>();
 
 const receiptWidth = ref<'80mm' | '58mm'>(
@@ -237,17 +238,25 @@ const queueNumber = computed(() => {
         </div>
 
         <!-- Footer Action Buttons (Hidden during print) -->
-        <div class="print:hidden p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex space-x-3 shrink-0">
+        <div class="print:hidden p-3.5 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 flex flex-wrap sm:flex-nowrap gap-2 shrink-0">
           <button 
             @click="triggerPrint"
-            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black py-3 rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs cursor-pointer"
+            class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black py-3 rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-xs cursor-pointer min-w-[140px]"
           >
             <Printer class="w-4 h-4" />
-            <span>Chop etish (Printerni tanlash)</span>
+            <span>Kassa Cheki (Chop etish)</span>
+          </button>
+          <button 
+            v-if="order"
+            @click="emit('print-kitchen', order); emit('close')"
+            class="px-3.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            title="Oshxona/Oshpaz uchun alohida chek chiqarish"
+          >
+            <span>👨‍🍳 Oshxona Cheki</span>
           </button>
           <button 
             @click="emit('close')"
-            class="px-5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all text-xs cursor-pointer"
+            class="px-4 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition-all text-xs cursor-pointer"
           >
             Yopish
           </button>

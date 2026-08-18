@@ -16,6 +16,7 @@ import CustomProductModal from '../components/pos/CustomProductModal.vue';
 import PosHeader from '../components/pos/PosHeader.vue';
 import PosCategoriesBar from '../components/pos/PosCategoriesBar.vue';
 import PosProductGrid from '../components/pos/PosProductGrid.vue';
+import PosOrdersDrawer from '../components/pos/PosOrdersDrawer.vue';
 import TableMapView from '../components/TableMapView.vue';
 import { getCashierFloorInfo, getNextDailyQueueNumber } from '../utils/formatters';
 import {
@@ -51,6 +52,7 @@ const activeWeightedProduct = ref<Product | null>(null);
 const showPaymentModal = ref(false);
 const showReceiptModal = ref(false);
 const showKitchenReceiptModal = ref(false);
+const showOrdersDrawer = ref(false);
 const kitchenReceiptData = ref<{ 
   tableNumber: number | null; 
   tableName?: string;
@@ -80,6 +82,9 @@ function handleGlobalKeydown(e: KeyboardEvent) {
     if (activeCart.value.length > 0) {
       clearActiveCart();
     }
+  } else if (e.key === 'F3') {
+    e.preventDefault();
+    showOrdersDrawer.value = !showOrdersDrawer.value;
   } else if (e.key === 'F4') {
     e.preventDefault();
     if (!showPaymentModal.value && !showExpenseModal.value) {
@@ -253,6 +258,49 @@ function saveTableOrder() {
   }
 }
 
+async function saveSaboyKitchenOrder() {
+  if (isSavingKitchenOrder.value) return;
+  if (posStore.cart.length === 0) return;
+  
+  isSavingKitchenOrder.value = true;
+  try {
+    const isKitchenPrinterOn = localStorage.getItem('doston_pos_printer_kitchen') !== 'false';
+    const cashierName = shiftStore.currentShift?.cashierName || authStore.user?.fullName || 'Kassir';
+    const shiftId = shiftStore.currentShift?.id || 'default-shift';
+
+    const res = await posStore.submitSaboyKitchenOrder(cashierName, shiftId);
+    if (res) {
+      kitchenReceiptData.value = res.kitchenReceiptData;
+      playPaySound();
+      toast.success(`🛍️ Saboy #${res.order.dailyQueueNumber} oshxonaga yuborildi!`);
+      if (isKitchenPrinterOn) {
+        showKitchenReceiptModal.value = true;
+      }
+    }
+  } finally {
+    setTimeout(() => {
+      isSavingKitchenOrder.value = false;
+    }, 500);
+  }
+}
+
+function handlePrintReceiptFromDrawer(order: Order) {
+  lastCompletedOrder.value = order;
+  showReceiptModal.value = true;
+}
+
+function handlePrintKitchenFromDrawer(order: Order) {
+  kitchenReceiptData.value = {
+    tableNumber: order.tableNumber || null,
+    tableName: order.orderType === 'TAKEAWAY' ? `🛍️ Saboy #${order.dailyQueueNumber || order.orderNumber}` : `${order.tableNumber}-Stol`,
+    items: order.items || [],
+    dailyQueueNumber: order.dailyQueueNumber,
+    cashierFloor: order.cashierFloor || getCashierFloorInfo(order.cashierName).badge,
+    isDoZakaz: order.isDoZakaz
+  };
+  showKitchenReceiptModal.value = true;
+}
+
 async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number) {
   if (isProcessingPayment.value) return;
   isProcessingPayment.value = true;
@@ -322,6 +370,7 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
         @switch-mode="switchMode"
         @back-to-table-map="backToTableMap"
         @open-expense="showExpenseModal = true"
+        @open-orders-drawer="showOrdersDrawer = true"
       />
 
       <!-- ZAL MODE: Stol xaritasi -->
@@ -550,12 +599,26 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
           </div>
         </template>
         <template v-else>
-          <button :disabled="activeCart.length === 0" @click="showPaymentModal = true" class="relative w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white py-4 rounded-2xl font-black text-base shadow-xl shadow-amber-500/25 transition-all active:scale-[.98] flex items-center justify-center gap-2.5 cursor-pointer">
-            <CreditCard class="w-5 h-5" />
-            <span v-if="activeCart.length > 0">To'lov — {{ posStore.activeTotalWithServiceFee.toLocaleString('uz-UZ') }} so'm</span>
-            <span v-else>Savat bo'sh</span>
-            <span v-if="activeCart.length > 0" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
-          </button>
+          <div class="grid grid-cols-5 gap-2">
+            <button 
+              :disabled="activeCart.length === 0" 
+              @click="saveSaboyKitchenOrder" 
+              class="col-span-2 flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 text-slate-700 dark:text-slate-200 py-3.5 rounded-xl font-black text-xs transition-all disabled:opacity-40 active:scale-95 cursor-pointer"
+              title="Saboyni to'lovsiz oshxonaga yuborish (to'lov keyin olinadi)"
+            >
+              <Utensils class="w-4 h-4 text-amber-500" />
+              <span>Oshxona</span>
+            </button>
+            <button 
+              :disabled="activeCart.length === 0" 
+              @click="showPaymentModal = true" 
+              class="col-span-3 relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:bg-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:shadow-none text-white py-3.5 rounded-xl font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <CreditCard class="w-4 h-4" />
+              <span>To'lov</span>
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/30 pointer-events-none">F1</span>
+            </button>
+          </div>
         </template>
       </div>
     </div>
@@ -571,7 +634,12 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
       @close="showPaymentModal = false" 
       @success="handlePaymentSuccess" 
     />
-    <ReceiptModal :order="lastCompletedOrder" :is-open="showReceiptModal" @close="showReceiptModal = false" />
+    <ReceiptModal 
+      :order="lastCompletedOrder" 
+      :is-open="showReceiptModal" 
+      @close="showReceiptModal = false" 
+      @print-kitchen="handlePrintKitchenFromDrawer"
+    />
     <KitchenReceiptModal 
       :is-open="showKitchenReceiptModal" 
       :table-number="kitchenReceiptData.tableNumber" 
@@ -582,6 +650,12 @@ async function handlePaymentSuccess(paymentType: PaymentType, paidAmount: number
       :daily-queue-number="kitchenReceiptData.dailyQueueNumber"
       :is-do-zakaz="kitchenReceiptData.isDoZakaz"
       @close="showKitchenReceiptModal = false" 
+    />
+    <PosOrdersDrawer 
+      :is-open="showOrdersDrawer" 
+      @close="showOrdersDrawer = false" 
+      @print-receipt="handlePrintReceiptFromDrawer" 
+      @print-kitchen="handlePrintKitchenFromDrawer" 
     />
     <ExpenseModal :is-open="showExpenseModal" @close="showExpenseModal = false" />
     <WeightedProductModal :is-open="!!activeWeightedProduct" :product="activeWeightedProduct" @close="activeWeightedProduct = null" @confirm="confirmWeightedProduct" />

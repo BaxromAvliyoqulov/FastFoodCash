@@ -695,6 +695,99 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  // ─── SABOY: submitSaboyKitchenOrder (Oshxonaga to'lovsiz yuborish) ───────────
+  async function submitSaboyKitchenOrder(
+    cashierName?: string,
+    shiftId?: string
+  ): Promise<{ order: Order; kitchenReceiptData: any } | null> {
+    if (isSubmittingOrder.value) return null;
+    if (cart.value.length === 0) return null;
+
+    isSubmittingOrder.value = true;
+    const authStore = useAuthStore();
+
+    try {
+      const cartItemsCopy = [...cart.value];
+      const subtotal = cartSubtotal.value;
+      const totalAmount = subtotal; // Saboyda xizmat haqi 0%
+      const dailyQueueNumber = getNextDailyQueueNumber();
+      const cashierFloorInfo = getCashierFloorInfo(authStore.user);
+      const effectiveCashier = cashierName || authStore.user?.fullName || 'Kassir';
+      const effectiveShiftId = shiftId || 'default-shift';
+
+      const orderNumber = activeOrderNumber.value++;
+      const orderId = 'saboy-kitch-' + Date.now();
+
+      const newOrder: Order = {
+        id: orderId,
+        orderNumber,
+        dailyQueueNumber,
+        shiftId: effectiveShiftId,
+        cashierName: effectiveCashier,
+        cashierFloor: cashierFloorInfo.badge,
+        orderType: 'TAKEAWAY',
+        items: cartItemsCopy.map(c => ({
+          id: 'item-' + Math.random().toString(36).substr(2, 6),
+          product: { ...c.product },
+          quantity: c.quantity,
+          unitPrice: c.unitPrice || c.product.price,
+          totalPrice: c.totalPrice,
+          selectedModifiers: c.selectedModifiers || [],
+          customNote: c.customNote,
+          isTakeaway: true
+        })),
+        subtotal,
+        serviceFee: 0,
+        serviceFeePercent: 0,
+        totalAmount,
+        paymentType: 'CASH', // default kutilmoqda
+        paidAmount: 0,
+        changeAmount: 0,
+        status: 'COOKING',
+        createdAt: new Date().toISOString()
+      };
+
+      orderHistory.value.unshift(newOrder);
+
+      // LocalStorage offline orders da ham saqlash
+      const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
+      offlineOrders.push(newOrder);
+      localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
+
+      clearCart();
+      _deductIngredients(cartItemsCopy);
+
+      return {
+        order: newOrder,
+        kitchenReceiptData: {
+          tableNumber: null,
+          tableName: `🛍️ Saboy #${dailyQueueNumber}`,
+          items: cartItemsCopy,
+          dailyQueueNumber,
+          cashierFloor: cashierFloorInfo.badge,
+          isDoZakaz: false
+        }
+      };
+    } finally {
+      isSubmittingOrder.value = false;
+    }
+  }
+
+  // ─── Update Order Status (COOKING -> READY -> COMPLETED) ───────────────────
+  function updateOrderStatus(orderId: string, newStatus: 'COOKING' | 'READY' | 'COMPLETED' | 'CANCELLED') {
+    const order = orderHistory.value.find(o => o.id === orderId);
+    if (order) {
+      order.status = newStatus;
+      // LocalStorage dagi offline orders ni ham yangilash
+      const offlineOrders = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
+      const offIndex = offlineOrders.findIndex((o: any) => o.id === orderId);
+      if (offIndex > -1) {
+        offlineOrders[offIndex].status = newStatus;
+        localStorage.setItem('doston_offline_orders', JSON.stringify(offlineOrders));
+      }
+    }
+  }
+
   // ─── ZAL: addToTableCart ──────────────────────────────────────────────────────
   function addToTableCart(tableId: string, product: Product, selectedModifiers: Modifier[] = [], customQuantity: number = 1) {
     const cat = categories.value.find(c => c.id === product.categoryId);
@@ -1224,6 +1317,8 @@ export const usePosStore = defineStore('pos', () => {
     removeFromCart,
     clearCart,
     submitOrder,
+    submitSaboyKitchenOrder,
+    updateOrderStatus,
     checkLowStockAlerts,
 
     // ZAL methods

@@ -12,7 +12,8 @@ import {
   Moon,
   LogOut,
   LayoutDashboard,
-  Crown
+  Crown,
+  History
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -83,6 +84,20 @@ const themeStore = useThemeStore();
         <span v-if="authStore.user?.fullName?.toLowerCase().includes('2')">2-Qavat · Xonalar</span>
         <span v-else-if="authStore.user?.fullName?.toLowerCase().includes('1')">1-Qavat · Stollar</span>
         <span v-else>Zal & Xonalar</span>
+      </button>
+
+      <!-- SAVDO TARIXI TAB — Kassirlar va Admin uchun ochiq -->
+      <button 
+        @click="emit('change-tab', 'history')"
+        :class="[
+          'flex items-center space-x-2 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all duration-200 shrink-0 cursor-pointer',
+          activeTab === 'history' 
+            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30 scale-[1.02]' 
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-900'
+        ]"
+      >
+        <History class="w-4 h-4" />
+        <span>Savdo Tarixi</span>
       </button>
 
       <!-- SMENA TAB — Faqat Admin uchun yoki Admin paneli orqali -->

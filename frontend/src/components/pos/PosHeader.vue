@@ -22,10 +22,17 @@ const emit = defineEmits<{
   (e: 'switch-mode', mode: 'SABOY' | 'ZAL'): void;
   (e: 'back-to-table-map'): void;
   (e: 'open-expense'): void;
+  (e: 'open-orders-drawer'): void;
 }>();
 
 const posStore = usePosStore();
 const authStore = useAuthStore();
+
+const activeSaboyCount = computed(() => {
+  return (posStore.orderHistory || []).filter(o => 
+    o.orderType === 'TAKEAWAY' && (o.status === 'COOKING' || o.status === 'READY')
+  ).length;
+});
 
 // Kassir qaysi qavatga biriktirilgan?
 const cashierFloor = computed<'ALL' | 'FLOOR_1' | 'FLOOR_2'>(() => {
@@ -107,6 +114,23 @@ onUnmounted(() => {
 
     <!-- RIGHT ACTION CONTROLS -->
     <div class="ml-auto flex items-center gap-2">
+      <!-- Live Saboy Orders Queue Button (F3) -->
+      <button
+        @click="emit('open-orders-drawer')"
+        class="relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 border cursor-pointer bg-gradient-to-r from-amber-500/10 to-orange-500/15 hover:from-amber-500/20 hover:to-orange-500/25 border-amber-500/30 text-amber-800 dark:text-amber-300 shadow-sm"
+        title="Saboy va barcha buyurtmalar navbati [F3]"
+      >
+        <ShoppingBag class="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <span class="hidden sm:inline">Saboy Navbati</span>
+        <span
+          v-if="activeSaboyCount > 0"
+          class="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full animate-pulse shadow-sm shadow-amber-500/30"
+        >
+          {{ activeSaboyCount }}
+        </span>
+        <span class="hidden md:inline text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-500/30">F3</span>
+      </button>
+
       <!-- Sound Effects Toggle Button -->
       <button 
         @click="handleToggleSound" 
