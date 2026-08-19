@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/authStore';
-import { useToastStore } from '../stores/toastStore';
 import { 
   Delete, ArrowRight, 
   UtensilsCrossed, Sparkles, Lock, RotateCcw 
 } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
-const toast = useToastStore();
 
 const pin = ref('');
 const errorMsg = ref('');
@@ -41,9 +39,6 @@ const handleLogin = async () => {
   if (!result.success) {
     errorMsg.value = result.error || "Noto'g'ri PIN-kod!";
     pin.value = '';
-  } else if ((result as any).offline) {
-    // Offline rejimda kirdi — foydalanuvchiga xabar berish
-    toast.info('📡 Offline rejimda ishlamoqda. Internet qaytganda avtomatik sinxronlanadi.', 4000);
   }
   
   isLoading.value = false;
