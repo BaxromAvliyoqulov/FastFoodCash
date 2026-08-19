@@ -84,12 +84,20 @@ const filteredCategoriesList = computed(() => {
 // Filtered Products
 const filteredProductList = computed(() => {
   return posStore.products.filter(p => {
+    if (!p) return false;
     let matchesCat = true;
     if (selectedCategoryFilter.value !== 'ALL') {
       const cat = posStore.categories.find(c => c.id === selectedCategoryFilter.value);
-      matchesCat = cat ? (p.categoryName === cat.name || p.categoryId === cat.id) : false;
+      if (cat) {
+        const pCatName = (p.categoryName || '').toLowerCase().trim();
+        const catName = (cat.name || '').toLowerCase().trim();
+        matchesCat = p.categoryId === cat.id || pCatName === catName || pCatName.includes(catName) || catName.includes(pCatName);
+      } else {
+        matchesCat = p.categoryId === selectedCategoryFilter.value;
+      }
     }
-    const matchesSearch = !searchQuery.value || p.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const q = (searchQuery.value || '').toLowerCase().trim();
+    const matchesSearch = !q || (p.name || '').toLowerCase().includes(q) || (p.categoryName || '').toLowerCase().includes(q);
     return matchesCat && matchesSearch;
   });
 });

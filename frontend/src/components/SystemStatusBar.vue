@@ -30,15 +30,19 @@ async function handleSyncOfflineOrders() {
 <template>
   <div class="flex items-center gap-2 flex-wrap">
     
-    <!-- 🟢 ONLINE / 🔴 OFFLINE STATUS BADGE -->
+    <!-- 🟢 ONLINE / 🟡 LOCAL / 🔴 OFFLINE STATUS BADGE -->
     <div 
       :class="[
         'flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black border transition-all duration-300 select-none shadow-sm',
         posStore.isOnline
-          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+          ? (posStore.isServerConnected 
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' 
+              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400')
           : 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 animate-pulse'
       ]"
-      :title="posStore.isOnline ? 'Server bilan aloqa barqaror (Online)' : 'Server yoki internet uzilgan (Offline rejimda ishlamoqda)'"
+      :title="posStore.isOnline 
+        ? (posStore.isServerConnected ? 'Server va internet bilan aloqa barqaror (Online)' : 'Internet mavjud. Mahalliy kassa rejimida 100% ishlamoqda') 
+        : 'Internet uzilgan (Mahalliy xotirada ishlamoqda)'"
     >
       <span class="relative flex h-2 w-2">
         <span 
@@ -52,7 +56,7 @@ async function handleSyncOfflineOrders() {
 
       <component :is="posStore.isOnline ? Wifi : WifiOff" class="w-3.5 h-3.5 shrink-0" />
       <span class="tracking-wide uppercase text-[10px]">
-        {{ posStore.isOnline ? 'Online' : 'Offline' }}
+        {{ posStore.isOnline ? (posStore.isServerConnected ? 'Online' : 'Online (Lokal)') : 'Offline' }}
       </span>
     </div>
 

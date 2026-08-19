@@ -208,6 +208,7 @@ export const usePosStore = defineStore('pos', () => {
 
   // ─── Network Status, Sync Engine & BroadcastChannel ────────────────────────
   const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const isServerConnected = ref(true);
   const lastSyncTime = ref<Date>(new Date());
   const isSyncingOrders = ref(false);
   const isSyncingProducts = ref(false);
@@ -262,6 +263,7 @@ export const usePosStore = defineStore('pos', () => {
         const body = await res.json();
         const backendProducts = body.success && Array.isArray(body.data) ? body.data : [];
         
+        isServerConnected.value = true;
         isOnline.value = true;
         lastSyncTime.value = new Date();
 
@@ -312,10 +314,14 @@ export const usePosStore = defineStore('pos', () => {
         if (showToast) {
           toast.success("Menyu va tovarlar serverdan to'liq yangilandi! ✨");
         }
+      } else {
+        isServerConnected.value = false;
+        isOnline.value = typeof navigator !== 'undefined' ? navigator.onLine : false;
       }
     } catch (e) {
       console.warn('Backend offline — mahalliy keshdagi tovarlar ishlatilmoqda:', e);
-      isOnline.value = false;
+      isServerConnected.value = false;
+      isOnline.value = typeof navigator !== 'undefined' ? navigator.onLine : false;
     } finally {
       isSyncingProducts.value = false;
     }
@@ -452,6 +458,7 @@ export const usePosStore = defineStore('pos', () => {
       if (res.ok) {
         const body = await res.json();
         if (body.success && body.data) {
+          isServerConnected.value = true;
           isOnline.value = true;
           lastSyncTime.value = new Date();
           // Backend returns { items: [...], meta: {...} } — array ni to'g'ri olish kerak
@@ -488,10 +495,14 @@ export const usePosStore = defineStore('pos', () => {
             createdAt: o.createdAt || new Date().toISOString()
           }));
         }
+      } else {
+        isServerConnected.value = false;
+        isOnline.value = typeof navigator !== 'undefined' ? navigator.onLine : false;
       }
     } catch (e) {
       console.warn('Backend API unreachable, using local orders history:', e);
-      isOnline.value = false;
+      isServerConnected.value = false;
+      isOnline.value = typeof navigator !== 'undefined' ? navigator.onLine : false;
     }
   }
 
@@ -1546,6 +1557,7 @@ export const usePosStore = defineStore('pos', () => {
 
     // Network & Sync State
     isOnline,
+    isServerConnected,
     lastSyncTime,
     isSyncingOrders,
     isSyncingProducts,
