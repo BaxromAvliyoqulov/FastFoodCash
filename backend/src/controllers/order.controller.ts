@@ -211,7 +211,8 @@ export const createOrder = async (req: Request, res: Response) => {
     return res.status(201).json({
       success: true,
       message: 'Buyurtma rasmiylashtirildi',
-      data: result
+      data: result,
+      order: result
     });
 
   } catch (error: any) {
@@ -309,7 +310,7 @@ export const cancelOrder = async (req: Request, res: Response) => {
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 50));
+    const limit = Math.max(1, Math.min(500, parseInt(req.query.limit as string) || 200));
     const skip = (page - 1) * limit;
 
     const [orders, totalCount] = await Promise.all([
@@ -352,7 +353,7 @@ export const getOrders = async (req: Request, res: Response) => {
     const formattedOrders = orders.map(o => ({
       id: o.id,
       orderNumber: o.orderNumber,
-      cashierName: (o.cashier?.fullName || 'Kassir').replace(/baxrom\s*/i, '').trim() || 'Kassir',
+      cashierName: o.cashier?.fullName || 'Kassir',
       totalAmount: o.totalAmount,
       paymentType: o.paymentType,
       status: o.status,

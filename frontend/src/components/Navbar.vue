@@ -3,6 +3,7 @@
 import { useShiftStore } from '../stores/shiftStore';
 import { useThemeStore } from '../stores/themeStore';
 import { useAuthStore } from '../stores/authStore';
+import SystemStatusBar from './SystemStatusBar.vue';
 import { 
   ShoppingCart, 
   Receipt, 
@@ -30,7 +31,7 @@ const themeStore = useThemeStore();
 </script>
 
 <template>
-  <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 shadow-sm dark:shadow-2xl transition-colors duration-300 relative z-30">
+  <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3 shadow-sm dark:shadow-2xl transition-colors duration-300 relative z-30 flex-wrap sm:flex-nowrap">
     <!-- Brand Logo & System Identity — bosganda POS home ga qaytadi -->
     <div 
       class="flex items-center space-x-3 shrink-0 cursor-pointer group"
@@ -134,8 +135,11 @@ const themeStore = useThemeStore();
       </button>
     </nav>
 
-    <!-- Right Action Controls: Shift Status + Theme Switcher + Logout -->
+    <!-- Right Action Controls: SystemStatusBar + Shift Status + Theme Switcher + Logout -->
     <div class="flex items-center space-x-2.5 shrink-0">
+      <!-- Live Network & Menu Sync Status Bar -->
+      <SystemStatusBar />
+
       <!-- Shift Status Pill -->
       <button 
         v-if="shiftStore.currentShift" 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
@@ -21,12 +21,26 @@ import {
   X,
   User,
   Filter,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw,
+  FileSpreadsheet
 } from 'lucide-vue-next';
 
 const posStore = usePosStore();
 const authStore = useAuthStore();
 const toast = useToastStore();
+
+const isRefreshing = ref(false);
+async function handleRefreshHistory() {
+  isRefreshing.value = true;
+  await posStore.fetchOrders();
+  toast.success('Savdo tarixi muvaffaqiyatli yangilandi! 📊', 2000);
+  isRefreshing.value = false;
+}
+
+onMounted(() => {
+  posStore.fetchOrders();
+});
 
 const searchQuery = ref('');
 const selectedDateFilter = ref<'ALL' | 'TODAY' | 'YESTERDAY' | 'MONTH'>('ALL');
@@ -306,6 +320,16 @@ function handleExportSalesExcel() {
       </div>
 
       <div class="flex items-center gap-3">
+        <button 
+          @click="handleRefreshHistory"
+          :disabled="isRefreshing"
+          class="bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 hover:text-white dark:text-indigo-400 dark:hover:text-white border border-indigo-500/20 font-bold px-3.5 py-2 rounded-2xl text-xs flex items-center space-x-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+          title="Serverdan eng so'nggi barcha buyurtmalar tarixini yuklab olish"
+        >
+          <RefreshCw :class="['w-4 h-4', isRefreshing ? 'animate-spin' : '']" />
+          <span>{{ isRefreshing ? 'Yangilanmoqda...' : 'Yangilash' }}</span>
+        </button>
+
         <button 
           v-if="posStore.orderHistory.length > 0"
           @click="handleExportSalesExcel"

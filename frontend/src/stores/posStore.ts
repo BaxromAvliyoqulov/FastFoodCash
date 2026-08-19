@@ -206,48 +206,237 @@ export const usePosStore = defineStore('pos', () => {
     }
   }
 
+  // ─── Network Status, Sync Engine & BroadcastChannel ────────────────────────
+  const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const lastSyncTime = ref<Date>(new Date());
+  const isSyncingOrders = ref(false);
+  const isSyncingProducts = ref(false);
+
+  const pendingOfflineCount = computed(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('doston_offline_orders') || '[]');
+      return Array.isArray(list) ? list.length : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Cross-Tab Real-time BroadcastChannel (0ms sync between all open tabs/monitors)
+  let syncChannel: BroadcastChannel | null = null;
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    try {
+      syncChannel = new BroadcastChannel('fastfoodcash_sync');
+      syncChannel.onmessage = (event) => {
+        const { type } = event.data || {};
+        if (type === 'PRODUCTS_UPDATED') {
+          fetchProducts(false);
+        } else if (type === 'ORDER_CREATED' || type === 'ORDER_CANCELLED') {
+          fetchOrders();
+        } else if (type === 'FORCE_REFRESH') {
+          fetchProducts(false);
+          fetchOrders();
+        }
+      };
+    } catch (e) {
+      console.warn('BroadcastChannel initialization warning:', e);
+    }
+  }
+
+  function broadcastSync(type: 'PRODUCTS_UPDATED' | 'ORDER_CREATED' | 'ORDER_CANCELLED' | 'FORCE_REFRESH') {
+    try {
+      syncChannel?.postMessage({ type, timestamp: Date.now() });
+    } catch (e) {
+      console.warn('Broadcast sync error:', e);
+    }
+  }
+
   const products = ref<Product[]>(loadedProducts);
   watch(products, (newVal) => localStorage.setItem('doston_pos_products', JSON.stringify(newVal)), { deep: true });
 
-  async function fetchProducts() {
+  // ─── Fetch Products (Never drops new DB products added by Super Admin) ────────
+  async function fetchProducts(showToast = false) {
+    isSyncingProducts.value = true;
     try {
-      const res = await fetchWithTimeout(`${API_URL}/products`);
+      const res = await fetchWithTimeout(`${API_URL}/products`, {}, 4000);
       if (res.ok) {
         const body = await res.json();
-        const backendProducts = body.success ? body.data : [];
+        const backendProducts = body.success && Array.isArray(body.data) ? body.data : [];
         
-        products.value = initialProducts.map(localProd => {
-          const backendMatch = backendProducts.find((bp: any) =>
-            bp.id === localProd.id || 
-            bp.name?.toLowerCase().trim() === localProd.name?.toLowerCase().trim()
-          );
+        isOnline.value = true;
+        lastSyncTime.value = new Date();
+
+        if (backendProducts.length > 0) {
+          // Barcha backenddagi mahsulotlarni qamrab olamiz (faqat initialProducts emas!)
+          const activeBackendProducts = backendProducts.filter((bp: any) => !bp.isDeleted);
           
-          if (backendMatch) {
-            const hasValidName = backendMatch.name && !backendMatch.name.startsWith('prod-');
-            const norm = normalizeCategoryName(backendMatch.categoryName || localProd.categoryName, localProd.categoryId);
+          const mergedProducts: Product[] = activeBackendProducts.map((bp: any) => {
+            const initMatch = initialProducts.find(
+              ip => ip.id === bp.id || ip.name?.toLowerCase().trim() === bp.name?.toLowerCase().trim()
+            );
+
+            const norm = normalizeCategoryName(bp.categoryName || initMatch?.categoryName || 'Boshqa', bp.categoryId || initMatch?.categoryId);
+            
+            const imgUrl = (bp.imageUrl && !bp.imageUrl.includes('placeholder'))
+              ? bp.imageUrl
+              : (initMatch?.imageUrl || '/images/food/lavash_obichniy.jpg');
+
             return {
-              ...localProd,
-              id: backendMatch.id || localProd.id,
-              name: hasValidName ? backendMatch.name : localProd.name,
-              price: backendMatch.price || localProd.price,
+              id: bp.id,
+              name: bp.name || initMatch?.name || 'Taom',
+              price: typeof bp.price === 'number' ? bp.price : (Number(bp.price) || initMatch?.price || 0),
               categoryId: norm.id,
               categoryName: norm.name,
-              imageUrl: (backendMatch.imageUrl && !backendMatch.imageUrl.includes('placeholder')) ? backendMatch.imageUrl : localProd.imageUrl,
-              isStopList: backendMatch.isStopList ?? localProd.isStopList
+              imageUrl: imgUrl,
+              isStopList: bp.isAvailable !== undefined ? !bp.isAvailable : (bp.isStopList ?? initMatch?.isStopList ?? false),
+              recipe: (bp.recipes && bp.recipes.length > 0)
+                ? bp.recipes.map((r: any) => ({ ingredientId: r.ingredientId, quantityRequired: r.quantityRequired }))
+                : (initMatch?.recipe || [])
             };
-          }
-          const norm = normalizeCategoryName(localProd.categoryName, localProd.categoryId);
-          return {
-            ...localProd,
-            categoryId: norm.id,
-            categoryName: norm.name
-          };
-        });
+          });
+
+          products.value = mergedProducts;
+
+          // Kategoriyalarni ham dinamik to'ldirish
+          mergedProducts.forEach(p => {
+            if (p.categoryName && !categories.value.some(c => c.name.toLowerCase() === p.categoryName.toLowerCase())) {
+              categories.value.push({
+                id: p.categoryId || ('cat-' + p.categoryName.toLowerCase().replace(/\s+/g, '-')),
+                name: p.categoryName,
+                count: 0,
+                isHidden: false
+              });
+            }
+          });
+        }
+
+        if (showToast) {
+          toast.success("Menyu va tovarlar serverdan to'liq yangilandi! ✨");
+        }
       }
     } catch (e) {
-      console.warn('Backend offline — frontendning mahalliy menyu ma\'lumotlari ishlatilmoqda:', e);
+      console.warn('Backend offline — mahalliy keshdagi tovarlar ishlatilmoqda:', e);
+      isOnline.value = false;
+    } finally {
+      isSyncingProducts.value = false;
     }
   }
+
+  // ─── Force Refresh Menu (Keshni tozalash va to'liq yangilash) ───────────────
+  async function forceRefreshMenu() {
+    localStorage.removeItem('doston_pos_products');
+    await fetchProducts(true);
+    await fetchOrders();
+    broadcastSync('FORCE_REFRESH');
+  }
+
+  // ─── Offline Orders Auto-Sync Engine ──────────────────────────────────────────
+  async function syncOfflineOrders() {
+    if (isSyncingOrders.value) return;
+    const raw = localStorage.getItem('doston_offline_orders');
+    if (!raw) return;
+
+    let offlineOrders: any[] = [];
+    try {
+      offlineOrders = JSON.parse(raw);
+    } catch {
+      return;
+    }
+
+    if (!Array.isArray(offlineOrders) || offlineOrders.length === 0) return;
+
+    isSyncingOrders.value = true;
+    let successCount = 0;
+    const remainingOrders: any[] = [];
+
+    for (const offOrder of offlineOrders) {
+      try {
+        const payload = offOrder.offlinePayload || {
+          cashierId: offOrder.cashierId || 'default',
+          shiftId: offOrder.shiftId,
+          paymentType: offOrder.paymentType,
+          items: offOrder.items?.map((item: any) => ({
+            productId: item.product?.id || item.productId,
+            productName: item.product?.name || item.productName,
+            quantity: item.quantity || 1,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice
+          }))
+        };
+
+        const res = await fetchWithTimeout(`${API_URL}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 3500);
+
+        const body = await res.json();
+        if (res.ok && body.success) {
+          successCount++;
+          // Update local orderHistory if matching temp id
+          const realOrder = body.data?.order || body.data || body.order;
+          if (realOrder) {
+            const idx = orderHistory.value.findIndex(o => o.id === offOrder.id);
+            if (idx > -1) {
+              orderHistory.value[idx].id = realOrder.id;
+              orderHistory.value[idx].orderNumber = realOrder.orderNumber;
+              orderHistory.value[idx].status = 'COMPLETED';
+            }
+          }
+        } else {
+          remainingOrders.push(offOrder);
+        }
+      } catch {
+        remainingOrders.push(offOrder);
+      }
+    }
+
+    localStorage.setItem('doston_offline_orders', JSON.stringify(remainingOrders));
+    isSyncingOrders.value = false;
+
+    if (successCount > 0) {
+      toast.success(`${successCount} ta oflayn chek serverga muvaffaqiyatli yuklandi! 🚀`, 4000);
+      broadcastSync('ORDER_CREATED');
+      await fetchOrders();
+    }
+  }
+
+  // ─── Auto Background Polling & Online Listeners ─────────────────────────────
+  let autoSyncInterval: any = null;
+  function initSyncEngine() {
+    if (autoSyncInterval) return;
+    autoSyncInterval = setInterval(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        syncOfflineOrders();
+        fetchProducts(false);
+        fetchOrders();
+      }
+    }, 10000);
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        isOnline.value = true;
+        syncOfflineOrders();
+        fetchProducts(false);
+        fetchOrders();
+        toast.success('Internet aloqasi tiklandi! 🟢', 3000);
+      });
+
+      window.addEventListener('offline', () => {
+        isOnline.value = false;
+        toast.warning('Internet aloqasi uzildi! Kassa oflayn rejimda ishlaydi. 🔴', 4000);
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          fetchProducts(false);
+          fetchOrders();
+        }
+      });
+    }
+  }
+
+  // Start sync engine immediately on store creation
+  initSyncEngine();
 
   // ─── SABOY Cart ──────────────────────────────────────────────────────────────
   const cart = ref<CartItem[]>([]);
@@ -259,10 +448,12 @@ export const usePosStore = defineStore('pos', () => {
 
   async function fetchOrders() {
     try {
-      const res = await fetchWithTimeout(`${API_URL}/orders`);
+      const res = await fetchWithTimeout(`${API_URL}/orders`, {}, 4000);
       if (res.ok) {
         const body = await res.json();
         if (body.success && body.data) {
+          isOnline.value = true;
+          lastSyncTime.value = new Date();
           // Backend returns { items: [...], meta: {...} } — array ni to'g'ri olish kerak
           const rawOrders = Array.isArray(body.data) ? body.data : (Array.isArray(body.data.items) ? body.data.items : []);
           
@@ -300,6 +491,7 @@ export const usePosStore = defineStore('pos', () => {
       }
     } catch (e) {
       console.warn('Backend API unreachable, using local orders history:', e);
+      isOnline.value = false;
     }
   }
 
@@ -621,13 +813,14 @@ export const usePosStore = defineStore('pos', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 1000);
+        }, 3500);
         
         const body = await res.json();
+        const orderData = body.data?.order || body.data || body.order;
         
-        if (res.ok && body.success && body.data?.order) {
+        if (res.ok && body.success && orderData) {
           const completedOrder = {
-            ...body.data.order,
+            ...orderData,
             dailyQueueNumber,
             cashierFloor: cashierFloorInfo.badge,
             subtotal,
@@ -648,6 +841,7 @@ export const usePosStore = defineStore('pos', () => {
           orderHistory.value.unshift(completedOrder);
           clearCart();
           _deductIngredients(cartItemsCopy);
+          broadcastSync('ORDER_CREATED');
           return completedOrder;
         }
       } catch (_backendErr) {
@@ -932,13 +1126,14 @@ export const usePosStore = defineStore('pos', () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 1000);
+        }, 3500);
         
         const body = await res.json();
+        const orderData = body.data?.order || body.data || body.order;
         
-        if (res.ok && body.success && body.data?.order) {
+        if (res.ok && body.success && orderData) {
           const completedOrder = {
-            ...body.data.order,
+            ...orderData,
             dailyQueueNumber,
             cashierFloor: cashierFloorInfo.badge,
             isDoZakaz,
@@ -973,6 +1168,7 @@ export const usePosStore = defineStore('pos', () => {
             localStorage.removeItem('doston_pos_active_table');
           }
 
+          broadcastSync('ORDER_CREATED');
           return completedOrder;
         }
       } catch (_backendErr) {
@@ -1164,7 +1360,8 @@ export const usePosStore = defineStore('pos', () => {
     const prod = products.value.find(p => p.id === productId);
     if (!prod) return;
     prod.isStopList = !prod.isStopList;
-    toast.info(prod.isStopList ? `"${prod.name}" Stop-listga olindi ⛔` : `"${prod.name}" sotuvga chiqarildi ✅`, 2500);
+    toast.info(`"${prod.name}" ${prod.isStopList ? 'Stop-Listga qo\'shildi' : 'Stop-Listdan chiqarildi'}!`, 2500);
+    broadcastSync('PRODUCTS_UPDATED');
 
     try {
       await fetchWithTimeout(`${API_URL}/products/${productId}`, {
@@ -1346,6 +1543,16 @@ export const usePosStore = defineStore('pos', () => {
     setServiceFeeConfig,
     activeServiceFeeAmount,
     activeTotalWithServiceFee,
+
+    // Network & Sync State
+    isOnline,
+    lastSyncTime,
+    isSyncingOrders,
+    isSyncingProducts,
+    pendingOfflineCount,
+    syncOfflineOrders,
+    forceRefreshMenu,
+    broadcastSync,
 
     // Menu CRUD
     toggleStopList,

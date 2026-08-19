@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePosStore } from '../../stores/posStore';
 import { useAuthStore } from '../../stores/authStore';
-import { Search, ShoppingBag, ArrowLeft, Maximize, Minimize, Volume2, VolumeX } from 'lucide-vue-next';
+import { Search, ShoppingBag, ArrowLeft, Maximize, Minimize, Volume2, VolumeX, RefreshCw } from 'lucide-vue-next';
 import { isSoundEnabled, toggleSoundEnabled } from '../../utils/posSounds';
 
 const soundOn = ref(isSoundEnabled());
@@ -129,6 +129,16 @@ onUnmounted(() => {
           {{ activeSaboyCount }}
         </span>
         <span class="hidden md:inline text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-500/30">F3</span>
+      </button>
+
+      <!-- Quick Menu Sync / Refresh Button -->
+      <button 
+        @click="posStore.forceRefreshMenu()" 
+        title="Menyu va tovarlarni serverdan darhol yangilash (Keshni tozalash)"
+        class="flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all active:scale-95 cursor-pointer group"
+      >
+        <RefreshCw :class="['w-3.5 h-3.5 text-amber-500 transition-transform duration-500', posStore.isSyncingProducts ? 'animate-spin' : 'group-hover:rotate-180']" />
+        <span class="hidden xl:inline text-[11px]">Yangilash</span>
       </button>
 
       <!-- Sound Effects Toggle Button -->
