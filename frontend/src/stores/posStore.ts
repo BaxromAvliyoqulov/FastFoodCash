@@ -207,14 +207,40 @@ export const usePosStore = defineStore('pos', () => {
     return init?.name || rawName || 'Taom';
   }
 
-  // Helper to ensure dummy/obsolete products are excluded
+  // ─── Deleted Products ID Tracking (Permanent Suppression) ───────────────────
+  let storedDeletedIds: string[] = [];
+  try {
+    const raw = localStorage.getItem('doston_pos_deleted_ids');
+    if (raw) storedDeletedIds = JSON.parse(raw);
+  } catch {}
+  const deletedProductIds = ref<Set<string>>(new Set(storedDeletedIds));
+  
+  function markProductDeleted(id: string, name?: string) {
+    deletedProductIds.value.add(id);
+    if (name) {
+      deletedProductIds.value.add(name.toLowerCase().trim());
+    }
+    try {
+      localStorage.setItem('doston_pos_deleted_ids', JSON.stringify(Array.from(deletedProductIds.value)));
+    } catch {}
+  }
+
+  // Helper to ensure dummy/obsolete or deleted products are excluded
   function isObsoleteDummyProduct(p: any): boolean {
     if (!p) return true;
     const id = p.id || '';
     const name = (p.name || '').toLowerCase().trim();
+    if (deletedProductIds.value.has(id) || deletedProductIds.value.has(name)) {
+      return true;
+    }
     if (
       id === 'prod-des-9' ||
       name === 'prod-des-9' ||
+      id === 'prod-drk-nestle-gaz-15' ||
+      name === 'nestle gazli 1.5l' ||
+      name === 'nestle gazli' ||
+      id === 'prod-drk-pepsi-bot' ||
+      name === 'pepsi butulka' ||
       name === 'mazza cheeseburger' ||
       name === 'double max burger' ||
       name === 'classic cheeseburger' ||
@@ -230,7 +256,7 @@ export const usePosStore = defineStore('pos', () => {
 
   // ─── Products ────────────────────────────────────────────────────────────────
   const storedProducts = localStorage.getItem('doston_pos_products');
-  let loadedProducts: Product[] = initialProducts;
+  let loadedProducts: Product[] = initialProducts.filter(ip => !isObsoleteDummyProduct(ip));
   if (storedProducts) {
     try {
       const parsed = JSON.parse(storedProducts);
@@ -364,6 +390,7 @@ export const usePosStore = defineStore('pos', () => {
         const mergedMap = new Map<string, Product>();
 
         initialProducts.forEach(ip => {
+          if (isObsoleteDummyProduct(ip)) return;
           const norm = normalizeCategoryName(ip.categoryName, ip.categoryId, ip.name);
           mergedMap.set(ip.id, {
             ...ip,
@@ -451,6 +478,7 @@ export const usePosStore = defineStore('pos', () => {
           // O'chirilgan (isDeleted: true) tovarlarni olib tashlash
           const deletedBackendProducts = backendProducts.filter((bp: any) => bp.isDeleted);
           deletedBackendProducts.forEach((bp: any) => {
+            markProductDeleted(bp.id, bp.name);
             mergedMap.delete(bp.id);
             for (const [id, item] of mergedMap.entries()) {
               if (item.name?.toLowerCase().trim() === bp.name?.toLowerCase().trim()) {
@@ -1623,10 +1651,13 @@ export const usePosStore = defineStore('pos', () => {
 
   async function deleteProduct(productId: string) {
     const index = products.value.findIndex(p => p.id === productId);
+    let prodName = '';
     if (index > -1) {
+      prodName = products.value[index].name;
       products.value.splice(index, 1);
       toast.success('Taom o\'chirildi! 🗑️', 3000);
     }
+    markProductDeleted(productId, prodName);
     broadcastSync('PRODUCTS_UPDATED');
     try {
       await fetchWithTimeout(`${API_URL}/products/${productId}`, {
