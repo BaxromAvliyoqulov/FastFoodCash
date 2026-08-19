@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../db';
+import { sendTelegramMessage } from '../utils/telegram';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -208,6 +209,18 @@ export const createOrder = async (req: Request, res: Response) => {
       return newOrder;
     });
 
+    if (totalAmount >= 300000) {
+      sendTelegramMessage(`
+🎉 <b>KATTA BUYURTMA URILDI!</b>
+━━━━━━━━━━━━━━━━━━━━
+🆔 <b>Chek:</b> #${result.orderNumber}
+💰 <b>Summa:</b> ${totalAmount.toLocaleString('uz-UZ')} so'm
+💳 <b>To'lov turi:</b> ${paymentType}
+⏰ <b>Vaqt:</b> ${new Date().toLocaleTimeString('uz-UZ')}
+━━━━━━━━━━━━━━━━━━━━
+      `.trim());
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Buyurtma rasmiylashtirildi',
@@ -299,6 +312,17 @@ export const cancelOrder = async (req: Request, res: Response) => {
 
       return updatedOrder;
     });
+
+    sendTelegramMessage(`
+🚨 <b>DIQQAT! BUYURTMA BEKOR QILINDI</b>
+━━━━━━━━━━━━━━━━━━━━
+🆔 <b>Chek:</b> #${result.orderNumber}
+💰 <b>Summa:</b> ${result.totalAmount.toLocaleString('uz-UZ')} so'm
+👤 <b>Mas'ul:</b> ${manager.fullName}
+📝 <b>Sabab:</b> ${reason || 'Menejer/Kassir bekori'}
+⏰ <b>Vaqt:</b> ${new Date().toLocaleTimeString('uz-UZ')}
+━━━━━━━━━━━━━━━━━━━━
+    `.trim());
 
     return res.json({ success: true, message: 'Buyurtma bekor qilindi', data: result });
   } catch (error: any) {
