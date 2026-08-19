@@ -96,9 +96,6 @@ export const usePosStore = defineStore('pos', () => {
   // ─── Categories ──────────────────────────────────────────────────────────────
   function normalizeCategoryName(catName?: string, catId?: string) {
     const lower = `${catName || ''} ${catId || ''}`.toLowerCase().trim();
-    if (lower.includes('drink') || lower.includes('salqin') || lower.includes('ichimlik') || lower.includes('napitk')) {
-      return { id: 'cat-drinks', name: 'Salqin Ichimliklar' };
-    }
     if (lower.includes('burger') || lower.includes('gamburger')) {
       return { id: 'cat-burger', name: 'Burger' };
     }
@@ -106,39 +103,49 @@ export const usePosStore = defineStore('pos', () => {
       return { id: 'cat-lavash', name: 'Lavash' };
     }
     if (lower.includes('hotdog') || lower.includes('hot-dog') || lower.includes('hot dog')) {
-      return { id: 'cat-hotdog', name: 'Hot-Dog' };
+      return { id: 'cat-hotdog', name: 'Hot Dog' };
     }
-    if (lower.includes('fries') || lower.includes('fri') || lower.includes('kartoshka')) {
-      return { id: 'cat-fries', name: 'Fri' };
+    if (lower.includes('fries') || lower.includes('fri') || lower.includes('kfc') || lower.includes('qovurilgan') || lower.includes('naggets') || lower.includes('kartoshka') || lower.includes('garnir') || lower.includes('snack')) {
+      return { id: 'cat-fried', name: 'Qovurilganlar & KFC' };
     }
     if (lower.includes('pizza') || lower.includes('pitsa')) {
-      return { id: 'cat-pizza', name: 'Pitsa' };
+      return { id: 'cat-pizza', name: 'Pizza' };
     }
     if (lower.includes('salad') || lower.includes('salat')) {
       return { id: 'cat-salads', name: 'Salatlar' };
     }
-    if (lower.includes('dessert') || lower.includes('shirin') || lower.includes('tort')) {
-      return { id: 'cat-desserts', name: 'Shirinliklar' };
+    if (lower.includes('dessert') || lower.includes('muzqaymoq') || lower.includes('marojniy') || lower.includes('shirin') || lower.includes('tort')) {
+      return { id: 'cat-desserts', name: 'Muzqaymoq' };
     }
-    if (lower.includes('coffee') || lower.includes('kofe') || lower.includes('qahva')) {
-      return { id: 'cat-coffee', name: 'Kofe' };
+    if (lower.includes('coffee') || lower.includes('kofe') || lower.includes('qahva') || lower.includes('choy')) {
+      return { id: 'cat-coffee', name: 'Kofe va Choy' };
     }
     if (lower.includes('energy') || lower.includes('energetik')) {
       return { id: 'cat-energy', name: 'Energetiklar' };
     }
     if (lower.includes('juice') || lower.includes('sok') || lower.includes('sharbat') || lower.includes('moxito') || lower.includes('mojito')) {
-      return { id: 'cat-juices', name: 'Soklar' };
+      return { id: 'cat-juices', name: 'Sok va Moxito' };
     }
-    return { id: catId || 'cat-other', name: catName || 'Boshqa' };
+    if (lower.includes('drink') || lower.includes('salqin') || lower.includes('ichimlik') || lower.includes('napitk')) {
+      return { id: 'cat-drinks', name: 'Salqin Ichimliklar' };
+    }
+    return { id: catId || 'cat-drinks', name: catName || 'Salqin Ichimliklar' };
   }
 
   const storedCategories = localStorage.getItem('doston_pos_categories');
   let parsedCategories: Category[] = storedCategories ? JSON.parse(storedCategories) : initialCategories;
   
-  // Filter out any obsolete 'cat-all' entry from local storage
-  parsedCategories = parsedCategories.filter(c => c.id !== 'cat-all' && c.name !== 'Barcha Taomlar');
+  // Filter out any obsolete 'cat-all', 'Garnirlar', 'Snacks' entries
+  parsedCategories = parsedCategories.filter(c => 
+    c.id !== 'cat-all' && 
+    c.name !== 'Barcha Taomlar' &&
+    !c.name.toLowerCase().includes('garnir') &&
+    !c.name.toLowerCase().includes('snack') &&
+    !c.id.includes('garnir') &&
+    !c.id.includes('snack')
+  );
 
-  // Normalize category names (e.g. merge 'Drinks' -> 'Salqin Ichimliklar')
+  // Normalize category names
   parsedCategories = parsedCategories.map(c => {
     const norm = normalizeCategoryName(c.name, c.id);
     return { ...c, id: norm.id, name: norm.name };
@@ -146,17 +153,14 @@ export const usePosStore = defineStore('pos', () => {
 
   // Deduplicate categories by ID
   const uniqueCatMap = new Map<string, Category>();
+  initialCategories.forEach(initialCat => {
+    const norm = normalizeCategoryName(initialCat.name, initialCat.id);
+    uniqueCatMap.set(norm.id, { ...initialCat, id: norm.id, name: norm.name });
+  });
+
   parsedCategories.forEach(c => {
     if (!uniqueCatMap.has(c.id)) {
       uniqueCatMap.set(c.id, c);
-    }
-  });
-
-  // Sync initial categories names & add missing ones
-  initialCategories.forEach(initialCat => {
-    const norm = normalizeCategoryName(initialCat.name, initialCat.id);
-    if (!uniqueCatMap.has(norm.id)) {
-      uniqueCatMap.set(norm.id, { ...initialCat, id: norm.id, name: norm.name });
     }
   });
 

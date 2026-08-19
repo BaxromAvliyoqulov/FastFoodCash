@@ -4,7 +4,7 @@ export const friedProducts: Product[] = [
   {
     id: 'prod-frd-1',
     categoryId: 'cat-fried',
-    categoryName: 'Qovurilganlar & Sneklar',
+    categoryName: 'Qovurilganlar & KFC',
     name: 'Classic Fri',
     price: 18000,
     imageUrl: '/images/food/classic_fri.jpg',
@@ -15,7 +15,7 @@ export const friedProducts: Product[] = [
   {
     id: 'prod-frd-2',
     categoryId: 'cat-fried',
-    categoryName: 'Qovurilganlar & Sneklar',
+    categoryName: 'Qovurilganlar & KFC',
     name: 'Jaydari Fri',
     price: 20000,
     imageUrl: '/images/food/jaydari_fri.jpg',
@@ -26,7 +26,7 @@ export const friedProducts: Product[] = [
   {
     id: 'prod-frd-3',
     categoryId: 'cat-fried',
-    categoryName: 'Qovurilganlar & Sneklar',
+    categoryName: 'Qovurilganlar & KFC',
     name: 'KFC (Portsiya)',
     price: 25000,
     imageUrl: '/images/hotdog/kfc_chicken.png',
@@ -37,7 +37,7 @@ export const friedProducts: Product[] = [
   {
     id: 'prod-frd-4',
     categoryId: 'cat-fried',
-    categoryName: 'Qovurilganlar & Sneklar',
+    categoryName: 'Qovurilganlar & KFC',
     name: 'KFC (1 KG)',
     price: 85000,
     imageUrl: '/images/hotdog/kfc_chicken.png',
@@ -48,7 +48,7 @@ export const friedProducts: Product[] = [
   {
     id: 'prod-frd-5',
     categoryId: 'cat-fried',
-    categoryName: 'Qovurilganlar & Sneklar',
+    categoryName: 'Qovurilganlar & KFC',
     name: 'Baliq Okean',
     price: 70000,
     imageUrl: '/images/fried/baliq_okean.png',
