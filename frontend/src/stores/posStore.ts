@@ -254,7 +254,7 @@ export const usePosStore = defineStore('pos', () => {
   const products = ref<Product[]>(loadedProducts);
   watch(products, (newVal) => localStorage.setItem('doston_pos_products', JSON.stringify(newVal)), { deep: true });
 
-  // ─── Fetch Products (Never drops new DB products added by Super Admin) ────────
+  // ─── Fetch Products (Never drops original menu or new DB products) ────────
   async function fetchProducts(showToast = false) {
     isSyncingProducts.value = true;
     try {
@@ -267,49 +267,107 @@ export const usePosStore = defineStore('pos', () => {
         isOnline.value = true;
         lastSyncTime.value = new Date();
 
+        // 1. Asosiy baza: Barcha original menyu (Choy, Kofe, Muzqaymoq, Lavash, Burger, Pizza, Hotdog...)
+        const mergedMap = new Map<string, Product>();
+
+        initialProducts.forEach(ip => {
+          const norm = normalizeCategoryName(ip.categoryName, ip.categoryId);
+          mergedMap.set(ip.id, {
+            ...ip,
+            categoryId: norm.id,
+            categoryName: norm.name
+          });
+        });
+
+        // 2. Agar localStorage da saqlangan maxsus tovarlar bo'lsa, ularni ham saqlaymiz
+        try {
+          const stored = localStorage.getItem('doston_pos_products');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              const initialIds = new Set(initialProducts.map(p => p.id));
+              parsed.forEach((p: any) => {
+                if (!initialIds.has(p.id)) {
+                  const norm = normalizeCategoryName(p.categoryName, p.categoryId);
+                  mergedMap.set(p.id, {
+                    ...p,
+                    categoryId: norm.id,
+                    categoryName: norm.name
+                  });
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Error reading stored custom products:', e);
+        }
+
+        // 3. Backend DB dan kelgan tovarlar bilan yangilaymiz yoki yangilarini qo'shamiz
         if (backendProducts.length > 0) {
-          // Barcha backenddagi mahsulotlarni qamrab olamiz (faqat initialProducts emas!)
           const activeBackendProducts = backendProducts.filter((bp: any) => !bp.isDeleted);
           
-          const mergedProducts: Product[] = activeBackendProducts.map((bp: any) => {
-            const initMatch = initialProducts.find(
-              ip => ip.id === bp.id || ip.name?.toLowerCase().trim() === bp.name?.toLowerCase().trim()
-            );
+          activeBackendProducts.forEach((bp: any) => {
+            const existingById = mergedMap.get(bp.id);
+            let existingByName: Product | undefined;
+            for (const item of mergedMap.values()) {
+              if (item.name?.toLowerCase().trim() === bp.name?.toLowerCase().trim()) {
+                existingByName = item;
+                break;
+              }
+            }
+            const matched = existingById || existingByName;
 
-            const norm = normalizeCategoryName(bp.categoryName || initMatch?.categoryName || 'Boshqa', bp.categoryId || initMatch?.categoryId);
-            
+            const norm = normalizeCategoryName(bp.categoryName || matched?.categoryName || 'Boshqa', bp.categoryId || matched?.categoryId);
             const imgUrl = (bp.imageUrl && !bp.imageUrl.includes('placeholder'))
               ? bp.imageUrl
-              : (initMatch?.imageUrl || '/images/food/lavash_obichniy.jpg');
+              : (matched?.imageUrl || '/images/food/lavash_obichniy.jpg');
 
-            return {
-              id: bp.id,
-              name: bp.name || initMatch?.name || 'Taom',
-              price: typeof bp.price === 'number' ? bp.price : (Number(bp.price) || initMatch?.price || 0),
+            const updatedProd: Product = {
+              id: bp.id || matched?.id || ('prod-' + Date.now()),
+              name: bp.name || matched?.name || 'Taom',
+              price: typeof bp.price === 'number' ? bp.price : (Number(bp.price) || matched?.price || 0),
               categoryId: norm.id,
               categoryName: norm.name,
               imageUrl: imgUrl,
-              isStopList: bp.isAvailable !== undefined ? !bp.isAvailable : (bp.isStopList ?? initMatch?.isStopList ?? false),
+              isStopList: bp.isAvailable !== undefined ? !bp.isAvailable : (bp.isStopList ?? matched?.isStopList ?? false),
               recipe: (bp.recipes && bp.recipes.length > 0)
                 ? bp.recipes.map((r: any) => ({ ingredientId: r.ingredientId, quantityRequired: r.quantityRequired }))
-                : (initMatch?.recipe || [])
+                : (matched?.recipe || [])
             };
+
+            if (matched && matched.id !== updatedProd.id) {
+              mergedMap.delete(matched.id);
+            }
+            mergedMap.set(updatedProd.id, updatedProd);
           });
 
-          products.value = mergedProducts;
-
-          // Kategoriyalarni ham dinamik to'ldirish
-          mergedProducts.forEach(p => {
-            if (p.categoryName && !categories.value.some(c => c.name.toLowerCase() === p.categoryName.toLowerCase())) {
-              categories.value.push({
-                id: p.categoryId || ('cat-' + p.categoryName.toLowerCase().replace(/\s+/g, '-')),
-                name: p.categoryName,
-                count: 0,
-                isHidden: false
-              });
+          // O'chirilgan (isDeleted: true) tovarlarni olib tashlash
+          const deletedBackendProducts = backendProducts.filter((bp: any) => bp.isDeleted);
+          deletedBackendProducts.forEach((bp: any) => {
+            mergedMap.delete(bp.id);
+            for (const [id, item] of mergedMap.entries()) {
+              if (item.name?.toLowerCase().trim() === bp.name?.toLowerCase().trim()) {
+                mergedMap.delete(id);
+              }
             }
           });
         }
+
+        const finalProductList = Array.from(mergedMap.values());
+        products.value = finalProductList;
+        localStorage.setItem('doston_pos_products', JSON.stringify(finalProductList));
+
+        // Kategoriyalarni to'ldirish
+        finalProductList.forEach(p => {
+          if (p.categoryName && !categories.value.some(c => c.name.toLowerCase() === p.categoryName.toLowerCase())) {
+            categories.value.push({
+              id: p.categoryId || ('cat-' + p.categoryName.toLowerCase().replace(/\s+/g, '-')),
+              name: p.categoryName,
+              count: 0,
+              isHidden: false
+            });
+          }
+        });
 
         if (showToast) {
           toast.success("Menyu va tovarlar serverdan to'liq yangilandi! ✨");
