@@ -38,6 +38,15 @@ export const drinksProducts: Product[] = [
     recipe: []
   },
   {
+    id: 'prod-drk-nestle-gaz-15',
+    categoryId: 'cat-drinks',
+    categoryName: 'Salqin Ichimliklar',
+    name: 'Nestle Gazli 1.5L',
+    price: 6000,
+    imageUrl: '/images/food/nestle_gazli_15.jpg',
+    recipe: []
+  },
+  {
     id: 'prod-drk-nestle-gazsiz-15',
     categoryId: 'cat-drinks',
     categoryName: 'Salqin Ichimliklar',
@@ -47,5 +56,6 @@ export const drinksProducts: Product[] = [
     recipe: []
   }
 ];
+
 
 

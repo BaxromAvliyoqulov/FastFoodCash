@@ -230,15 +230,9 @@ export const usePosStore = defineStore('pos', () => {
     if (!p) return true;
     const id = p.id || '';
     const name = (p.name || '').toLowerCase().trim();
-    if (deletedProductIds.value.has(id) || deletedProductIds.value.has(name)) {
-      return true;
-    }
     if (
       id === 'prod-des-9' ||
       name === 'prod-des-9' ||
-      id === 'prod-drk-nestle-gaz-15' ||
-      name === 'nestle gazli 1.5l' ||
-      name === 'nestle gazli' ||
       id === 'prod-drk-pepsi-bot' ||
       name === 'pepsi butulka' ||
       name === 'mazza cheeseburger' ||
