@@ -123,10 +123,10 @@ export const usePosStore = defineStore('pos', () => {
     if (lower.includes('coffee') || lower.includes('kofe') || lower.includes('qahva')) {
       return { id: 'cat-coffee', name: 'Kofe' };
     }
-    if (lower.includes('energy') || lower.includes('energetik') || lower.includes('moxito') || lower.includes('mojito')) {
-      return { id: 'cat-energy', name: 'Energetik' };
+    if (lower.includes('energy') || lower.includes('energetik')) {
+      return { id: 'cat-energy', name: 'Energetiklar' };
     }
-    if (lower.includes('juice') || lower.includes('sok') || lower.includes('sharbat')) {
+    if (lower.includes('juice') || lower.includes('sok') || lower.includes('sharbat') || lower.includes('moxito') || lower.includes('mojito')) {
       return { id: 'cat-juices', name: 'Soklar' };
     }
     return { id: catId || 'cat-other', name: catName || 'Boshqa' };

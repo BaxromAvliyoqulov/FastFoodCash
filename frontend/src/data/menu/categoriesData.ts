@@ -9,7 +9,7 @@ export const initialCategories: Category[] = [
   { id: 'cat-salads', name: 'Salatlar', count: 5, isHidden: false },
   { id: 'cat-desserts', name: 'Shirinliklar (Tortlar)', count: 9, isHidden: false },
   { id: 'cat-coffee', name: 'Kofe va Choy', count: 7, isHidden: false },
-  { id: 'cat-drinks', name: 'Salqin Ichimliklar', count: 15, isHidden: false },
-  { id: 'cat-energy', name: 'Energetik & Moxito', count: 5, isHidden: false },
-  { id: 'cat-juices', name: 'Soklar (Sharbatlar)', count: 5, isHidden: false },
+  { id: 'cat-drinks', name: 'Salqin Ichimliklar', count: 18, isHidden: false },
+  { id: 'cat-energy', name: 'Energetiklar', count: 4, isHidden: false },
+  { id: 'cat-juices', name: 'Soklar', count: 10, isHidden: false },
 ];
