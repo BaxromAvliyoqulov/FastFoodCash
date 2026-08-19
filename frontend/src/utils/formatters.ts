@@ -8,7 +8,35 @@ export function formatMoney(amount: number | string | null | undefined): string 
     return '0';
   }
   const num = Number(amount);
-  return num.toLocaleString('uz-UZ');
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+/**
+ * Formats a raw number or string into thousand-separated format with spaces (e.g. 100000 -> "100 000")
+ */
+export function formatWithSpaces(val: number | string | null | undefined): string {
+  if (val === undefined || val === null || val === '') return '';
+  const num = typeof val === 'number' ? val : Number(String(val).replace(/\D/g, ''));
+  if (isNaN(num) || num === 0) return '';
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+/**
+ * Handles input event for money inputs, formatting the displayed value with spaces
+ * and returning the clean numeric value.
+ */
+export function formatMoneyInput(eventOrValue: Event | string | number | null | undefined): number {
+  if (!eventOrValue) return 0;
+  if (typeof eventOrValue === 'object' && 'target' in eventOrValue) {
+    const input = eventOrValue.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
+    const num = Number(raw) || 0;
+    input.value = num > 0 ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '';
+    return num;
+  } else {
+    const raw = String(eventOrValue).replace(/\D/g, '');
+    return Number(raw) || 0;
+  }
 }
 
 export function formatDateTime(dateVal: string | number | Date | null | undefined): string {

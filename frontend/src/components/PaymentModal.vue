@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import type { PaymentType } from '../types/pos';
 import { useToastStore } from '../stores/toastStore';
+import { formatWithSpaces, formatMoneyInput } from '../utils/formatters';
 import { X, Banknote, CreditCard, CheckCircle2, AlertTriangle } from 'lucide-vue-next';
 
 const props = withDefaults(defineProps<{
@@ -153,9 +154,10 @@ function handleComplete() {
                 <button @click="paidAmountInput = totalAmount" class="text-[11px] font-bold text-amber-500 hover:underline cursor-pointer">Aniq Summa</button>
               </div>
               <input 
-                type="number" 
-                v-model="paidAmountInput"
-                class="w-full bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/40 rounded-xl px-3.5 py-2.5 sm:py-3 text-slate-900 dark:text-white text-xl sm:text-2xl font-black font-mono focus:border-amber-500 focus:outline-none shadow-sm"
+                type="text" 
+                :value="formatWithSpaces(paidAmountInput)"
+                @input="paidAmountInput = formatMoneyInput($event)"
+                class="w-full bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/40 rounded-xl px-3.5 py-2.5 sm:py-3 text-slate-900 dark:text-white text-xl sm:text-2xl font-black font-mono focus:border-amber-500 focus:outline-none shadow-sm tracking-wider"
                 placeholder="Summani kiriting..."
               />
             </div>

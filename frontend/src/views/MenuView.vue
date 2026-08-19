@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { usePosStore } from '../stores/posStore';
 import { useToastStore } from '../stores/toastStore';
+import { formatWithSpaces, formatMoneyInput } from '../utils/formatters';
 import type { Product, Category } from '../types/pos';
 import CategoryIcon from '../components/CategoryIcon.vue';
 import { 
@@ -576,7 +577,15 @@ function handleSaveProduct() {
 
             <div>
               <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Sotish Narxi (SO'M)</label>
-              <input v-model.number="activeProductForm.price" type="number" step="1000" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500" />
+              <div class="relative">
+                <input 
+                  type="text" 
+                  :value="formatWithSpaces(activeProductForm.price)" 
+                  @input="activeProductForm.price = formatMoneyInput($event)" 
+                  placeholder="Masalan: 35 000" 
+                  class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold font-mono text-slate-900 dark:text-white focus:outline-none focus:border-amber-500" 
+                />
+              </div>
             </div>
 
             <div>

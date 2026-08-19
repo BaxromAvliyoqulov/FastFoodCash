@@ -202,6 +202,36 @@ async function main() {
     }
   });
 
+  const pPepsi2L = await prisma.product.create({
+    data: {
+      categoryName: 'Salqin Ichimliklar',
+      name: 'Pepsi 2L',
+      price: 20000,
+      imageUrl: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=400',
+      isAvailable: true
+    }
+  });
+
+  const pCola2L = await prisma.product.create({
+    data: {
+      categoryName: 'Salqin Ichimliklar',
+      name: 'Coca-Cola 2L',
+      price: 20000,
+      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400',
+      isAvailable: true
+    }
+  });
+
+  const pFanta2L = await prisma.product.create({
+    data: {
+      categoryName: 'Salqin Ichimliklar',
+      name: 'Fanta 2L',
+      price: 20000,
+      imageUrl: 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=400',
+      isAvailable: true
+    }
+  });
+
   console.log('✅ Products & BOM Recipes seeded');
 
   // 4. Create an open shift for Kassir

@@ -2,6 +2,33 @@ import type { Product } from '../../types/pos';
 
 export const drinksProducts: Product[] = [
   {
+    id: 'prod-drk-pepsi-2l',
+    categoryId: 'cat-drinks',
+    categoryName: 'Salqin Ichimliklar',
+    name: 'Pepsi 2L',
+    price: 20000,
+    imageUrl: '/images/food/pepsi_15l.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-drk-cola-2l',
+    categoryId: 'cat-drinks',
+    categoryName: 'Salqin Ichimliklar',
+    name: 'Coca-Cola 2L',
+    price: 20000,
+    imageUrl: '/images/food/coca_cola_15l.jpg',
+    recipe: []
+  },
+  {
+    id: 'prod-drk-fanta-2l',
+    categoryId: 'cat-drinks',
+    categoryName: 'Salqin Ichimliklar',
+    name: 'Fanta 2L',
+    price: 20000,
+    imageUrl: '/images/food/fanta_15l.jpg',
+    recipe: []
+  },
+  {
     id: 'prod-drk-cola-05',
     categoryId: 'cat-drinks',
     categoryName: 'Salqin Ichimliklar',
