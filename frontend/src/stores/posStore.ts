@@ -166,6 +166,21 @@ export const usePosStore = defineStore('pos', () => {
   const selectedCategory = ref('cat-all');
   const searchQuery = ref('');
 
+  // Helper to ensure human-readable product names (never raw IDs like prod-lav-1)
+  function resolveProductName(id?: string, rawName?: string): string {
+    const init = initialProducts.find(ip => ip.id === id);
+    if (init && init.name) {
+      if (!rawName || rawName.startsWith('prod-') || rawName.trim() === '' || rawName === id) {
+        return init.name;
+      }
+      return rawName;
+    }
+    if (rawName && !rawName.startsWith('prod-')) {
+      return rawName;
+    }
+    return init?.name || rawName || 'Taom';
+  }
+
   // ─── Products ────────────────────────────────────────────────────────────────
   const storedProducts = localStorage.getItem('doston_pos_products');
   let loadedProducts: Product[] = initialProducts;
@@ -174,7 +189,7 @@ export const usePosStore = defineStore('pos', () => {
       const parsed = JSON.parse(storedProducts);
       if (Array.isArray(parsed)) {
         const initialIds = new Set(initialProducts.map(p => p.id));
-        const customProducts = parsed.filter((p: any) => !initialIds.has(p.id));
+        const customProducts = parsed.filter((p: any) => !initialIds.has(p.id) && !p.id?.startsWith('prod-lav-') && !p.id?.startsWith('prod-drk-') && !p.id?.startsWith('prod-bur-') && !p.id?.startsWith('prod-hot-') && !p.id?.startsWith('prod-piz-') && !p.id?.startsWith('prod-sok-') && !p.id?.startsWith('prod-cof-') && !p.id?.startsWith('prod-mox-') && !p.id?.startsWith('prod-des-') && !p.id?.startsWith('prod-sal-') && !p.id?.startsWith('prod-fri-'));
         
         loadedProducts = [
           ...initialProducts.map(ip => {
@@ -183,21 +198,29 @@ export const usePosStore = defineStore('pos', () => {
             if (found) {
               return {
                 ...ip,
+                name: resolveProductName(ip.id, found.name),
                 categoryId: norm.id,
                 categoryName: norm.name,
                 price: found.price || ip.price,
+                imageUrl: (found.imageUrl && !found.imageUrl.includes('placeholder')) ? found.imageUrl : ip.imageUrl,
                 isStopList: found.isStopList ?? ip.isStopList
               };
             }
             return {
               ...ip,
+              name: ip.name,
               categoryId: norm.id,
               categoryName: norm.name
             };
           }),
           ...customProducts.map((cp: any) => {
             const norm = normalizeCategoryName(cp.categoryName, cp.categoryId);
-            return { ...cp, categoryId: norm.id, categoryName: norm.name };
+            return { 
+              ...cp, 
+              name: resolveProductName(cp.id, cp.name),
+              categoryId: norm.id, 
+              categoryName: norm.name 
+            };
           })
         ];
       }
@@ -324,7 +347,7 @@ export const usePosStore = defineStore('pos', () => {
 
             const updatedProd: Product = {
               id: bp.id || matched?.id || ('prod-' + Date.now()),
-              name: bp.name || matched?.name || 'Taom',
+              name: resolveProductName(bp.id || matched?.id, bp.name || matched?.name),
               price: typeof bp.price === 'number' ? bp.price : (Number(bp.price) || matched?.price || 0),
               categoryId: norm.id,
               categoryName: norm.name,
