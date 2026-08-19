@@ -39,13 +39,28 @@ function getCartQuantity(productId: string): number {
         <div class="relative h-28 sm:h-32 rounded-2xl overflow-hidden mb-3 bg-slate-100 dark:bg-slate-950">
           <img :src="prod.imageUrl" :alt="prod.name" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           
+          <!-- 🔘 QUICK AVAILABILITY SWITCHER (BOR / YO'Q) -->
+          <button 
+            @click.stop="posStore.toggleStopList(prod.id)"
+            :title="prod.isStopList ? 'Tovar qolmagan (Stop-listda). Sotuvga qaytarish uchun bosing' : 'Tovar bor (Sotuvda). Tugagan deb belgilash uchun bosing'"
+            :class="[
+              'absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-black border backdrop-blur-md flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer',
+              prod.isStopList 
+                ? 'bg-rose-600 text-white border-rose-400 ring-2 ring-rose-500/50 animate-pulse' 
+                : 'bg-black/60 hover:bg-black/80 text-emerald-400 border-emerald-500/40 hover:border-emerald-400'
+            ]"
+          >
+            <span :class="['w-2 h-2 rounded-full', prod.isStopList ? 'bg-white' : 'bg-emerald-400']"></span>
+            <span>{{ prod.isStopList ? "Yo'q (Tugagan)" : "Bor" }}</span>
+          </button>
+
           <!-- Weighted product badge -->
-          <div v-if="isWeightedProduct(prod)" class="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-xl text-[10px] font-black border border-amber-400 flex items-center gap-1 shadow-md">
+          <div v-if="isWeightedProduct(prod) && !prod.isStopList" class="absolute bottom-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-xl text-[10px] font-black border border-amber-400 flex items-center gap-1 shadow-md">
             <Scale class="w-3 h-3" />TAROZI (KG)
           </div>
 
           <!-- Modifiers trigger -->
-          <button v-if="prod.availableModifiers?.length" @click.stop="emit('open-modifiers', prod, $event)" class="absolute top-2 right-2 bg-white/90 dark:bg-slate-950/85 backdrop-blur-sm px-2 py-0.5 rounded-xl text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 hover:bg-amber-500 hover:text-white transition-colors">
+          <button v-if="prod.availableModifiers?.length && !prod.isStopList" @click.stop="emit('open-modifiers', prod, $event)" class="absolute top-2 right-2 bg-white/90 dark:bg-slate-950/85 backdrop-blur-sm px-2 py-0.5 rounded-xl text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 hover:bg-amber-500 hover:text-white transition-colors">
             <Sparkles class="w-3 h-3" />+Qo'shimcha
           </button>
 
@@ -58,8 +73,12 @@ function getCartQuantity(productId: string): number {
             <span>x{{ getCartQuantity(prod.id) }}</span>
           </div>
           
-          <div v-if="prod.isStopList" class="absolute inset-0 bg-slate-900/70 flex items-center justify-center">
-            <span class="text-xs font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/30">Stop-List</span>
+          <!-- Stop-List Full Overlay -->
+          <div v-if="prod.isStopList" class="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center p-2 text-center select-none">
+            <span class="text-[11px] font-black text-rose-400 bg-rose-500/20 px-2.5 py-1 rounded-xl border border-rose-500/40 uppercase tracking-wider mb-1">
+              ⛔ TUGAGAN
+            </span>
+            <span class="text-[9px] text-slate-300 font-bold">Sotuvdan to'xtatilgan</span>
           </div>
         </div>
         

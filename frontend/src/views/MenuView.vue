@@ -16,8 +16,6 @@ import {
   Eye, 
   EyeOff, 
   Layers,
-  CheckCircle2,
-  AlertCircle,
   LayoutGrid,
   List
 } from 'lucide-vue-next';
@@ -446,20 +444,20 @@ function handleSaveProduct() {
                     {{ prod.price.toLocaleString('uz-UZ') }} so'm
                   </td>
 
-                  <!-- Stop-List Toggle Button -->
+                  <!-- Stop-List Switcher Toggle -->
                   <td class="p-3">
                     <button 
                       @click="posStore.toggleStopList(prod.id)"
                       :class="[
-                        'px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1',
+                        'px-3 py-1.5 rounded-xl text-[11px] font-black border transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 select-none',
                         prod.isStopList 
-                          ? 'bg-rose-500/10 text-rose-500 border-rose-500/30 hover:bg-rose-500 hover:text-white' 
-                          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500 hover:text-white'
+                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 hover:bg-rose-500 hover:text-white' 
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500 hover:text-white'
                       ]"
+                      :title="prod.isStopList ? 'Tovar tugagan deb belgilangan. Mavjud (Bor) qilish uchun bosing' : 'Tovar sotuvda bor. Tugagan (Yo\'q) qilish uchun bosing'"
                     >
-                      <AlertCircle v-if="prod.isStopList" class="w-3 h-3" />
-                      <CheckCircle2 v-else class="w-3 h-3" />
-                      <span>{{ prod.isStopList ? '⛔ STOP-LIST' : '✅ Sotuvda Mavjud' }}</span>
+                      <span :class="['w-2.5 h-2.5 rounded-full shrink-0', prod.isStopList ? 'bg-rose-500 animate-ping' : 'bg-emerald-500']"></span>
+                      <span>{{ prod.isStopList ? "🔴 Yo'q (Tugagan)" : "🟢 Bor (Mavjud)" }}</span>
                     </button>
                   </td>
 
@@ -519,11 +517,13 @@ function handleSaveProduct() {
                 <button 
                   @click="posStore.toggleStopList(prod.id)"
                   :class="[
-                    'px-2 py-1 rounded-xl text-[10px] font-bold border transition-all',
-                    prod.isStopList ? 'bg-rose-500/10 text-rose-500 border-rose-500/30' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                    'px-2.5 py-1 rounded-xl text-[10px] font-black border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 select-none',
+                    prod.isStopList ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/40 hover:bg-rose-500 hover:text-white' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500 hover:text-white'
                   ]"
+                  :title="prod.isStopList ? 'Tovar tugagan. Mavjud qilish uchun bosing' : 'Tovar bor. Tugagan deb belgilash uchun bosing'"
                 >
-                  {{ prod.isStopList ? '⛔ Stop-List' : '✅ Active' }}
+                  <span :class="['w-2 h-2 rounded-full', prod.isStopList ? 'bg-rose-500' : 'bg-emerald-500']"></span>
+                  <span>{{ prod.isStopList ? "🔴 Yo'q (Tugagan)" : "🟢 Bor (Mavjud)" }}</span>
                 </button>
 
                 <div class="flex items-center space-x-1">
