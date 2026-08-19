@@ -94,7 +94,18 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   // ─── Categories ──────────────────────────────────────────────────────────────
-  function normalizeCategoryName(catName?: string, catId?: string) {
+  function normalizeCategoryName(catName?: string, catId?: string, prodName?: string) {
+    const prodLower = (prodName || '').toLowerCase().trim();
+    if (prodLower.includes('cola') || prodLower.includes('kola')) {
+      return { id: 'cat-cola', name: 'Coca-Cola' };
+    }
+    if (prodLower.includes('fanta')) {
+      return { id: 'cat-fanta', name: 'Fanta' };
+    }
+    if (prodLower.includes('pepsi')) {
+      return { id: 'cat-pepsi', name: 'Pepsi' };
+    }
+
     const lower = `${catName || ''} ${catId || ''}`.toLowerCase().trim();
     if (lower.includes('burger') || lower.includes('gamburger')) {
       return { id: 'cat-burger', name: 'Burger' };
@@ -120,6 +131,15 @@ export const usePosStore = defineStore('pos', () => {
     if (lower.includes('coffee') || lower.includes('kofe') || lower.includes('qahva') || lower.includes('choy')) {
       return { id: 'cat-coffee', name: 'Kofe va Choy' };
     }
+    if (lower.includes('cola') || lower.includes('kola')) {
+      return { id: 'cat-cola', name: 'Coca-Cola' };
+    }
+    if (lower.includes('fanta')) {
+      return { id: 'cat-fanta', name: 'Fanta' };
+    }
+    if (lower.includes('pepsi')) {
+      return { id: 'cat-pepsi', name: 'Pepsi' };
+    }
     if (lower.includes('energy') || lower.includes('energetik')) {
       return { id: 'cat-energy', name: 'Energetiklar' };
     }
@@ -135,9 +155,11 @@ export const usePosStore = defineStore('pos', () => {
   const storedCategories = localStorage.getItem('doston_pos_categories');
   let parsedCategories: Category[] = storedCategories ? JSON.parse(storedCategories) : initialCategories;
   
-  // Filter out any obsolete 'cat-all', 'Garnirlar', 'Snacks' entries
+  // Filter out any obsolete 'cat-all', 'cat-soda', 'Garnirlar', 'Snacks' entries
   parsedCategories = parsedCategories.filter(c => 
     c.id !== 'cat-all' && 
+    c.id !== 'cat-soda' &&
+    c.name !== 'Cola, Fanta, Pepsi' &&
     c.name !== 'Barcha Taomlar' &&
     !c.name.toLowerCase().includes('garnir') &&
     !c.name.toLowerCase().includes('snack') &&
@@ -185,6 +207,27 @@ export const usePosStore = defineStore('pos', () => {
     return init?.name || rawName || 'Taom';
   }
 
+  // Helper to ensure dummy/obsolete products are excluded
+  function isObsoleteDummyProduct(p: any): boolean {
+    if (!p) return true;
+    const id = p.id || '';
+    const name = (p.name || '').toLowerCase().trim();
+    if (
+      id === 'prod-des-9' ||
+      name === 'prod-des-9' ||
+      name === 'mazza cheeseburger' ||
+      name === 'double max burger' ||
+      name === 'classic cheeseburger' ||
+      name === 'double cheese monster' ||
+      name === 'tovuqli cheese lavash' ||
+      name === 'kartoshka fri (l)' ||
+      name === 'garnir fri'
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   // ─── Products ────────────────────────────────────────────────────────────────
   const storedProducts = localStorage.getItem('doston_pos_products');
   let loadedProducts: Product[] = initialProducts;
@@ -193,16 +236,38 @@ export const usePosStore = defineStore('pos', () => {
       const parsed = JSON.parse(storedProducts);
       if (Array.isArray(parsed)) {
         const initialIds = new Set(initialProducts.map(p => p.id));
-        const customProducts = parsed.filter((p: any) => !initialIds.has(p.id) && !p.id?.startsWith('prod-lav-') && !p.id?.startsWith('prod-drk-') && !p.id?.startsWith('prod-bur-') && !p.id?.startsWith('prod-hot-') && !p.id?.startsWith('prod-piz-') && !p.id?.startsWith('prod-sok-') && !p.id?.startsWith('prod-cof-') && !p.id?.startsWith('prod-mox-') && !p.id?.startsWith('prod-des-') && !p.id?.startsWith('prod-sal-') && !p.id?.startsWith('prod-fri-'));
+        const customProducts = parsed.filter((p: any) => 
+          !initialIds.has(p.id) && 
+          !p.id?.startsWith('prod-lav-') && 
+          !p.id?.startsWith('prod-drk-') && 
+          !p.id?.startsWith('prod-bur-') && 
+          !p.id?.startsWith('prod-hot-') && 
+          !p.id?.startsWith('prod-piz-') && 
+          !p.id?.startsWith('prod-sok-') && 
+          !p.id?.startsWith('prod-cof-') && 
+          !p.id?.startsWith('prod-mox-') && 
+          !p.id?.startsWith('prod-des-') && 
+          !p.id?.startsWith('prod-ice-') && 
+          !p.id?.startsWith('prod-sal-') && 
+          !p.id?.startsWith('prod-fri-') &&
+          !p.name?.toLowerCase().includes('marojniy') &&
+          !p.name?.toLowerCase().includes('muzqaymoq') &&
+          !p.name?.toLowerCase().includes('pepsi') &&
+          !p.name?.toLowerCase().includes('fanta') &&
+          !p.name?.toLowerCase().includes('cola') &&
+          !p.name?.toLowerCase().includes('kola') &&
+          !isObsoleteDummyProduct(p)
+        );
         
         loadedProducts = [
           ...initialProducts.map(ip => {
             const found = parsed.find((p: any) => p.id === ip.id);
-            const norm = normalizeCategoryName(found?.categoryName || ip.categoryName, found?.categoryId || ip.categoryId);
+            const resolvedName = resolveProductName(ip.id, found?.name);
+            const norm = normalizeCategoryName(found?.categoryName || ip.categoryName, found?.categoryId || ip.categoryId, resolvedName);
             if (found) {
               return {
                 ...ip,
-                name: resolveProductName(ip.id, found.name),
+                name: resolvedName,
                 categoryId: norm.id,
                 categoryName: norm.name,
                 price: found.price || ip.price,
@@ -218,10 +283,11 @@ export const usePosStore = defineStore('pos', () => {
             };
           }),
           ...customProducts.map((cp: any) => {
-            const norm = normalizeCategoryName(cp.categoryName, cp.categoryId);
+            const resolvedName = resolveProductName(cp.id, cp.name);
+            const norm = normalizeCategoryName(cp.categoryName, cp.categoryId, resolvedName);
             return { 
               ...cp, 
-              name: resolveProductName(cp.id, cp.name),
+              name: resolvedName,
               categoryId: norm.id, 
               categoryName: norm.name 
             };
@@ -298,7 +364,7 @@ export const usePosStore = defineStore('pos', () => {
         const mergedMap = new Map<string, Product>();
 
         initialProducts.forEach(ip => {
-          const norm = normalizeCategoryName(ip.categoryName, ip.categoryId);
+          const norm = normalizeCategoryName(ip.categoryName, ip.categoryId, ip.name);
           mergedMap.set(ip.id, {
             ...ip,
             categoryId: norm.id,
@@ -314,10 +380,23 @@ export const usePosStore = defineStore('pos', () => {
             if (Array.isArray(parsed)) {
               const initialIds = new Set(initialProducts.map(p => p.id));
               parsed.forEach((p: any) => {
-                if (!initialIds.has(p.id)) {
-                  const norm = normalizeCategoryName(p.categoryName, p.categoryId);
+                if (
+                  !initialIds.has(p.id) &&
+                  !p.id?.startsWith('prod-des-') &&
+                  !p.id?.startsWith('prod-ice-') &&
+                  !p.name?.toLowerCase().includes('marojniy') &&
+                  !p.name?.toLowerCase().includes('muzqaymoq') &&
+                  !p.name?.toLowerCase().includes('pepsi') &&
+                  !p.name?.toLowerCase().includes('fanta') &&
+                  !p.name?.toLowerCase().includes('cola') &&
+                  !p.name?.toLowerCase().includes('kola') &&
+                  !isObsoleteDummyProduct(p)
+                ) {
+                  const resolvedName = resolveProductName(p.id, p.name);
+                  const norm = normalizeCategoryName(p.categoryName, p.categoryId, resolvedName);
                   mergedMap.set(p.id, {
                     ...p,
+                    name: resolvedName,
                     categoryId: norm.id,
                     categoryName: norm.name
                   });
@@ -331,7 +410,7 @@ export const usePosStore = defineStore('pos', () => {
 
         // 3. Backend DB dan kelgan tovarlar bilan yangilaymiz yoki yangilarini qo'shamiz
         if (backendProducts.length > 0) {
-          const activeBackendProducts = backendProducts.filter((bp: any) => !bp.isDeleted);
+          const activeBackendProducts = backendProducts.filter((bp: any) => !bp.isDeleted && !isObsoleteDummyProduct(bp));
           
           activeBackendProducts.forEach((bp: any) => {
             const existingById = mergedMap.get(bp.id);
@@ -344,14 +423,15 @@ export const usePosStore = defineStore('pos', () => {
             }
             const matched = existingById || existingByName;
 
-            const norm = normalizeCategoryName(bp.categoryName || matched?.categoryName || 'Boshqa', bp.categoryId || matched?.categoryId);
+            const resolvedName = resolveProductName(bp.id || matched?.id, bp.name || matched?.name);
+            const norm = normalizeCategoryName(bp.categoryName || matched?.categoryName || 'Boshqa', bp.categoryId || matched?.categoryId, resolvedName);
             const imgUrl = (bp.imageUrl && !bp.imageUrl.includes('placeholder'))
               ? bp.imageUrl
               : (matched?.imageUrl || '/images/food/lavash_obichniy.jpg');
 
             const updatedProd: Product = {
               id: bp.id || matched?.id || ('prod-' + Date.now()),
-              name: resolveProductName(bp.id || matched?.id, bp.name || matched?.name),
+              name: resolvedName,
               price: typeof bp.price === 'number' ? bp.price : (Number(bp.price) || matched?.price || 0),
               categoryId: norm.id,
               categoryName: norm.name,
@@ -1471,44 +1551,71 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   async function saveProduct(productData: Partial<Product> & { id?: string }) {
+    const isNew = !productData.id;
+    const prodId = productData.id || ('prod-custom-' + Date.now());
+    
+    const prod: Product = {
+      id: prodId,
+      name: productData.name || 'Yangi Taom',
+      price: Number(productData.price) || 0,
+      categoryId: productData.categoryId || 'cat-lavash',
+      categoryName: productData.categoryName || 'Lavash',
+      imageUrl: productData.imageUrl || '/images/food/lavash_obichniy.jpg',
+      isStopList: productData.isStopList || false,
+      recipe: productData.recipe || []
+    };
+
     // 1. Optimistic immediate local update (0ms delay)
-    if (productData.id) {
-      const index = products.value.findIndex(p => p.id === productData.id);
-      if (index > -1) {
-        products.value[index] = { ...products.value[index], ...productData } as Product;
-      }
+    if (isNew) {
+      products.value.unshift(prod);
     } else {
-      const newId = 'prod-custom-' + Date.now();
-      const newProd: Product = {
-        id: newId,
-        name: productData.name || 'Yangi Taom',
-        price: Number(productData.price) || 0,
-        categoryId: productData.categoryId || 'cat-lavash',
-        categoryName: productData.categoryName || 'Lavash',
-        imageUrl: productData.imageUrl || '/images/food/lavash_obichniy.jpg',
-        isStopList: productData.isStopList || false,
-        recipe: productData.recipe || []
-      };
-      products.value.unshift(newProd);
-      productData.id = newId;
+      const index = products.value.findIndex(p => p.id === prodId);
+      if (index > -1) {
+        products.value[index] = { ...products.value[index], ...prod };
+      } else {
+        products.value.unshift(prod);
+      }
     }
     toast.success('Taom muvaffaqiyatli saqlandi! ✨', 3000);
+    broadcastSync('PRODUCTS_UPDATED');
 
-    // 2. Background sync to backend
+    // 2. Background sync to backend database
     try {
-      if (productData.id) {
-        await fetchWithTimeout(`${API_URL}/products/${productData.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(productData)
-        });
-      } else {
-        await fetchWithTimeout(`${API_URL}/products`, {
+      if (isNew) {
+        const res = await fetchWithTimeout(`${API_URL}/products`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(productData)
+          body: JSON.stringify({
+            name: prod.name,
+            categoryName: prod.categoryName,
+            price: prod.price,
+            imageUrl: prod.imageUrl,
+            isAvailable: !prod.isStopList
+          })
+        });
+        if (res.ok) {
+          const body = await res.json();
+          if (body.success && body.data?.id) {
+            const idx = products.value.findIndex(p => p.id === prodId);
+            if (idx > -1) {
+              products.value[idx].id = body.data.id;
+            }
+          }
+        }
+      } else {
+        await fetchWithTimeout(`${API_URL}/products/${prodId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: prod.name,
+            categoryName: prod.categoryName,
+            price: prod.price,
+            imageUrl: prod.imageUrl,
+            isAvailable: !prod.isStopList
+          })
         });
       }
+      broadcastSync('PRODUCTS_UPDATED');
     } catch (e: any) {
       console.warn('Backendga sinxronlash keyinroq amalga oshiriladi (Lokal xotirada saqlandi):', e);
     }
@@ -1520,10 +1627,12 @@ export const usePosStore = defineStore('pos', () => {
       products.value.splice(index, 1);
       toast.success('Taom o\'chirildi! 🗑️', 3000);
     }
+    broadcastSync('PRODUCTS_UPDATED');
     try {
       await fetchWithTimeout(`${API_URL}/products/${productId}`, {
         method: 'DELETE'
       });
+      broadcastSync('PRODUCTS_UPDATED');
     } catch (e) {
       console.warn('Backend delete sync deferred (offline):', e);
     }

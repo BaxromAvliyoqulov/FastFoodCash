@@ -5,7 +5,7 @@ export const dessertProducts: Product[] = [
     id: 'prod-ice-05',
     categoryId: 'cat-desserts',
     categoryName: 'Muzqaymoq',
-    name: 'Muzqaymoq 0.5',
+    name: 'Marojniy 0.5',
     price: 5000,
     imageUrl: '/images/food/muzqaymoq_05.jpg',
     recipe: []
@@ -20,3 +20,4 @@ export const dessertProducts: Product[] = [
     recipe: []
   }
 ];
+

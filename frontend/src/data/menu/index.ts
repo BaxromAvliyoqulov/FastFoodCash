@@ -7,6 +7,7 @@ import { pizzaProducts } from './pizzaData';
 import { saladProducts } from './saladsData';
 import { dessertProducts } from './dessertsData';
 import { coffeeProducts } from './coffeeData';
+import { sodaProducts } from './sodaData';
 import { drinksProducts } from './drinksData';
 import { energyProducts } from './energyData';
 import { juicesProducts } from './juicesData';
@@ -21,6 +22,7 @@ export { pizzaProducts } from './pizzaData';
 export { saladProducts } from './saladsData';
 export { dessertProducts } from './dessertsData';
 export { coffeeProducts } from './coffeeData';
+export { sodaProducts } from './sodaData';
 export { drinksProducts } from './drinksData';
 export { energyProducts } from './energyData';
 export { juicesProducts } from './juicesData';
@@ -34,7 +36,9 @@ export const initialProducts: Product[] = [
   ...saladProducts,
   ...dessertProducts,
   ...coffeeProducts,
+  ...sodaProducts,
   ...drinksProducts,
   ...energyProducts,
   ...juicesProducts
 ];
+

@@ -228,7 +228,94 @@ const safeCatId = computed(() => (props.catId || '').toLowerCase());
       <path d="M31 11C31 8.5 33.5 7 33.5 4.5" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" opacity="0.9" />
     </svg>
 
-    <!-- 9. 🥤 PREMIUM 3D SALQIN ICHIMLIKLAR (Icy Refreshing Cola Drink) -->
+    <!-- 9. 🥤 PREMIUM 3D COCA-COLA (Classic Red Contour Bottle) -->
+    <svg v-else-if="safeCatId.includes('cola') || safeCatId.includes('kola')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <defs>
+        <linearGradient id="pColaBottle" x1="16" y1="6" x2="32" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#EF4444" />
+          <stop offset="0.4" stop-color="#DC2626" />
+          <stop offset="0.8" stop-color="#991B1B" />
+          <stop offset="1" stop-color="#450A0A" />
+        </linearGradient>
+      </defs>
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="44" rx="14" ry="3" fill="#000" opacity="0.3" />
+      <!-- Contour Bottle Silhouette -->
+      <path d="M21 8C21 8 20 12 18 16C15 22 14 28 15 36C15.8 42 19 44 24 44C29 44 32.2 42 33 36C34 28 33 22 30 16C28 12 27 8 27 8H21Z" fill="url(#pColaBottle)" />
+      <!-- Red Bottle Cap -->
+      <rect x="20" y="4" width="8" height="5" rx="1.5" fill="#EF4444" />
+      <line x1="20" y1="6.5" x2="28" y2="6.5" stroke="#FCA5A5" stroke-width="0.8" />
+      <!-- Glass Neck Ring -->
+      <rect x="19" y="8" width="10" height="2" rx="1" fill="#DC2626" />
+      <!-- Iconic White Dynamic Ribbon Wave -->
+      <path d="M15 24C18 22 21 28 27 25C30 23.5 32 25 33 26C33 28 32 31 30 32C24 35 21 29 17 31C15 32 14.5 30 15 24Z" fill="#FFFFFF" opacity="0.95" />
+      <path d="M16 26C19 24 22 29 27 26.5C30 25 32 26.5 32.5 27" stroke="#DC2626" stroke-width="1.2" stroke-linecap="round" />
+      <!-- Carbonated Fizz Bubbles -->
+      <circle cx="21" cy="38" r="1.5" fill="#FEF08A" opacity="0.8" />
+      <circle cx="27" cy="35" r="1.2" fill="#FEF08A" opacity="0.9" />
+      <circle cx="24" cy="40" r="1" fill="#FEF08A" opacity="0.7" />
+      <!-- Specular Highlight -->
+      <path d="M17 18C16 23 16 33 17 38" stroke="#FCA5A5" stroke-width="1.8" stroke-linecap="round" opacity="0.6" />
+    </svg>
+
+    <!-- 10. 🍊 PREMIUM 3D FANTA (Vivid Orange Citrus Splash Bottle) -->
+    <svg v-else-if="safeCatId.includes('fanta')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <defs>
+        <linearGradient id="pFantaBottle" x1="16" y1="6" x2="32" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FB923C" />
+          <stop offset="0.4" stop-color="#F97316" />
+          <stop offset="0.8" stop-color="#EA580C" />
+          <stop offset="1" stop-color="#9A3412" />
+        </linearGradient>
+      </defs>
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="44" rx="14" ry="3" fill="#000" opacity="0.3" />
+      <!-- Fanta Bottle Silhouette -->
+      <path d="M21 8C21 8 20 12 18 16C15 22 14 28 15 36C15.8 42 19 44 24 44C29 44 32.2 42 33 36C34 28 33 22 30 16C28 12 27 8 27 8H21Z" fill="url(#pFantaBottle)" />
+      <!-- Blue Cap -->
+      <rect x="20" y="4" width="8" height="5" rx="1.5" fill="#2563EB" />
+      <line x1="20" y1="6.5" x2="28" y2="6.5" stroke="#93C5FD" stroke-width="0.8" />
+      <rect x="19" y="8" width="10" height="2" rx="1" fill="#1D4ED8" />
+      <!-- Fanta Blue Splash Badge -->
+      <ellipse cx="24" cy="27" rx="8" ry="6" fill="#1D4ED8" />
+      <ellipse cx="24" cy="27" rx="6.5" ry="4.8" fill="#F97316" />
+      <!-- Green Citrus Leaf -->
+      <path d="M24 21C26 19 29 19 30 22C28 24 25 24 24 21Z" fill="#16A34A" />
+      <!-- Effervescence Bubbles -->
+      <circle cx="20" cy="38" r="1.5" fill="#FEF08A" opacity="0.8" />
+      <circle cx="28" cy="36" r="1.2" fill="#FEF08A" opacity="0.9" />
+      <path d="M17 18C16 23 16 33 17 38" stroke="#FED7AA" stroke-width="1.8" stroke-linecap="round" opacity="0.7" />
+    </svg>
+
+    <!-- 11. 🔵 PREMIUM 3D PEPSI (Signature Royal Blue Globe Bottle) -->
+    <svg v-else-if="safeCatId.includes('pepsi')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
+      <defs>
+        <linearGradient id="pPepsiBottle" x1="16" y1="6" x2="32" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#3B82F6" />
+          <stop offset="0.4" stop-color="#2563EB" />
+          <stop offset="0.8" stop-color="#1D4ED8" />
+          <stop offset="1" stop-color="#1E3A8A" />
+        </linearGradient>
+      </defs>
+      <!-- Base Shadow -->
+      <ellipse cx="24" cy="44" rx="14" ry="3" fill="#000" opacity="0.3" />
+      <!-- Pepsi Bottle Silhouette -->
+      <path d="M21 8C21 8 20 12 18 16C15 22 14 28 15 36C15.8 42 19 44 24 44C29 44 32.2 42 33 36C34 28 33 22 30 16C28 12 27 8 27 8H21Z" fill="url(#pPepsiBottle)" />
+      <!-- Royal Blue Cap -->
+      <rect x="20" y="4" width="8" height="5" rx="1.5" fill="#1D4ED8" />
+      <line x1="20" y1="6.5" x2="28" y2="6.5" stroke="#93C5FD" stroke-width="0.8" />
+      <rect x="19" y="8" width="10" height="2" rx="1" fill="#2563EB" />
+      <!-- Pepsi Iconic Globe -->
+      <circle cx="24" cy="27" r="7.5" fill="#FFFFFF" />
+      <path d="M16.8 25C18.5 22 22 21 26 23C29 24.5 30.5 24 31.2 25C31.1 21.5 28 19.5 24 19.5C20 19.5 17.2 22 16.8 25Z" fill="#DC2626" />
+      <path d="M16.8 29C17.5 30 19 32 23 32C27 32 30 29.5 31.2 29C30.5 31 28 34.5 24 34.5C20 34.5 17.5 32 16.8 29Z" fill="#1D4ED8" />
+      <!-- Effervescence Bubbles -->
+      <circle cx="21" cy="39" r="1.5" fill="#93C5FD" opacity="0.8" />
+      <circle cx="27" cy="37" r="1.2" fill="#93C5FD" opacity="0.9" />
+      <path d="M17 18C16 23 16 33 17 38" stroke="#93C5FD" stroke-width="1.8" stroke-linecap="round" opacity="0.7" />
+    </svg>
+
+    <!-- 10. 🥤 PREMIUM 3D SALQIN ICHIMLIKLAR (Icy Refreshing Drink) -->
     <svg v-else-if="safeCatId.includes('drink') || safeCatId.includes('salqin') || safeCatId.includes('ichimlik') || safeCatId.includes('napitk')" :class="iconSizeClass" viewBox="0 0 48 48" fill="none">
       <defs>
         <linearGradient id="pDrinkGlass" x1="8" y1="12" x2="40" y2="44" gradientUnits="userSpaceOnUse">
