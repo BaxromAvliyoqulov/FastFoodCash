@@ -85,6 +85,15 @@ export const sodaProducts: Product[] = [
     imageUrl: '/images/food/fanta_15l.jpg',
     recipe: []
   },
+  {
+    id: 'prod-drk-fanta-bot',
+    categoryId: 'cat-fanta',
+    categoryName: 'Fanta',
+    name: 'Fanta Butulka',
+    price: 10000,
+    imageUrl: '/images/food/fanta_05.jpg',
+    recipe: []
+  },
 
   // ─── PEPSI ───────────────────────────────────
   {
@@ -122,15 +131,7 @@ export const sodaProducts: Product[] = [
     price: 20000,
     imageUrl: '/images/food/pepsi_15l.jpg',
     recipe: []
-  },
-  {
-    id: 'prod-drk-pepsi-bot',
-    categoryId: 'cat-pepsi',
-    categoryName: 'Pepsi',
-    name: 'Pepsi Butulka',
-    price: 10000,
-    imageUrl: '/images/food/pepsi_butulka.jpg',
-    recipe: []
   }
 ];
+
 
